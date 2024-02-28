@@ -33,21 +33,6 @@ router.get('/ghAccessToken', async function (req, res) {
         res.status(500).json({ message: 'Error interno del servidor.' });
     }
 });
-//     req.query.code;
-//     console.log(req.query.code);
-//     const params = `?client_id=${client_id}&client_secret=${client_secret}&code=${req.query.code}`;
-//     await fetch("https://github.com/login/oauth/access_token"+ params, {
-//         method: 'POST',
-//         headers: {
-//             'Accept': 'application/json'
-//         }
-//     }).then(response => {
-//         console.log(response.json());
-//         return response.json();
-//     }).then(data => {
-//         res.json(data);
-//     });
-// });
 
 router.get('/getAuth', async function (req, res) {
     try {
@@ -59,8 +44,5 @@ router.get('/getAuth', async function (req, res) {
         res.status(500).json({ message: 'Error interno del servidor.' });
     }
 });
-//     res.json(req.get('Authorization'));
-//     console.log(req.get('Authorization'));
-// });
 
 export default router
