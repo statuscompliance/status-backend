@@ -5,6 +5,7 @@ import controlRoutes from './routes/control.routes.js'
 import inputRoutes from './routes/input.routes.js'
 import indexRoutes from './routes/index.routes.js'
 import inputControlRoutes from './routes/input_control.routes.js'
+import ghAccess from './routes/ghaccess.routes.js'
 import cors from 'cors'
 
 const app = express()
@@ -22,6 +23,8 @@ app.use('/api', mashupRoutes)
 app.use('/api', controlRoutes)
 app.use('/api', inputRoutes)
 app.use('/api', inputControlRoutes)
+app.use('/api', ghAccess)
+
 
 app.listen(3001)
 console.log(`Server on port ${3001}`)
