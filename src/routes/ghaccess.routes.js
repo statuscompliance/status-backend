@@ -1,5 +1,5 @@
 import {Router} from 'express'
-import dotenv from 'dotenv';
+import dotenv from 'dotenv'
 
 dotenv.config();
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
