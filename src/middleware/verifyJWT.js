@@ -4,7 +4,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 export function verifyJWT(req, res, next) {
-    const accessToken = req.headers['authorization']
+    const accessToken = req.headers['authorization'].split(' ')[1]
     if (!accessToken) {
         return res.status(401).json({ message: 'No token provided' })
     }
@@ -13,6 +13,6 @@ export function verifyJWT(req, res, next) {
         req.username = decoded.username
         next()
     } catch (error) {
-        return res.status(401).json({ message: 'Unauthorized' })
+        return res.status(401).json({ message: `Unauthorized, ${error}` })
     }
 }

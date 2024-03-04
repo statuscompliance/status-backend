@@ -19,19 +19,19 @@ app.use(express.json())
 app.use(cors({
     origin: 'http://localhost:3000',
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie'],
 }));
 
 app.use(indexRoutes)
 app.use('/api', inputRoutes)
+app.use('/api', refresh)
+app.use('/api', userRoutes)
+// app.use(verifyJWT) // All routes below this line are protected
 app.use('/api', inputControlRoutes)
 app.use('/api', controlRoutes)
 app.use('/api', ghAccess)
-app.use('/api', refresh)
-// app.use(verifyJWT) // All routes below this line are protected
-app.use('/api', userRoutes)
 app.use('/api', catalogRoutes)
 app.use('/api', mashupRoutes)
-
 app.use(cookieParser())
 
 

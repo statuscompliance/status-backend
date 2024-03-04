@@ -21,8 +21,7 @@ fs.readFile('db/database.sql', 'utf8', async (err, data) => {
         const tableExistsQuery = `SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '${tableName}'`;
         const [rows, fields] = await connection.query(tableExistsQuery);
         // if(tableName === 'user'){
-            // await connection.query(`DROP TABLE USER_AUTHORITY`);
-            // await connection.query(`DROP TABLE USER`); 
+        //     await connection.query(`DROP TABLE USER`); 
         // }
 
         if (rows[0].count > 0) {
