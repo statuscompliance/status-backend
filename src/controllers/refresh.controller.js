@@ -18,7 +18,7 @@ export async function refreshToken(req, res) {
         if(err || user.username !== decoded.username){
             return res.status(403).json({message: 'Invalid token'})
         }
-        const accessToken = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' })
+        const accessToken = jwt.sign({ username: user.username, authority: user.authority}, process.env.JWT_SECRET, { expiresIn: '1h' })
         res.status(200).json({accessToken: accessToken})
     })
 }

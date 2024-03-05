@@ -40,8 +40,8 @@ export async function signIn(req, res) {
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid password' })
         }else{
-            const accessToken = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' })
-            const refreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_JWT_SECRET, { expiresIn: '1d' })
+            const accessToken = jwt.sign({ username: user.username , authority: user.authority }, process.env.JWT_SECRET, { expiresIn: '1h' })
+            const refreshToken = jwt.sign({ username: user.username, authority: user.authority }, process.env.REFRESH_JWT_SECRET, { expiresIn: '1d' })
             const [row] = await pool.query('UPDATE user SET refresh_token = ? WHERE username = ?', [refreshToken, username])
             res.status(200).json({ username:username ,accessToken: accessToken, refreshToken: refreshToken});
         }
