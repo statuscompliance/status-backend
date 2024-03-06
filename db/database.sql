@@ -17,7 +17,7 @@ CREATE TABLE mashup (
     PRIMARY KEY(id)
 );
 
-CREATE TABLE user (
+CREATE TABLE User (
     id INT(11) NOT NULL AUTO_INCREMENT,
     username VARCHAR(60) NOT NULL,
     password VARCHAR(255) NOT NULL,

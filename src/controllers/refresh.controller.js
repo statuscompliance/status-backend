@@ -10,7 +10,7 @@ export async function refreshToken(req, res) {
         return res.status(401).json({message: 'No token provided'})
     }
     const refreshToken = cookies.refreshToken
-    const user = (await pool.query('SELECT * FROM user WHERE refresh_token = ?', [refreshToken]))[0][0]
+    const user = (await pool.query('SELECT * FROM User WHERE refresh_token = ?', [refreshToken]))[0][0]
     if(user.length === 0){
         return res.status(403).json({message: 'Invalid token'})
     }

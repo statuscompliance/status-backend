@@ -1,4 +1,3 @@
-import { table } from 'console';
 import { pool } from '../src/db.js';
 import fs from 'fs';
 
@@ -19,8 +18,9 @@ fs.readFile('db/database.sql', 'utf8', async (err, data) => {
       if (query.trim().startsWith('CREATE TABLE')) {
         const tableName = query.match(/CREATE TABLE (\w+)/)[1];
         const tableExistsQuery = `SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '${tableName}'`;
-        const [rows, fields] = await connection.query(tableExistsQuery);
-        // if(tableName === 'user'){
+        const [rows] = await connection.query(tableExistsQuery);
+        
+        // if(tableName === 'User'){
         //     await connection.query(`DROP TABLE USER`); 
         // }
 
