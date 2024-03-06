@@ -15,6 +15,16 @@ export const getInput = async (req, res) => {
     res.json(rows[0])
 }
 
+export const getInputsByMashupId = async (req, res) => {
+    const [rows] = await pool.query('SELECT * FROM input WHERE mashup_id = ?', [req.params.id])
+
+    if(rows.length <= 0) return res.status(404).json({
+        message: 'The mashup has no inputs'
+    })
+
+    res.json(rows)
+}
+
 export const createInput = async (req, res) => {
     const {name, type, mashup_id} = req.body
     const [rows] = await pool.query('INSERT INTO input (name,type,mashup_id) VALUES(?,?,?)', [name,type,mashup_id])

@@ -1,4 +1,5 @@
-CREATE DATABASE IF NOT EXISTS statusdb;
+DROP DATABASE statusdb;
+CREATE DATABASE statusdb;
 
 USE statusdb;
 
@@ -21,8 +22,6 @@ CREATE TABLE control (
     id INT(11) NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     description TEXT NOT NULL,
-    operator ENUM('EQUAL_TO', 'HIGHER_THAN', 'HIGHER_THAN_OR_EQUAL_TO', 'LESS_THAN', 'LESS_THAN_OR_EQUAL_TO') NOT NULL,
-    term INT NOT NULL,
     period ENUM('DAILY', 'MONTHLY', 'ANNUALLY') NOT NULL,
     startDate DATE,
     endDate DATE,

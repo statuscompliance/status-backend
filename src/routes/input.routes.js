@@ -1,11 +1,13 @@
 import {Router} from 'express'
-import {getInputs, getInput, createInput, updateInput, deleteInput} from '../controllers/input.controller.js'
+import {getInputs, getInput, getInputsByMashupId, createInput, updateInput, deleteInput} from '../controllers/input.controller.js'
 
 const router = Router()
 
 router.get('/input', getInputs)
 
 router.get('/input/:id', getInput)
+
+router.get('/:id/inputs', getInputsByMashupId)
 
 router.post('/input', createInput)
 
