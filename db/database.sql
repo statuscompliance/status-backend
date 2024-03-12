@@ -18,6 +18,16 @@ CREATE TABLE mashup (
     PRIMARY KEY(id)
 );
 
+CREATE TABLE User (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    username VARCHAR(60) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    authority ENUM('ADMIN','DEVELOPER','USER') NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    refresh_token VARCHAR(255),
+    PRIMARY KEY(id)
+);
+
 CREATE TABLE control (
     id INT(11) NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -50,3 +60,5 @@ CREATE TABLE input_control (
     FOREIGN KEY(input_id) REFERENCES input(id),
     FOREIGN KEY(control_id) REFERENCES control(id)
 );
+
+
