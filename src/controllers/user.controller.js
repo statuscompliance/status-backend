@@ -1,9 +1,7 @@
 import {pool} from '../db.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import dotenv from 'dotenv'
 
-dotenv.config()
 
 export async function signUp(req, res) {
     const { username, password, email } = req.body
@@ -30,15 +28,14 @@ export async function signIn(req, res) {
         if (!user || user.length === 0) {
             return res.status(404).json({ message: 'User not found' })
         }
-        
         const hashedPassword = user.password;
 
         const isPasswordValid = await bcrypt.compare(password, hashedPassword);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid password' })
         }else{
-            const accessToken = jwt.sign({ username: user.username , authority: user.authority }, process.env.JWT_SECRET, { expiresIn: '1h' })
-            const refreshToken = jwt.sign({ username: user.username, authority: user.authority }, process.env.REFRESH_JWT_SECRET, { expiresIn: '1d' })
+            const accessToken = jwt.sign({ user_id: user.id, username: user.username , authority: user.authority }, process.env.JWT_SECRET, { expiresIn: '1h' })
+            const refreshToken = jwt.sign({ user_id: user.id, username: user.username, authority: user.authority }, process.env.REFRESH_JWT_SECRET, { expiresIn: '1d' })
             await pool.query('UPDATE User SET refresh_token = ? WHERE username = ?', [refreshToken, username])
             res.status(200).json({ username:username ,accessToken: accessToken, refreshToken: refreshToken});
         }

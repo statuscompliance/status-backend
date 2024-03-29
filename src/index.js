@@ -8,6 +8,8 @@ import inputControlRoutes from './routes/input_control.routes.js'
 import ghAccess from './routes/ghaccess.routes.js'
 import userRoutes from './routes/user.routes.js'
 import refresh from './routes/refresh.routes.js'
+import assistantRoutes from './routes/assistant.routes.js'
+import threadRoutes from './routes/thread.routes.js'
 import cors from 'cors'
 import { verifyJWT } from './middleware/verifyJWT.js'
 import cookieParser from 'cookie-parser'
@@ -32,8 +34,9 @@ app.use('/api', controlRoutes)
 app.use('/api', ghAccess)
 app.use('/api', catalogRoutes)
 app.use('/api', mashupRoutes)
+app.use('/api', assistantRoutes)
+app.use('/api', threadRoutes)
 app.use(cookieParser())
-
 
 app.listen(3001)
 console.log(`Server on port ${3001}`)

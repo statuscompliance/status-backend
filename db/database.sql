@@ -28,6 +28,35 @@ CREATE TABLE User (
     PRIMARY KEY(id)
 );
 
+CREATE TABLE thread (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    gpt_id VARCHAR(50) NOT NULL,
+    user_id INT(11) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    run_id VARCHAR(50) NOT NULL,
+    PRIMARY KEY(id),
+    FOREIGN KEY(user_id) REFERENCES User(id)
+);
+
+CREATE TABLE message (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    content TEXT NOT NULL,
+    thread_id INT(11) NOT NULL,
+    PRIMARY KEY(id),
+    FOREIGN KEY(thread_id) REFERENCES thread(id)
+);
+
+CREATE TABLE assistant (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    assistantId VARCHAR(50) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    instructions TEXT NOT NULL,
+    tools TEXT NOT NULL,
+    model VARCHAR(100) NOT NULL,
+    status ENUM('ACTIVE', 'INACTIVE'),
+    PRIMARY KEY(id)
+);
+
 CREATE TABLE control (
     id INT(11) NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
