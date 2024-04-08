@@ -152,6 +152,24 @@ export async function deleteUserThreads(req,res){
     }
 }
 
+export async function changeThreadName(req, res){
+    const accessToken = req.headers['authorization'].split(' ')[1] || req.headers['Authorization'].split(' ')[1]
+    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET)
+    const userId = decoded.user_id
+    const { gptId } = req.params
+    const { name } = req.body
+    try {
+        const thread = await pool.query('UPDATE thread SET name = ? WHERE gpt_id = ? AND user_id = ?', [name, gptId, userId])
+        if (thread[0].length === 0) {
+            return res.status(404).json({ message: `Thread ${gptId} not found` })
+        }
+        res.status(200).json({ message: `Thread ${gptId} name updated successfully` })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: `Failed to update thread name, error: ${error.message}` })
+    }
+}
+
 async function insertThread(connection, gptId, userId, runId){
     try {
         const [result] = await connection.query('INSERT INTO thread (gpt_id, user_id, name, run_id) VALUES (?, ?, ?, ?)', [gptId, userId, "Nuevo Hilo",runId])
