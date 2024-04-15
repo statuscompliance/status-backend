@@ -5,7 +5,10 @@ import sequelize from '../../db/database.js';
 const User = sequelize.define('User', {
     username: {
         type: DataTypes.STRING(60),
-        allowNull: false
+        allowNull: false,
+        validate: {
+            isAlphanumeric: true
+        }
     },
     password: {
         type: DataTypes.STRING(255),
@@ -17,7 +20,10 @@ const User = sequelize.define('User', {
     },
     email: {
         type: DataTypes.STRING(100),
-        allowNull: false
+        allowNull: false,
+        validate: {
+            isEmail: true
+        }
     },
     refresh_token: {
         type: DataTypes.STRING(255)

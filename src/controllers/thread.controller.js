@@ -83,35 +83,38 @@ export async function createThread(req, res) {
     console.log(content);
 
     const accessToken = req.headers['authorization'].split(' ')[1] || req.headers['Authorization'].split(' ')[1];
-    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
-    const username = decoded.username;
+    if(isValidAccessToken(accessToken)){
+        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+        const username = decoded.username;
+        try {
+            const user = await models.User.findOne({ where: { username: username } });
+            const userId = user.id;
 
-    try {
-        const user = await models.User.findOne({ where: { username: username } });
-        const userId = user.id;
+            if (!validMsg(content)) {
+                return res.status(400).json({ error: 'Por favor, haz el mensaje un poco más detallado' });
+            }
 
-        if (!validMsg(content)) {
-            return res.status(400).json({ error: 'Por favor, haz el mensaje un poco más detallado' });
-        }
+            await sequelize.transaction(async (transaction) => {
+                const runThread = await openai.beta.threads.createAndRun({
+                    assistant_id: assistantId,
+                    thread: {
+                        messages: [{ role: "user", content: content }],
+                    },
+                });
+                console.log(runThread);
+                const threadId = await insertThread(transaction, runThread.thread_id, userId, runThread.id);
+                console.log("HERE, line 107",threadId);
 
-        await sequelize.transaction(async (transaction) => {
-            const runThread = await openai.beta.threads.createAndRun({
-                assistant_id: assistantId,
-                thread: {
-                    messages: [{ role: "user", content: content }],
-                },
+                await insertMessage(transaction, content, threadId);
+
+                return res.status(201).json({ id: runThread.thread_id, message: 'Hilo creado exitosamente' });
             });
-            console.log(runThread);
-            const threadId = await insertThread(transaction, runThread.thread_id, userId, runThread.id);
-            console.log("HERE, line 107",threadId);
-
-            await insertMessage(transaction, content, threadId);
-
-            return res.status(201).json({ id: runThread.thread_id, message: 'Hilo creado exitosamente' });
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: `Error al crear el hilo, error: ${error}` });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ error: `Error al crear el hilo, error: ${error}` });
+        }
+    } else {
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 }
 
@@ -125,9 +128,9 @@ export async function addNewMessage(req, res) {
         }
 
         await sequelize.transaction(async (transaction) => {
-            const threadMessage = await openai.beta.threads.messages.create(gptId, { role: "user", content: content });
+            await openai.beta.threads.messages.create(gptId, { role: "user", content: content });
 
-            const thread = await openai.beta.threads.runs.create(gptId, { assistant_id: assistantId });
+            await openai.beta.threads.runs.create(gptId, { assistant_id: assistantId });
 
             const threadId = await models.Thread.findOne({ where: { gpt_id: gptId } }, { transaction });
 
@@ -243,4 +246,14 @@ async function insertMessage(transaction, content, threadId){
         console.error(error);
         throw new Error(`Error al insertar el mensaje en la base de datos, error: ${error.message}`);
     }
+}
+
+function isValidAccessToken(token) {
+    if (typeof token !== 'string' || token.length === 0) {
+        return false;
+    }
+
+    const [bearer, accessToken] = token.split(' ');
+
+    return bearer.toLowerCase() === 'bearer' && accessToken.length > 0;
 }

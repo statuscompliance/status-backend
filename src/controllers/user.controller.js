@@ -100,11 +100,11 @@ export async function getAuthority(req, res) {
     const username = req.params.username;
     const user = await models.User.findOne({
         where: {
-            username
+            username: username
         }
     });
 
-    if (rows.length === 0) {
+    if (user.length === 0) {
         return res.status(404).json({ message: 'User not found' });
     }
     res.status(200).json(user.authority);
