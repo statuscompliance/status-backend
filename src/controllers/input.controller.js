@@ -1,13 +1,11 @@
 import models from "../../db/models.js"
 
 export const getInputs = async (req, res) => {
-    // const [rows] = await pool.query('SELECT * FROM input')
     const [rows] = await models.Input.findAll();
     res.json(rows)
 }
 
 export const getInput = async (req, res) => {
-    // const [rows] = await pool.query('SELECT * FROM input WHERE id = ?', [req.params.id])
     const [rows] = await models.Input.findByPk(req.params.id);
 
     if(rows.length <= 0) return res.status(404).json({
@@ -18,7 +16,6 @@ export const getInput = async (req, res) => {
 }
 
 export const getInputsByMashupId = async (req, res) => {
-    // const [rows] = await pool.query('SELECT * FROM input WHERE mashup_id = ?', [req.params.id])
     const [rows] = await models.Input.findAll({
         where: {
             mashup_id: req.params.id
@@ -34,7 +31,6 @@ export const getInputsByMashupId = async (req, res) => {
 
 export const createInput = async (req, res) => {
     const {name, type, mashup_id} = req.body
-    // const [rows] = await pool.query('INSERT INTO input (name,type,mashup_id) VALUES(?,?,?)', [name,type,mashup_id])
     const rows = await models.Input.create({
         name,
         type,
@@ -42,7 +38,7 @@ export const createInput = async (req, res) => {
     });
 
     res.send({
-        id: rows.insertId,
+        id: rows.id,
         name,
         type,
         mashup_id,
@@ -52,8 +48,6 @@ export const createInput = async (req, res) => {
 export const updateInput = async (req, res) => {
     const {id} = req.params
     const {name, type, mashup_id} = req.body
-
-    // const [result] = await pool.query('UPDATE input SET name = IFNULL(?, name), type = IFNULL(?, type), mashup_id = IFNULL(?, mashup_id) WHERE id = ?', [name, type, mashup_id, id])
     const result = await models.Input.update({
         name,
         type,
@@ -67,15 +61,12 @@ export const updateInput = async (req, res) => {
     if(result.affectedRows <= 0) return res.status(404).json({
         message: 'Input not found'
     })
-
-    // const [rows] = await pool.query('SELECT * FROM input WHERE id = ?', [id])
     const [rows] = await models.Input.findByPk(id);
 
     res.json(rows[0])
 }
 
 export const deleteInput = async (req, res) => {
-    // const [result] = await pool.query('DELETE FROM input WHERE id = ?', [req.params.id])
     const result = await models.Input.destroy({
         where: {
             id: req.params.id

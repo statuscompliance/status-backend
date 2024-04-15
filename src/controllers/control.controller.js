@@ -44,9 +44,8 @@ export const createControl = async (req, res) => {
         catalog_id
     });
 
-    // const [rows] = await pool.query('INSERT INTO control (name,description,period,startDate,endDate,mashup_id,catalog_id) VALUES(?,?,?,?,?,?,?)', [name,description,period,startDate,endDate,mashup_id,catalog_id])
     res.send({
-        id: rows.insertId,
+        id: rows.id,
         name,
         description,
         period,

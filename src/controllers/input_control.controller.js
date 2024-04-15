@@ -19,7 +19,6 @@ export const getInputControl = async (req, res) => {
 
 export const createInputControl = async (req, res) => {
     const {value, input_id, control_id} = req.body
-    // const [rows] = await pool.query('INSERT INTO input_control (value,input_id,control_id) VALUES(?,?,?)', [value,input_id,control_id])
     const rows = await models.InputControl.create({
         value,
         input_id,
@@ -27,7 +26,7 @@ export const createInputControl = async (req, res) => {
     });
 
     res.send({
-        id: rows.insertId,
+        id: rows.id,
         value,
         input_id,
         control_id,

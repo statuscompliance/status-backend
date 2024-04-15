@@ -18,7 +18,6 @@ export async function createAssistant(req,res){
             tools: [{"type":"code_interpreter"}],
             model: "gpt-3.5-turbo-0125"
         });
-        // const insertedAssistant = await pool.query('INSERT INTO assistant (assistantId, name, instructions, tools, model) VALUES (?, ?, ?, ?, ?)', [assistant.id, name, instructions, assistant.tools, assistant.model]);
         
         await models.Assistant.create({
             assistantId: assistant.id,
@@ -36,7 +35,6 @@ export async function createAssistant(req,res){
 
 export async function getAssistants(req,res){
     try {
-        // const assistants = await pool.query('SELECT * FROM assistant')
         const assistants = await models.Assistant.findAll();
         res.status(200).json(assistants[0]);
     } catch (error) {
@@ -46,7 +44,6 @@ export async function getAssistants(req,res){
 
 export async function renewAssistant(req,res){
     try {
-        // await pool.query('DELETE FROM assistant')
         await models.Assistant.destroy({
             where: {},
             truncate: true
@@ -60,7 +57,6 @@ export async function renewAssistant(req,res){
             tools: [{"type":"code_interpreter"}],
             model: "gpt-3.5-turbo-0125"
         });
-        // const insertedAssistant = await pool.query('INSERT INTO assistant (assistantId, name, instructions, tools, model) VALUES (?, ?, ?, ?, ?)', [assistant.id, name, instructions, assistant.tools, assistant.model]);
         await models.Assistant.create({
             assistantId: assistant.id,
             name: name,

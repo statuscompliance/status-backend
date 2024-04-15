@@ -18,13 +18,12 @@ export const getCatalog = async (req, res) => {
 
 export const createCatalog = async (req, res) => {
     const {name,url} = req.body
-    // const [rows] = await pool.query('INSERT INTO catalog (name,url) VALUES(?,?)', [name,url])
     const rows = await models.Catalog.create({
         name,
         url
     });
     res.send({
-        id: rows.insertId,
+        id: rows.id,
         name,
         url,
     })
