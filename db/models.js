@@ -9,9 +9,7 @@ import Catalog from '../src/models/catalog.model.js';
 import Control from '../src/models/control.model.js';
 import Input from '../src/models/input.model.js';
 import InputControl from '../src/models/input_control.model.js';
-
-// const sequelize = new Sequelize(process.env.DB_CONNECTION_URL);
-
+import { associateModels } from './model-utils.js';
 
 const models = {
     User,
@@ -24,12 +22,11 @@ const models = {
     InputControl
 };
 
-Object.keys(models).forEach(modelName => {
-    const model = models[modelName];
-    if (model.associate) {
-      model.associate(models)
-    }
-});
+try {
+  associateModels(models);
+} catch (error) {
+  console.error('Error associating models:', error);
+}
 
 applyExtraSetup(sequelize);
 
