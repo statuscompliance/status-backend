@@ -1,6 +1,5 @@
 import express from 'express'
 import catalogRoutes from './routes/catalog.routes.js'
-import mashupRoutes from './routes/mashup.routes.js'
 import controlRoutes from './routes/control.routes.js'
 import inputRoutes from './routes/input.routes.js'
 import indexRoutes from './routes/index.routes.js'
@@ -33,7 +32,6 @@ app.use('/api', inputControlRoutes)
 app.use('/api', controlRoutes)
 app.use('/api', ghAccess)
 app.use('/api', catalogRoutes)
-app.use('/api', mashupRoutes)
 app.use('/api', assistantRoutes)
 app.use('/api', threadRoutes)
 app.use(cookieParser())

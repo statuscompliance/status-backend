@@ -1,41 +1,36 @@
-import { pool } from '../src/db.js';
-import fs from 'fs';
+import { Sequelize } from 'sequelize';
 
-fs.readFile('db/database.sql', 'utf8', async (err, data) => {
-  if (err) {
-    console.error('Error reading SQL file:', err);
-    return;
-  }
-
-  const queries = data.split(';').filter(query => query.trim() !== '');
-
-  try {
-    const connection = await pool.getConnection();
-
-    for (let i = 0; i < queries.length; i++) {
-      const query = queries[i];
-
-      if (query.trim().startsWith('CREATE TABLE')) {
-        const tableName = query.match(/CREATE TABLE (\w+)/)[1];
-        const tableExistsQuery = `SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '${tableName}'`;
-        const [rows] = await connection.query(tableExistsQuery);
-        
-        // if(tableName === 'User'){
-        //     await connection.query(`DROP TABLE USER`); 
-        // }
-
-        if (rows[0].count > 0) {
-            console.log(`Table '${tableName}' already exists. Skipping creation.`);
-            continue;
-        }
-      }
-
-      await connection.query(query);
-    }
-
-    connection.release();
-    console.log('DONE');
-  } catch (error) {
-    console.error('Error when executing queries:', error);
-  }
+const sequelize = new Sequelize({
+	dialect: process.env.DB_DIALECT,
+	host: process.env.DB_HOST,
+	port: process.env.DB_PORT,
+	username: process.env.DB_USER,
+	password: process.env.DB_PASSWORD,
+	database: process.env.DB_NAME,
+  sync: { force: true },
+  dialectOptions: process.env.DB_CONFIG,
+  logging: console.log
 });
+
+// Test connection
+console.info('SETUP - Connecting database...')
+
+sequelize.authenticate()
+  .then(() => {
+    console.info('INFO - Database connected.')
+  })
+  .catch(err => {
+    console.error('ERROR - Unable to connect to the database:', err)
+  });
+  
+// DROP AND CREATE THE DATABASE
+
+// sequelize.sync()
+//   .then(() => {
+//       console.log('Database synchronized');
+//   })
+//   .catch(err => {
+//       console.error('Error synchronizing database:', err);
+//   });
+
+export default sequelize;
