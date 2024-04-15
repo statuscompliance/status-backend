@@ -1,11 +1,12 @@
 import {Router} from 'express'
 
 import { verifyAuthority } from '../middleware/verifyAuth.js'
-import { getThreadsByUserId, createThread, deleteThread, addNewMessage, getThreadMessages, deleteUserThreads, changeThreadName} from '../controllers/thread.controller.js'
+import { getThreads, getThreadsByUserId, createThread, deleteThread, addNewMessage, getThreadMessages, deleteUserThreads, changeThreadName} from '../controllers/thread.controller.js'
 
 
 const router = Router()
 
+router.get('/threads', verifyAuthority, getThreads)  
 router.get('/thread', verifyAuthority,getThreadsByUserId)
 router.get('/thread/:gptId', verifyAuthority, getThreadMessages)
 router.post('/thread', verifyAuthority, createThread)

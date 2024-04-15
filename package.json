@@ -19,7 +19,8 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.9.1",
     "node-fetch": "^3.3.2",
-    "openai": "^4.29.2"
+    "openai": "^4.29.2",
+    "sequelize": "^6.37.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"
