@@ -21,7 +21,7 @@ export async function updateConfiguration(req, res) {
         const configId = configuration.dataValues.id;
 
         if (configuration.length === 0) {
-            return res.status(404).json({ message: `Configuration ${id} not found` });
+            return res.status(404).json({ message: `Configuration ${configId} not found` });
         }
         await models.Configuration.update({
             endpoint: endpoint,

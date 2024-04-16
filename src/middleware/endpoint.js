@@ -1,4 +1,6 @@
 import models from '../../db/models.js'
+import jwt from 'jsonwebtoken'
+
 
 export async function endpointAvailable(req, res, next) {
     const configurations = await models.Configuration.findAll();
