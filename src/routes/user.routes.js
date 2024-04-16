@@ -10,6 +10,6 @@ router.get('/user/signOut', signOut)
 
 router.get('/user',getUsers)
 
-router.get('/auth/:username',getAuthority)
+router.get('/user/auth/',getAuthority)
 
 export default router

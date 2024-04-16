@@ -9,6 +9,7 @@ import Catalog from '../src/models/catalog.model.js';
 import Control from '../src/models/control.model.js';
 import Input from '../src/models/input.model.js';
 import InputControl from '../src/models/input_control.model.js';
+import Configuration from '../src/models/configuration.model.js';
 import { associateModels } from './model-utils.js';
 
 const models = {
@@ -18,6 +19,7 @@ const models = {
     Message,
     Catalog,
     Control,
+    Configuration,
     Input,
     InputControl
 };

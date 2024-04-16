@@ -97,15 +97,9 @@ export async function getUsers(req, res) { // THIS IS A TEST FUNCTION
 }
 
 export async function getAuthority(req, res) {
-    const username = req.params.username;
-    const user = await models.User.findOne({
-        where: {
-            username: username
-        }
-    });
+    const accessToken = req.headers['authorization'].split(' ')[1] || req.headers['Authorization'].split(' ')[1]
+    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET)
+    const authority = decoded.authority
+    res.status(200).json({ authority: authority });
 
-    if (user.length === 0) {
-        return res.status(404).json({ message: 'User not found' });
-    }
-    res.status(200).json(user.authority);
 }

@@ -66,19 +66,24 @@ export async function deleteThread(req, res) {
 }
 
 const validMsg = (content) => {
-    console.log(content);
-    const charactersLength = content.length;
-    const words = content.split(' ');
+    let charactersLength;
+    let words;
+    if (typeof content !== 'string') {
+        charactersLength = content.length;
+        words = JSON.parse(content).split(' ');
+    } else {
+        words = content.split(' ');
+        charactersLength = content.length;
+    }
     return words.length >= 6 || charactersLength >= 40;
 }
 
 export async function createThread(req, res) {
     const { assistantId } = req.body;
     const { content } = req.body;
-    console.log(content);
 
     const accessToken = req.headers['authorization'].split(' ')[1] || req.headers['Authorization'].split(' ')[1];
-    if(isValidAccessToken(accessToken)){
+    if(isValidAccessToken(req.headers['authorization'])){
         const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
         const username = decoded.username;
         try {
@@ -88,7 +93,6 @@ export async function createThread(req, res) {
             if (!validMsg(content)) {
                 return res.status(400).json({ error: 'Por favor, haz el mensaje un poco más detallado' });
             }
-
             await sequelize.transaction(async (transaction) => {
                 const runThread = await openai.beta.threads.createAndRun({
                     assistant_id: assistantId,
@@ -96,9 +100,7 @@ export async function createThread(req, res) {
                         messages: [{ role: "user", content: content }],
                     },
                 });
-                console.log(runThread);
                 const threadId = await insertThread(transaction, runThread.thread_id, userId, runThread.id);
-                console.log("HERE, line 107",threadId);
 
                 await insertMessage(transaction, content, threadId);
 
@@ -233,7 +235,6 @@ async function insertMessage(transaction, content, threadId){
             content,
             threadId: threadId
         }, { transaction });
-        console.log("result", result);
         return result.id;
     } catch (error) {
         console.error(error);

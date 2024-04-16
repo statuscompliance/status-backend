@@ -9,10 +9,14 @@ import userRoutes from './routes/user.routes.js'
 import refresh from './routes/refresh.routes.js'
 import assistantRoutes from './routes/assistant.routes.js'
 import threadRoutes from './routes/thread.routes.js'
+import configRoutes from './routes/configuration.routes.js'
 import cors from 'cors'
 import { verifyAuthority } from './middleware/verifyAuth.js'
 import { validateParams } from './middleware/validation.js'
+import { endpointAvailable } from './middleware/endpoint.js'
 import cookieParser from 'cookie-parser'
+import Configuration from './models/configuration.model.js';
+import db from '../db/database.js';
 
 const app = express()
 
@@ -25,6 +29,8 @@ app.use(cors({
 }));
 
 app.use(indexRoutes)
+app.use(endpointAvailable)
+app.use('/api', configRoutes)
 app.use('/api', refresh)
 app.use('/api', userRoutes)
 app.use(validateParams)
@@ -39,4 +45,33 @@ app.use('/api', threadRoutes)
 app.use(cookieParser())
 
 app.listen(3001)
+
+
+async function insertEndpointsToConfig(){
+    const endpoints = [
+        "/api/config",
+        "/api/refresh",
+        "/api/user",
+        "/api/input",
+        "/api/input_control",
+        "/api/control",
+        "/api/thread",
+        "/api/catalog",
+        "/api/assistant"
+    ];
+    try {
+        await db.sync(); 
+        for (const endpoint of endpoints) {
+            await Configuration.findOrCreate({
+                where: { endpoint },
+                defaults: { endpoint, available: true }
+            });
+        }
+        console.log('Endpoints added to the configuration');
+    } catch (error) {
+        console.error('Error al insertar endpoints:', error);
+    }
+}
+
+insertEndpointsToConfig();
 console.log(`Server on port ${3001}`)
