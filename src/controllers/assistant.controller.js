@@ -11,15 +11,7 @@ const openai = new OpenAI({
 export async function createAssistant(req,res){
     try {
         const { name } = req.body
-        const {assistant, instructions} = newAssistant(name)
-        await models.Assistant.create({
-            assistantId: assistant.id,
-            name: name,
-            instructions: instructions,
-            tools: assistant.tools.toString(),
-            model: assistant.model,
-            status: 'INACTIVE'
-        });
+        const assistant = newAssistant(name)
         res.status(201).json({message:`Assistant ${name} with id ${assistant.id} created successfully`});
     } catch (error) {
         res.status(500).json({ message: `Failed to create assistant, error: ${error.message}` })
@@ -41,16 +33,8 @@ export async function renewAssistant(req,res){
             where: {},
             truncate: true
         });
-
         const { name } = req.body
-        const {assistant, instructions} = newAssistant(name)
-        await models.Assistant.create({
-            assistantId: assistant.id,
-            name: name,
-            instructions: instructions,
-            tools: assistant.tools,
-            model: assistant.model
-        });
+        const assistant = newAssistant(name)
         res.status(201).json({message:`Assistant ${name} with id ${assistant.id} renewed successfully`});
     } catch (error) {
         res.status(500).json({ message: `Failed to renew the assistant, error: ${error.message}` })
@@ -74,6 +58,14 @@ async function newAssistant(name){
             instructions: instructions,
             tools: [{"type":"code_interpreter"}],
             model: "gpt-3.5-turbo-0125"
+        });
+        await models.Assistant.create({
+            assistantId: assistant.id,
+            name: name,
+            instructions: instructions,
+            tools: assistant.tools.toString(),
+            model: assistant.model,
+            status: 'INACTIVE'
         });
         return {assistant , instructions}
     } catch (error) {
