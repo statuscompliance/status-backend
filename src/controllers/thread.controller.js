@@ -13,26 +13,21 @@ export async function getThreads(req, res) {
         const threads = await models.Thread.findAll();
         res.status(200).json(threads);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: `Failed to get threads, error: ${error.message}` });
+        res.status(500).json({ message: `Failed to get all threads, error: ${error.message}` });
     }   
 }
 
 export async function getThreadsByUserId(req, res) {
     try {
-        const accessToken = req.headers['authorization'].split(' ')[1] || req.headers['Authorization'].split(' ')[1]
-        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET)
-        const userId = decoded.user_id
+        const userId = getUserId(req)
         const threads = await models.Thread.findAll({
             where: {
                 UserId: userId
             }
         });
-
         res.status(200).json(threads);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: `Failed to get threads, error: ${error.message}` })
+        res.status(500).json({ message: `Failed to get user threads, error: ${error.message}` })
     }
 }
 
@@ -193,9 +188,7 @@ export async function deleteUserThreads(req,res){
 }
 
 export async function changeThreadName(req, res){
-    const accessToken = req.headers['authorization'].split(' ')[1] || req.headers['Authorization'].split(' ')[1]
-    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET)
-    const userId = decoded.user_id
+    const userId = getUserId(req)
     const { gptId } = req.params
     const { name } = req.body
     try {
@@ -252,8 +245,17 @@ function isValidAccessToken(token) {
     if (typeof token !== 'string' || token.length === 0) {
         return false;
     }
-
     const [bearer, accessToken] = token.split(' ');
-
     return bearer.toLowerCase() === 'bearer' && accessToken.length > 0;
+}
+
+function getUserId(req){
+    if(req.headers['authorization'].split(' ')[1] || req.headers['Authorization'].split(' ')[1]){
+        const accessToken = req.headers['authorization'].split(' ')[1] || req.headers['Authorization'].split(' ')[1]
+        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET)
+        const userId = decoded.user_id
+        return userId
+    } else {
+        throw new Error('No token provided')
+    }
 }

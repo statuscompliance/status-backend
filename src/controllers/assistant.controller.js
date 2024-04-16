@@ -11,14 +11,7 @@ const openai = new OpenAI({
 export async function createAssistant(req,res){
     try {
         const { name } = req.body
-        const instructions = await readInstructions('./assistant-instructions.txt')
-        const assistant = await openai.beta.assistants.create({
-            name: name,
-            instructions: instructions,
-            tools: [{"type":"code_interpreter"}],
-            model: "gpt-3.5-turbo-0125"
-        });
-        
+        const assistant = newAssistant(name)
         await models.Assistant.create({
             assistantId: assistant.id,
             name: name,
@@ -50,13 +43,7 @@ export async function renewAssistant(req,res){
         });
 
         const { name } = req.body
-        const instructions = await readInstructions('./assistant-instructions.txt')
-        const assistant = await openai.beta.assistants.create({
-            name: name,
-            instructions: instructions,
-            tools: [{"type":"code_interpreter"}],
-            model: "gpt-3.5-turbo-0125"
-        });
+        const assistant = newAssistant(name)
         await models.Assistant.create({
             assistantId: assistant.id,
             name: name,
@@ -64,9 +51,9 @@ export async function renewAssistant(req,res){
             tools: assistant.tools,
             model: assistant.model
         });
-        res.status(201).json({message:`Assistant ${name} with id ${assistant.id} created successfully`});
+        res.status(201).json({message:`Assistant ${name} with id ${assistant.id} renewed successfully`});
     } catch (error) {
-        res.status(500).json({ message: `Failed to create assistant, error: ${error.message}` })
+        res.status(500).json({ message: `Failed to renew the assistant, error: ${error.message}` })
     }
 }
 
@@ -74,6 +61,21 @@ async function readInstructions(file){
     try {
         const instructions = await fs.readFile(file, 'utf8')
         return instructions
+    } catch (error) {
+        console.error(error.message)
+    }
+}
+
+async function newAssistant(name){
+    try {
+        const instructions = await readInstructions('./assistant-instructions.txt')
+        const assistant = await openai.beta.assistants.create({
+            name: name,
+            instructions: instructions,
+            tools: [{"type":"code_interpreter"}],
+            model: "gpt-3.5-turbo-0125"
+        });
+        return assistant
     } catch (error) {
         console.error(error.message)
     }

@@ -33,7 +33,7 @@ export const getCatalogControls = async (req, res) => {
 }
 
 export const createControl = async (req, res) => {
-    const {name,description,operator,term,period,startDate,endDate,mashup_id,catalog_id} = req.body
+    const {name,description,period,startDate,endDate,mashup_id,catalog_id} = req.body
     const rows = await models.Control.create({
         name,
         description,

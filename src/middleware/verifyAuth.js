@@ -21,3 +21,4 @@ export function verifyAuthority(req, res, next) {
         }
     }
 }
+// IT WOULD BE INTERESTING TO ADD A MIDDLEWARE TO CHECK IF THE USER IS ADMIN

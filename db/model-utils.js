@@ -1,3 +1,12 @@
+/**
+ * Associates models by calling their 'associate' method.
+ * 
+ * @param {object} models - The models object containing the models to be associated.
+ * @throws {Error} If the models object is not a valid object.
+ * @throws {Error} If an invalid modelName is detected.
+ * @throws {Error} If an invalid model type is detected.
+ * @returns {Promise<void>} A promise that resolves when all models have been associated.
+ */
 export async function associateModels(models) {
     try {
         if (typeof models !== 'object' || models === null) {

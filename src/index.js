@@ -10,7 +10,8 @@ import refresh from './routes/refresh.routes.js'
 import assistantRoutes from './routes/assistant.routes.js'
 import threadRoutes from './routes/thread.routes.js'
 import cors from 'cors'
-import { verifyJWT } from './middleware/verifyJWT.js'
+import { verifyAuthority } from './middleware/verifyAuth.js'
+import { validateParams } from './middleware/validation.js'
 import cookieParser from 'cookie-parser'
 
 const app = express()
@@ -24,10 +25,11 @@ app.use(cors({
 }));
 
 app.use(indexRoutes)
-app.use('/api', inputRoutes)
 app.use('/api', refresh)
 app.use('/api', userRoutes)
-// app.use(verifyJWT) // All routes below this line are protected
+app.use(validateParams)
+app.use(verifyAuthority)
+app.use('/api', inputRoutes)
 app.use('/api', inputControlRoutes)
 app.use('/api', controlRoutes)
 app.use('/api', ghAccess)
