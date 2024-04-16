@@ -11,7 +11,7 @@ const openai = new OpenAI({
 export async function createAssistant(req,res){
     try {
         const { name } = req.body
-        const assistant = newAssistant(name)
+        const {assistant, instructions} = newAssistant(name)
         await models.Assistant.create({
             assistantId: assistant.id,
             name: name,
@@ -43,7 +43,7 @@ export async function renewAssistant(req,res){
         });
 
         const { name } = req.body
-        const assistant = newAssistant(name)
+        const {assistant, instructions} = newAssistant(name)
         await models.Assistant.create({
             assistantId: assistant.id,
             name: name,
@@ -75,7 +75,7 @@ async function newAssistant(name){
             tools: [{"type":"code_interpreter"}],
             model: "gpt-3.5-turbo-0125"
         });
-        return assistant
+        return {assistant , instructions}
     } catch (error) {
         console.error(error.message)
     }
