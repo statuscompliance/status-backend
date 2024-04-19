@@ -38,17 +38,15 @@ export async function getAssistantsById(req,res){
     }
 }
 
-export async function deleteAssistant(req,res){
+export async function deleteAllAssistants(req,res){
     try {
-        const { id } = req.params
         await models.Assistant.destroy({
-            where: {
-                id: id
-            }
+            where: {},
+            truncate: true
         });
-        res.status(200).json({message:`Assistant deleted successfully`});
+        res.status(200).json({message:`All assistants deleted successfully`});
     } catch (error) {
-        res.status(500).json({ message: `Failed to delete the assistant, error: ${error.message}` })
+        res.status(500).json({ message: `Failed to delete all assistants, error: ${error.message}` })
     }
 }
 
@@ -99,6 +97,23 @@ export async function updateAssistantInstructions(req,res){
     }
 }
 
+export async function deleteAssistantById(req,res){
+    try {
+        const { id } = req.params
+        if (id === 'undefined') {
+            res.status(400).json({ message: `Assistant id is required` })
+        }
+        await models.Assistant.destroy({
+            where: {
+                id: id
+            }
+        });
+        res.status(200).json({message:`Assistant deleted successfully`});
+    } catch (error) {
+        res.status(500).json({ message: `Failed to delete the assistant, error: ${error.message}` })
+    }
+}
+
 async function readInstructions(file){
     try {
         const instructions = await fs.readFile(file, 'utf8')
@@ -116,14 +131,6 @@ async function newAssistant(name, type){
             instructions: instructions,
             tools: [{"type":"code_interpreter"}],
             model: "gpt-3.5-turbo-0125"
-        });
-        await models.Assistant.create({
-            assistantId: assistant.id,
-            name: name,
-            instructions: instructions,
-            tools: assistant.tools.toString(),
-            model: assistant.model,
-            status: 'INACTIVE'
         });
         const response = await models.Assistant.create({
             assistantId: assistant.id,
