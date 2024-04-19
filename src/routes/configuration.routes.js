@@ -1,10 +1,10 @@
-import {Router} from 'express'
-import { getConfiguration, updateConfiguration } from '../controllers/configuration.controller.js'
-import { verifyAuthority } from '../middleware/verifyAuth.js'
-import { validateParams } from '../middleware/validation.js'
+import { Router } from 'express'
+import { getConfiguration, getConfigurationByEndpoint, updateConfiguration } from '../controllers/configuration.controller.js'
+
 const router = Router()
 
-router.get('/config',verifyAuthority, getConfiguration)
-router.put('/config',validateParams,verifyAuthority, updateConfiguration)
+router.get('/config', getConfiguration)
+router.post('/config', getConfigurationByEndpoint)
+router.put('/config', updateConfiguration)
 
 export default router

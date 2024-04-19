@@ -11,8 +11,9 @@ const openai = new OpenAI({
 export async function createAssistant(req,res){
     try {
         const { name } = req.body
-        const assistant = newAssistant(name)
-        res.status(201).json({message:`Assistant ${name} with id ${assistant.id} created successfully`});
+        const assistant = await newAssistant(name)
+        const response = assistant.assistant.dataValues
+        res.status(201).json({message:`Assistant ${name} with id ${response.assistantId} created successfully`});
     } catch (error) {
         res.status(500).json({ message: `Failed to create assistant, error: ${error.message}` })
     }
@@ -21,23 +22,80 @@ export async function createAssistant(req,res){
 export async function getAssistants(req,res){
     try {
         const assistants = await models.Assistant.findAll();
-        res.status(200).json(assistants[0]);
+        res.status(200).json(assistants);
     } catch (error) {
         res.status(500).json({ message: `Failed to get assistants, error: ${error.message}` })
     }
 }
 
-export async function renewAssistant(req,res){
+export async function getAssistantsById(req,res){
     try {
-        await models.Assistant.destroy({
-            where: {},
-            truncate: true
-        });
-        const { name } = req.body
-        const assistant = newAssistant(name)
-        res.status(201).json({message:`Assistant ${name} with id ${assistant.id} renewed successfully`});
+        const { id } = req.params
+        const assistant = await models.Assistant.findByPk(id);
+        res.status(200).json(assistant);
     } catch (error) {
-        res.status(500).json({ message: `Failed to renew the assistant, error: ${error.message}` })
+        res.status(500).json({ message: `Failed to get assistants, error: ${error.message}` })
+    }
+}
+
+export async function deleteAssistant(req,res){
+    try {
+        const { id } = req.params
+        await models.Assistant.destroy({
+            where: {
+                id: id
+            }
+        });
+        res.status(200).json({message:`Assistant deleted successfully`});
+    } catch (error) {
+        res.status(500).json({ message: `Failed to delete the assistant, error: ${error.message}` })
+    }
+}
+
+// export async function renewAssistant(req,res){
+//     try {
+//         await models.Assistant.destroy({
+//             where: {},
+//             truncate: true
+//         });
+//         const { name } = req.body
+//         const assistant = newAssistant(name, "update")
+//         console.log(assistant)
+//         res.status(201).json({message:`Assistant ${name} with id ${assistant.id} renewed successfully`});
+//     } catch (error) {
+//         res.status(500).json({ message: `Failed to renew the assistant, error: ${error.message}` })
+//     }
+// }
+
+export async function getAssistantInstructions(req,res){
+    try {
+        const { id } = req.params
+        const assistant = await models.Assistant.findByPk(id);
+        const firstAssistant = assistant;
+        res.status(200).json({instructions: firstAssistant.instructions});
+    } catch (error) {
+        res.status(500).json({ message: `Failed to get assistant instructions, error: ${error.message}` })
+    }
+}
+
+export async function updateAssistantInstructions(req,res){
+    try {
+        const { id } = req.params
+        const { instructions } = req.body
+        await fs.writeFile('./assistant-instructions.txt', instructions)
+        await models.Assistant.update({instructions: instructions}, {
+            where: {
+                id: id 
+            }
+        });
+        const updatedAssistant = await models.Assistant.findByPk(id);
+        const response = await openai.beta.assistants.update({
+            assistantId: updatedAssistant.assistantId,
+            instructions: instructions
+        });
+        res.status(200).json({message:`Assistant instructions updated successfully`});
+    } catch (error) {
+        res.status(500).json({ message: `Failed to update assistant instructions, error: ${error.message}` })
     }
 }
 
@@ -50,7 +108,7 @@ async function readInstructions(file){
     }
 }
 
-async function newAssistant(name){
+async function newAssistant(name, type){
     try {
         const instructions = await readInstructions('./assistant-instructions.txt')
         const assistant = await openai.beta.assistants.create({
@@ -67,7 +125,15 @@ async function newAssistant(name){
             model: assistant.model,
             status: 'INACTIVE'
         });
-        return {assistant , instructions}
+        const response = await models.Assistant.create({
+            assistantId: assistant.id,
+            name: name,
+            instructions: instructions,
+            tools: assistant.tools.toString(),
+            model: assistant.model,
+            status: 'INACTIVE'
+        });
+        return {assistant: response , instructions}
     } catch (error) {
         console.error(error.message)
     }

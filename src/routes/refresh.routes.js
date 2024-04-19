@@ -1,4 +1,4 @@
-import {Router} from 'express'
+import { Router } from 'express'
 import {refreshToken} from '../controllers/refresh.controller.js'
 import { validateParams } from '../middleware/validation.js'
 

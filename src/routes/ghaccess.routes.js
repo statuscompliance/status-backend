@@ -1,4 +1,4 @@
-import {Router} from 'express'
+import { Router } from 'express';
 
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 

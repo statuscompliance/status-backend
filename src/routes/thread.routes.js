@@ -1,4 +1,4 @@
-import {Router} from 'express'
+import { Router } from 'express'
 
 import { verifyAuthority } from '../middleware/verifyAuth.js'
 import { getThreads, getThreadsByUserId, createThread, deleteThread, addNewMessage, getThreadMessages, deleteUserThreads, changeThreadName} from '../controllers/thread.controller.js'
