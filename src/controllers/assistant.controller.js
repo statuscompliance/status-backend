@@ -50,21 +50,6 @@ export async function deleteAllAssistants(req,res){
     }
 }
 
-// export async function renewAssistant(req,res){
-//     try {
-//         await models.Assistant.destroy({
-//             where: {},
-//             truncate: true
-//         });
-//         const { name } = req.body
-//         const assistant = newAssistant(name, "update")
-//         console.log(assistant)
-//         res.status(201).json({message:`Assistant ${name} with id ${assistant.id} renewed successfully`});
-//     } catch (error) {
-//         res.status(500).json({ message: `Failed to renew the assistant, error: ${error.message}` })
-//     }
-// }
-
 export async function getAssistantInstructions(req,res){
     try {
         const { id } = req.params
@@ -87,11 +72,14 @@ export async function updateAssistantInstructions(req,res){
             }
         });
         const updatedAssistant = await models.Assistant.findByPk(id);
-        const response = await openai.beta.assistants.update({
-            assistantId: updatedAssistant.assistantId,
-            instructions: instructions
-        });
-        res.status(200).json({message:`Assistant instructions updated successfully`});
+        try{
+            const response = await openai.beta.assistants.update(updatedAssistant.dataValues.assistantId, {
+                instructions: instructions
+            });
+        } catch (error) {
+            console.log(error.message)
+        }
+        res.status(200).json({message:`Assistant instructions updated successfully}`});
     } catch (error) {
         res.status(500).json({ message: `Failed to update assistant instructions, error: ${error.message}` })
     }

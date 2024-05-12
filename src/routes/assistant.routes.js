@@ -8,7 +8,7 @@ router.get('/assistant/:id', getAssistantsById)
 router.get('/assistant/:id/instructions', getAssistantInstructions)
 router.post('/assistant', createAssistant)
 // router.post('/assistant/renew', renewAssistant)
-router.put('/assistant/instructions', updateAssistantInstructions)
+router.put('/assistant/:id/instructions', updateAssistantInstructions)
 router.delete('/assistant/:id', deleteAssistantById)
 router.delete('/assistant', deleteAllAssistants)
 
