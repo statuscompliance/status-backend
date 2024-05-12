@@ -30,6 +30,7 @@ app.use(cors({
 
 app.use(indexRoutes)
 app.use(endpointAvailable)
+app.use('/api', ghAccess)
 app.use('/api', refresh)
 app.use('/api', userRoutes)
 app.use(validateParams)
@@ -39,7 +40,6 @@ app.use('/api', controlRoutes)
 app.use('/api', catalogRoutes)
 app.use(verifyAuthority)
 app.use('/api', configRoutes)
-app.use('/api', ghAccess)
 app.use('/api', assistantRoutes)
 app.use('/api', threadRoutes)
 app.use(cookieParser())
@@ -57,15 +57,24 @@ async function insertEndpointsToConfig(){
         "/api/control",
         "/api/thread",
         "/api/catalog",
-        "/api/assistant"
+        "/api/assistant",
+        "/api/ghAccessToken"
     ];
     try {
         await db.sync(); 
         for (const endpoint of endpoints) {
-            await Configuration.findOrCreate({
-                where: { endpoint },
-                defaults: { endpoint, available: true }
-            });
+            if (endpoint === "/api/assitant"){
+                await Configuration.findOrCreate({
+                    where: { endpoint },
+                    defaults: { endpoint, available: true, limit: 5}
+                });
+            } else {
+                await Configuration.findOrCreate({
+                    where: { endpoint },
+                    defaults: { endpoint, available: true }
+                });
+            }
+            
         }
         console.log('Endpoints added to the configuration');
     } catch (error) {

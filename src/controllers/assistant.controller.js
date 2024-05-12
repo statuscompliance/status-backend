@@ -19,6 +19,29 @@ export async function createAssistant(req,res){
     }
 }
 
+export async function createAssistantWithInstructions(req,res){
+    try {
+        const { name, instructions, model, tools } = req.body
+        const assistant = await openai.beta.assistants.create({
+            name: name,
+            instructions: instructions,
+            tools: tools,
+            model: model
+        });
+        const response = await models.Assistant.create({
+            assistantId: assistant.id,
+            name: name,
+            instructions: instructions,
+            tools: tools.toString(),
+            model: model,
+            status: 'INACTIVE'
+        });
+        res.status(201).json({message:`Assistant ${name} with id ${response.assistantId} created successfully`});
+    } catch (error) {
+        res.status(500).json({ message: `Failed to create assistant, error: ${error.message}` })
+    }
+}
+
 export async function getAssistants(req,res){
     try {
         const assistants = await models.Assistant.findAll();
@@ -65,7 +88,7 @@ export async function updateAssistantInstructions(req,res){
     try {
         const { id } = req.params
         const { instructions } = req.body
-        await fs.writeFile('./assistant-instructions.txt', instructions)
+        //await fs.writeFile('./assistant-instructions.txt', instructions) // Uncomment this line to write the instructions to the file
         await models.Assistant.update({instructions: instructions}, {
             where: {
                 id: id 

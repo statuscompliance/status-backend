@@ -9,6 +9,11 @@ const Configuration = sequelize.define('Configuration', {
     available: {
         type: DataTypes.BOOLEAN,
         defaultValue: true
+    }, 
+    limit: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 1
     }
 });
 

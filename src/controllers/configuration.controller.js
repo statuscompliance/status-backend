@@ -56,3 +56,49 @@ export async function updateConfiguration(req, res) {
         res.status(500).json({ message: `Failed to update configuration, error: ${error.message}` });
     }
 }
+
+export async function getAssistantLimit(req, res) {
+    try {
+        const configuration = await models.Configuration.findOne({
+            where: {
+                endpoint: "/api/assistant"
+            }
+        });
+        if (configuration.length === 0) {
+            return res.status(404).json({ message: `Configuration /api/assistant not found` });
+        }
+        res.status(200).json({ limit: configuration.dataValues.limit });
+    } catch (error) {
+        res.status(500).json({ message: `Failed to get configuration, error: ${error.message}` });
+    }
+}
+
+export async function updateAssistantLimit(req, res) {
+    try {
+        const { limit } = req.params;
+
+        const configuration = await models.Configuration.findOne({
+            where: {
+                endpoint: "/api/assistant"
+            }
+        });
+        const configId = configuration.dataValues.id;
+
+        if (configuration.length === 0) {
+            return res.status(404).json({ message: `Configuration ${configId} not found` });
+        }
+        await models.Configuration.update({
+            endpoint: "/api/assistant",
+            limit: limit
+        }, {
+            where: {
+                id: configId
+            }
+        });
+
+        res.status(200).json({ message: `Limit updated successfully` });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: `Failed to update configuration, error: ${error.message}` });
+    }
+}

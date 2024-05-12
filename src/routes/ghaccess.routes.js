@@ -10,7 +10,7 @@ router.get('/ghAccessToken', async function (req, res) {
     try {
         const code = req.query.code;
         
-        const params = `?client_id=${client_id}&client_secret=${client_secret}&code=${code}`;
+        const params = `?client_id=${client_id}&client_secret=${client_secret}&code=${code}&redirect_uri=http://localhost:3000/profile`;
         const response = await fetch("https://github.com/login/oauth/access_token" + params, {
             method: 'POST',
             headers: {
