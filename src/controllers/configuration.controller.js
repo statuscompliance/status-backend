@@ -1,4 +1,5 @@
-import models from '../../db/models.js'
+import models from '../../db/models.js';
+import { updateConfigurationsCache } from '../middleware/endpoint.js';
 
 export async function getConfiguration(req, res) {
     try {
@@ -49,6 +50,8 @@ export async function updateConfiguration(req, res) {
                 id: configId
             }
         });
+
+        await updateConfigurationsCache;
 
         res.status(200).json({ message: `Configuration ${configId} updated successfully` });
     } catch (error) {

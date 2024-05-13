@@ -1,11 +1,19 @@
-import models from '../../db/models.js'
-import jwt from 'jsonwebtoken'
+import models from '../../db/models.js';
 
+let configurationsCache = null;
+
+export async function updateConfigurationsCache() {
+    configurationsCache = await models.Configuration.findAll();
+}
 
 export async function endpointAvailable(req, res, next) {
-    const configurations = await models.Configuration.findAll();
+    if (!configurationsCache) {
+        await updateConfigurationsCache();
+    } 
     const endpoint = req.url;
-    const matchingConfig = configurations.find(config => endpoint.includes(config.dataValues.endpoint) || config.dataValues.endpoint.includes(endpoint));
+    const matchingConfig = configurationsCache.find(config =>
+        endpoint.includes(config.dataValues.endpoint) || config.dataValues.endpoint.includes(endpoint)
+    );
     if (matchingConfig === undefined) {
         return res.status(404).json({ message: 'Endpoint not found' });
     } else {
@@ -17,22 +25,23 @@ export async function endpointAvailable(req, res, next) {
     }
 };
 
-
-export function changeAvailability(req, res, next){
-    if(req.headers['authorization'] === undefined && req.headers['Authorization'] === undefined) {
-        return res.status(401).json({ message: 'No token provided' })
+export async function assistantlimitReached(req, res, next) {
+    if (!configurationsCache) {
+        await updateConfigurationsCache();
+    }
+    const matchingConfig = await models.Configuration.findOne({ where: { endpoint: '/api/assistant' } });
+    if (matchingConfig === undefined) {
+        return res.status(404).json({ message: 'Endpoint not found' });
     } else {
-        const accessToken = req.headers['authorization'].split(' ')[1] || req.headers['Authorization'].split(' ')[1];
-        try {
-            const decoded = jwt.verify(accessToken, process.env.JWT_SECRET)
-            const authority = decoded.authority
-            if (authority === 'ADMIN') {
-                next()
+        const assistants = await models.Assistant.findAll();
+        if(assistants){
+            if (matchingConfig.dataValues.limit <= assistants.length) {
+                res.status(429).send('Limit reached');
             } else {
-                return res.status(403).json({ message: 'Forbidden' })
+                next();
             }
-        } catch (error) {
-            return res.status(401).json({ message: `Unauthorized, ${error}` })
+        } else{
+            next();
         }
     }
-};
+}

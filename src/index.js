@@ -17,6 +17,7 @@ import { endpointAvailable } from './middleware/endpoint.js'
 import cookieParser from 'cookie-parser'
 import Configuration from './models/configuration.model.js';
 import db from '../db/database.js';
+import { verifyAdmin } from './middleware/verifyAdmin.js';
 
 const app = express()
 
@@ -39,9 +40,10 @@ app.use('/api', inputControlRoutes)
 app.use('/api', controlRoutes)
 app.use('/api', catalogRoutes)
 app.use(verifyAuthority)
-app.use('/api', configRoutes)
 app.use('/api', assistantRoutes)
 app.use('/api', threadRoutes)
+app.use(verifyAdmin)
+app.use('/api', configRoutes)
 app.use(cookieParser())
 
 app.listen(3001)
@@ -81,6 +83,5 @@ async function insertEndpointsToConfig(){
         console.error('Error al insertar endpoints:', error);
     }
 }
-
 insertEndpointsToConfig();
 console.log(`Server on port ${3001}`)
