@@ -21,7 +21,9 @@
     "mysql2": ">=3.9.4",
     "node-fetch": "^3.3.2",
     "openai": "^4.29.2",
-    "sequelize": "^6.37.3"
+    "sequelize": "^6.37.3",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
     "mysql2": ">=3.9.4",

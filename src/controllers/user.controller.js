@@ -2,7 +2,6 @@ import models from '../../db/models.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 
-
 export async function signUp(req, res) {
     const { username, password, email } = req.body;
     const rows = await models.User.findAll({

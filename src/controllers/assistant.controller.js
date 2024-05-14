@@ -19,6 +19,8 @@ export async function createAssistant(req,res){
     }
 }
 
+
+
 export async function createAssistantWithInstructions(req,res){
     try {
         const { name, instructions, model, tools } = req.body
