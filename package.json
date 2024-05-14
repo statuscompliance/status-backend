@@ -1,32 +1,32 @@
 {
-  "name": "status-backend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "dev": "nodemon --env-file=.env src/index.js",
-    "db": "node db/database.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "bcrypt": "^5.1.1",
-    "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "express-validator": "^7.0.1",
-    "jsonwebtoken": "^9.0.2",
-    "mysql2": ">=3.9.4",
-    "node-fetch": "^3.3.2",
-    "openai": "^4.29.2",
-    "sequelize": "^6.37.3",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.0"
-  },
-  "devDependencies": {
-    "mysql2": ">=3.9.4",
-    "nodemon": "^3.0.3"
-  }
+    "name": "status-backend",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "dev": "nodemon --env-file=.env src/index.js",
+        "db": "node db/database.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "bcrypt": "^5.1.1",
+        "cookie-parser": "^1.4.6",
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "express-validator": "^7.0.1",
+        "jsonwebtoken": "^9.0.2",
+        "mysql2": ">=3.9.4",
+        "node-fetch": "^3.3.2",
+        "openai": "^4.29.2",
+        "sequelize": "^6.37.3",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^5.0.0"
+    },
+    "devDependencies": {
+        "mysql2": ">=3.9.7",
+        "nodemon": "^3.0.3"
+    }
 }
