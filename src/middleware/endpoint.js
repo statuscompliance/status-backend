@@ -3,7 +3,9 @@ import models from "../../db/models.js";
 let configurationsCache = null;
 
 export async function updateConfigurationsCache() {
-    configurationsCache = await models.Configuration.findAll();
+    configurationsCache = await models.Configuration.findAll().catch((err) => {
+        console.error(err);
+    });
 }
 
 export async function endpointAvailable(req, res, next) {
