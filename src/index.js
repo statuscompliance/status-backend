@@ -73,6 +73,8 @@ app.listen(3001, () => {
     console.log("API doc available at http://localhost:3001/docs");
 });
 
+export default app;
+
 async function insertEndpointsToConfig() {
     const endpoints = [
         "/api/config",
@@ -91,7 +93,7 @@ async function insertEndpointsToConfig() {
     try {
         await db.sync();
         for (const endpoint of endpoints) {
-            if (endpoint === "/api/assitant") {
+            if (endpoint === "/api/assistant") {
                 await Configuration.findOrCreate({
                     where: { endpoint },
                     defaults: { endpoint, available: true, limit: 5 },

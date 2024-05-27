@@ -62,7 +62,7 @@ export default router;
  *                 message:
  *                   type: string
  *   post:
- *     summary: Creates a new assistant with the provided name
+ *     summary: Creates a new assistant with default settings
  *     tags: [Assistants]
  *     security:
  *       - bearerAuth: []
@@ -98,7 +98,7 @@ export default router;
  *
  * /api/assistant/admin:
  *   post:
- *     summary: Creates a new assistant with provided instructions
+ *     summary: Creates a new assistant
  *     tags: [Assistants]
  *     security:
  *       - bearerAuth: []
