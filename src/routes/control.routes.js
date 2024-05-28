@@ -25,7 +25,7 @@ router.post("/control", createControl);
 
 router.patch("/control/:id", updateControl);
 
-router.delete("/control/:id", deleteControl); // Authenticated users only
+router.delete("/control/:id", deleteControl);
 
 router.delete("/control/:id/input_controls", deleteInputControlsByControlId);
 

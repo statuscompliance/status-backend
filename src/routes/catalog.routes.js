@@ -1,16 +1,31 @@
-import {Router} from 'express'
-import {getCatalogs, getCatalog, createCatalog, updateCatalog, deleteCatalog} from '../controllers/catalog.controller.js'
+import { Router } from "express";
+import {
+  getCatalogs,
+  getCatalog,
+  createCatalog,
+  getTpa,
+  saveTpa,
+  deleteTPAByCatalogId,
+  updateCatalog,
+  deleteCatalog,
+} from "../controllers/catalog.controller.js";
 
-const router = Router()
+const router = Router();
 
-router.get('/catalog', getCatalogs)
+router.get("/catalog", getCatalogs);
 
-router.get('/catalog/:id', getCatalog)
+router.get("/catalog/:id", getCatalog);
 
-router.post('/catalog', createCatalog)
+router.post("/catalog", createCatalog);
 
-router.patch('/catalog/:id', updateCatalog)
+router.get("/tpa/:catalogId", getTpa);
 
-router.delete('/catalog/:id', deleteCatalog)
+router.post("/save-tpa", saveTpa);
 
-export default router
+router.delete("/delete-tpa/:catalogId", deleteTPAByCatalogId);
+
+router.patch("/catalog/:id", updateCatalog);
+
+router.delete("/catalog/:id", deleteCatalog);
+
+export default router;
