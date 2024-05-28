@@ -3,14 +3,10 @@ import {getMashups, getMashup, createMashup, updateMashup, deleteMashup} from '.
 
 const router = Router()
 
-router.get('/mashup', getMashups)
-
-router.get('/mashup/:id', getMashup)
-
-router.post('/mashup', createMashup)
-
-router.patch('/mashup/:id', updateMashup)
-
-router.delete('/mashup/:id', deleteMashup)
+router.get('/mashups', getMashups)
+router.get('/mashups/:id', getMashup)
+router.post('/mashups', createMashup)
+router.patch('/mashups/:id', updateMashup)
+router.delete('/mashups/:id', deleteMashup)
 
 export default router

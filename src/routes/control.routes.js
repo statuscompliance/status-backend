@@ -13,20 +13,18 @@ import {
 
 const router = Router();
 
-router.get("/control", getControls);
+// Controls
+router.get("/controls", getControls);
+router.get("/controls/:id", getControl);
+router.post("/controls", createControl);
+router.patch("/controls/:id", updateControl);
+router.delete("/controls/:id", deleteControl);
 
-router.get("/control/:id", getControl);
+// Catalog controls
+router.get("/catalogs/:catalog_id/controls", getCatalogControls);
 
-router.get("/catalogControls/:id", getCatalogControls);
-
-router.get("/control/:id/input_controls", getInputControlsByControlId);
-
-router.post("/control", createControl);
-
-router.patch("/control/:id", updateControl);
-
-router.delete("/control/:id", deleteControl);
-
-router.delete("/control/:id/input_controls", deleteInputControlsByControlId);
+// Input_controls
+router.get("/controls/:id/input-controls", getInputControlsByControlId);
+router.delete("/controls/:id/input-controls", deleteInputControlsByControlId);
 
 export default router;

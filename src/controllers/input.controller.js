@@ -16,7 +16,7 @@ export const getInput = async (req, res) => {
 }
 
 export const getInputsByMashupId = async (req, res) => {
-    const [rows] = await pool.query('SELECT * FROM input WHERE mashup_id = ?', [req.params.id])
+    const [rows] = await pool.query('SELECT * FROM input WHERE mashup_id = ?', [req.params.mashup_id])
 
     if(rows.length <= 0) return res.status(404).json({
         message: 'The mashup has no inputs'

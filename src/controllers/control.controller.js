@@ -32,7 +32,7 @@ export const getControl = async (req, res) => {
 export const getCatalogControls = async (req, res) => {
   const [rows] = await pool.query(
     "SELECT * FROM control WHERE catalog_id = ?",
-    [req.params.id]
+    [req.params.catalog_id]
   );
   const formattedRows = rows.map(formatControlDates);
 
