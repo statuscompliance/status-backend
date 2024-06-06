@@ -20,6 +20,9 @@ const Control = sequelize.define('Control', {
     endDate: {
         type: DataTypes.DATE
     }
-})
+}, {
+    tableName: 'control',
+    timestamps: false
+});
 
 export default Control;

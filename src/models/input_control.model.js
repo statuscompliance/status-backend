@@ -6,6 +6,9 @@ const InputControl = sequelize.define('InputControl', {
       type: DataTypes.STRING(255),
       allowNull: false
     }
+}, {
+  tableName: 'input_control',
+  timestamps: false
 });
   
 export default InputControl;

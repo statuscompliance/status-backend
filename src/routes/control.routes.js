@@ -1,18 +1,29 @@
-import {Router} from 'express'
-import {getControls, getControl, getCatalogControls, createControl, updateControl, deleteControl} from '../controllers/control.controller.js'
+import { Router } from "express";
+import {
+  getControls,
+  getControl,
+  getCatalogControls,
+  getInputControlsByControlId,
+  createControl,
+  updateControl,
+  deleteControl,
+  deleteInputControlsByControlId,
+} from "../controllers/control.controller.js";
 
-const router = Router()
+const router = Router();
 
-router.get('/control', getControls)
+// Controls
+router.get("/controls", getControls);
+router.get("/controls/:id", getControl);
+router.post("/controls", createControl);
+router.patch("/controls/:id", updateControl);
+router.delete("/controls/:id", deleteControl);
 
-router.get('/control/:id', getControl)
+// Catalog controls
+router.get("/catalogs/:catalog_id/controls", getCatalogControls);
 
-router.get('/catalogControls/:id', getCatalogControls)
+// Input_controls
+router.get("/controls/:id/input_controls", getInputControlsByControlId);
+router.delete("/controls/:id/input_controls", deleteInputControlsByControlId);
 
-router.post('/control', createControl)
-
-router.patch('/control/:id', updateControl)
-
-router.delete('/control/:id', deleteControl)
-
-export default router
+export default router;

@@ -1,24 +1,24 @@
 import models from "../../db/models.js"
 
 export const getInputs = async (req, res) => {
-    const [rows] = await models.Input.findAll();
+    const rows = await models.Input.findAll();
     res.json(rows)
 }
 
 export const getInput = async (req, res) => {
-    const [rows] = await models.Input.findByPk(req.params.id);
+    const row = await models.Input.findByPk(req.params.id);
 
-    if(rows.length <= 0) return res.status(404).json({
+    if(!row) return res.status(404).json({
         message: 'Input not found'
     })
 
-    res.json(rows[0])
+    res.json(row)
 }
 
 export const getInputsByMashupId = async (req, res) => {
-    const [rows] = await models.Input.findAll({
+    const rows = await models.Input.findAll({
         where: {
-            mashup_id: req.params.id
+            mashup_id: req.params.mashup_id
         }
     });
 
@@ -48,7 +48,13 @@ export const createInput = async (req, res) => {
 export const updateInput = async (req, res) => {
     const {id} = req.params
     const {name, type, mashup_id} = req.body
-    const result = await models.Input.update({
+
+    const currentInput = await models.Input.findByPk(id);
+    if (!currentInput) {
+        return res.status(404).json({ message: 'Input not found' });
+    }
+
+    await models.Input.update({
         name,
         type,
         mashup_id
@@ -58,12 +64,9 @@ export const updateInput = async (req, res) => {
         }
     });
 
-    if(result.affectedRows <= 0) return res.status(404).json({
-        message: 'Input not found'
-    })
-    const [rows] = await models.Input.findByPk(id);
+    const row = await models.Input.findByPk(id);
 
-    res.json(rows[0])
+    res.json(row)
 }
 
 export const deleteInput = async (req, res) => {
@@ -73,7 +76,7 @@ export const deleteInput = async (req, res) => {
         }
     });
 
-    if(result.affectedRows <= 0) return res.status(404).json({
+    if(result <= 0) return res.status(404).json({
         message: 'Input not found'
     })
 

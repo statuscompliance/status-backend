@@ -10,6 +10,9 @@ const Input = sequelize.define('Input', {
       type: DataTypes.ENUM('STRING', 'NUMBER'),
       allowNull: false
     }
+}, {
+  tableName: 'input',
+  timestamps: false
 });
 
 export default Input;

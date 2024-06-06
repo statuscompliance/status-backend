@@ -6,9 +6,15 @@ const Catalog = sequelize.define('Catalog', {
     type: DataTypes.STRING(100),
     allowNull: false
   },
-  url: {
-    type: DataTypes.STRING(255)
+  startDate: {
+    type: DataTypes.DATE
+  },
+  endDate: {
+    type: DataTypes.DATE
   }
+}, {
+  tableName: 'catalog',
+  timestamps: false
 });
 
 export default Catalog;
