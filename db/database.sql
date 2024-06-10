@@ -6,7 +6,8 @@ USE statusdb;
 CREATE TABLE catalog (
     id INT(11) NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
-    url VARCHAR(255),
+    startDate DATE,
+    endDate DATE,
     PRIMARY KEY(id)
 );
 
@@ -90,4 +91,27 @@ CREATE TABLE input_control (
     FOREIGN KEY(control_id) REFERENCES control(id)
 );
 
+INSERT INTO catalog (name, startDate, endDate) VALUES ('Catalogo 1', '2015-01-01', '2020-12-31');
+INSERT INTO catalog (name, startDate, endDate) VALUES ('Catalogo 2', null, null);
 
+INSERT INTO mashup (name, description, url) VALUES ('posts', 'Descripción del Mashup 1', 'src/pages/catalog/mashup-example.json');
+INSERT INTO mashup (name, description, url) VALUES ('albums', 'Descripción del Mashup 2', 'src/pages/catalog/mashup-example-2.json');
+INSERT INTO mashup (name, description, url) VALUES ('existsPipe', 'Descripción del Mashup 3', 'src/pages/catalog/mashup-example-3.json');
+INSERT INTO mashup (name, description, url) VALUES ('existsDocument', 'Verifies the existence of a given document', 'src/pages/catalog/mashup-example-4.json');
+
+INSERT INTO control (name, description, period, startDate, endDate, mashup_id, catalog_id) VALUES ('Exists document', 'Descripción del Control 1', 'DAILY', '2023-01-01', '2023-01-31', 1, 1);
+INSERT INTO control (name, description, period, mashup_id, catalog_id) VALUES ('Exists section in document', 'Descripción del Control 2', 'MONTHLY', 2, 1);
+
+INSERT INTO input (name, type, mashup_id) VALUES ('Nombre del documento', 'STRING', 1);
+INSERT INTO input (name, type, mashup_id) VALUES ('URL', 'STRING', 1);
+INSERT INTO input (name, type, mashup_id) VALUES ('Nombre del documento', 'STRING', 2);
+INSERT INTO input (name, type, mashup_id) VALUES ('Nombre de la sección', 'STRING', 2);
+INSERT INTO input (name, type, mashup_id) VALUES ('URL', 'STRING', 2);
+INSERT INTO input (name, type, mashup_id) VALUES ('Count', 'NUMBER', 3);
+INSERT INTO input (name, type, mashup_id) VALUES ('Document', 'STRING', 4);
+
+INSERT INTO input_control (input_id, control_id, value) VALUES (1, 1, 'Análisis funcional');
+INSERT INTO input_control (input_id, control_id, value) VALUES (2, 1, 'http://github.com/prueba');
+INSERT INTO input_control (input_id, control_id, value) VALUES (3, 2, 'Análisis funcional');
+INSERT INTO input_control (input_id, control_id, value) VALUES (4, 2, 'Lecciones aprendidas');
+INSERT INTO input_control (input_id, control_id, value) VALUES (5, 2, 'http://github.com/prueba');

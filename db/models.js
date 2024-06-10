@@ -7,6 +7,7 @@ import Thread from '../src/models/thread.model.js';
 import Message from '../src/models/message.model.js';
 import Catalog from '../src/models/catalog.model.js';
 import Control from '../src/models/control.model.js';
+import Mashup from '../src/models/mashup.model.js';
 import Input from '../src/models/input.model.js';
 import InputControl from '../src/models/input_control.model.js';
 import Configuration from '../src/models/configuration.model.js';
@@ -21,7 +22,8 @@ const models = {
     Control,
     Configuration,
     Input,
-    InputControl
+    InputControl,
+    Mashup
 };
 
 try {
