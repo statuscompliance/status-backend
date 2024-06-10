@@ -12,4 +12,19 @@ const InputControl = sequelize.define('InputControl', {
 });
   
 export default InputControl;
-  
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     InputControl:
+ *       type: object
+ *       properties:
+ *         value:
+ *           type: string
+ *           description: The value of the input control
+ *       required:
+ *         - value
+ *       example:
+ *         value: "Example Value"
+ */

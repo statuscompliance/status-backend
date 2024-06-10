@@ -19,3 +19,29 @@ const Mashup = sequelize.define('Mashup', {
 });
 
 export default Mashup;
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Mashup:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *           description: The name of the mashup
+ *         description:
+ *           type: string
+ *           description: The description of the mashup
+ *         url:
+ *           type: string
+ *           description: The URL of the mashup
+ *       required:
+ *         - name
+ *         - description
+ *         - url
+ *       example:
+ *         name: Exists Document
+ *         description: Verifies the existence of a document
+ *         url: src/pages/catalog/mashup-example.json
+ */
