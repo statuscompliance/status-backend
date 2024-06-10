@@ -16,8 +16,7 @@ export async function signUp(req, res) {
     const authority = "ADMIN";
     const hashedPassword = await bcrypt.hash(password, 10);
     try {
-        console.log("Creating user:", username);
-        const response = await models.User.create({
+        await models.User.create({
             username,
             password: hashedPassword,
             authority,
