@@ -6,7 +6,7 @@ COPY . .
 
 COPY .env.deploy .env
 
-RUN npm install
+RUN npm ci
 RUN npm install -g nodemon --unsafe-perm
 
-CMD ["npm", "run", "dev"]
+ENTRYPOINT ["npm", "run", "dev"]
