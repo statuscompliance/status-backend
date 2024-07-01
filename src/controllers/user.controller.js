@@ -136,10 +136,14 @@ export async function getUsers(req, res) {
 }
 
 export async function getAuthority(req, res) {
-    const accessToken =
-        req.headers["authorization"].split(" ")[1] ||
-        req.headers["Authorization"].split(" ")[1];
-    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
-    const authority = decoded.authority;
-    res.status(200).json({ authority: authority });
+    if (!req.headers["authorization"] || !req.headers["Authorization"]) {
+        return res.status(401).json({ message: "No token provided" });
+    } else {
+        const accessToken =
+            req.headers["authorization"].split(" ")[1] ||
+            req.headers["Authorization"].split(" ")[1];
+        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+        const authority = decoded.authority;
+        res.status(200).json({ authority: authority });
+    }
 }
