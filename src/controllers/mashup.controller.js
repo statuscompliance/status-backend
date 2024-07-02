@@ -1,52 +1,69 @@
-import {pool} from '../db.js'
+import models from '../../db/models.js'
 
 export const getMashups = async (req, res) => {
-    const [rows] = await pool.query('SELECT * FROM mashup')
-    res.json(rows)
+    const rows = await models.Mashup.findAll();
+    res.json(rows);
 }
 
 export const getMashup = async (req, res) => {
-    const [rows] = await pool.query('SELECT * FROM mashup WHERE id = ?', [req.params.id])
+    const row = await models.Mashup.findByPk(req.params.id);
 
-    if(rows.length <= 0) return res.status(404).json({
+    if (!row) return res.status(404).json({
         message: 'Mashup not found'
-    })
+    });
 
-    res.json(rows[0])
+    res.json(row);
 }
 
 export const createMashup = async (req, res) => {
-    const {name, description, url} = req.body
-    const [rows] = await pool.query('INSERT INTO mashup (name,description,url) VALUES(?,?,?)', [name,description,url])
+    const { name, description, url } = req.body;
+    const row = await models.Mashup.create({
+        name,
+        description,
+        url
+    });
+
     res.send({
-        id: rows.insertId,
+        id: row.id,
         name,
         description,
         url,
-    })
+    });
 }
 
 export const updateMashup = async (req, res) => {
-    const {id} = req.params
-    const {name, description, url} = req.body
+    const { id } = req.params;
+    const { name, description, url } = req.body;
 
-    const [result] = await pool.query('UPDATE mashup SET name = IFNULL(?, name), description = IFNULL(?, description), url = IFNULL(?, url) WHERE id = ?', [name, description, url, id])
+    const currentMashup = await models.Mashup.findByPk(id);
+    if (!currentMashup) {
+        return res.status(404).json({ message: 'Mashup not found' });
+    }
 
-    if(result.affectedRows <= 0) return res.status(404).json({
-        message: 'Mashup not found'
-    })
+    await models.Mashup.update({
+        name,
+        description,
+        url
+    }, {
+        where: {
+            id
+        }
+    });
 
-    const [rows] = await pool.query('SELECT * FROM mashup WHERE id = ?', [id])
-
-    res.json(rows[0])
+    const row = await models.Mashup.findByPk(id);
+    res.json(row);
 }
 
 export const deleteMashup = async (req, res) => {
-    const [result] = await pool.query('DELETE FROM mashup WHERE id = ?', [req.params.id])
+    const result = await models.Mashup.destroy({
+        where: {
+            id: req.params.id
+        }
+    });
 
-    if(result.affectedRows <= 0) return res.status(404).json({
+    if (result === 0) return res.status(404).json({
         message: 'Mashup not found'
-    })
+    });
 
-    res.sendStatus(204)
+    res.sendStatus(204);
 }

@@ -3,3 +3,15 @@ node_modules
 
 # Environment file
 .env
+
+# Migrations
+migrations
+
+# Seeders
+seeders
+
+# config
+config
+
+# others
+docker-compose.yml
