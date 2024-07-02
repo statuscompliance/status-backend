@@ -19,6 +19,10 @@ const Control = sequelize.define('Control', {
     },
     endDate: {
         type: DataTypes.DATE
+    },
+    mashup_id: {
+        type: DataTypes.NUMBER,
+        allowNull: false
     }
 }, {
     tableName: 'control',

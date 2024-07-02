@@ -40,11 +40,6 @@ export const createInputControl = async (req, res) => {
           message: "Control not found",
         });
 
-    if (!await models.Input.findByPk(input_id))
-        return res.status(404).json({
-            message: "Input not found",
-        });
-
     const row = await models.InputControl.create({
         value,
         input_id,

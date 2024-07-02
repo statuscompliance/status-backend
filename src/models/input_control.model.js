@@ -5,6 +5,10 @@ const InputControl = sequelize.define('InputControl', {
     value: {
       type: DataTypes.STRING(255),
       allowNull: false
+    },
+    input_id: {
+      type: DataTypes.NUMBER,
+      allowNull: false
     }
 }, {
   tableName: 'input_control',
