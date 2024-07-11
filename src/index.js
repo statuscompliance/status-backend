@@ -1,8 +1,6 @@
 import express from "express";
 import catalogRoutes from "./routes/catalog.routes.js";
 import controlRoutes from "./routes/control.routes.js";
-import mashupRoutes from "./routes/mashup.routes.js";
-import inputRoutes from "./routes/input.routes.js";
 import indexRoutes from "./routes/index.routes.js";
 import inputControlRoutes from "./routes/input_control.routes.js";
 import ghAccess from "./routes/ghaccess.routes.js";
@@ -59,10 +57,8 @@ app.use("/api", ghAccess);
 app.use("/api", refresh);
 app.use("/api", userRoutes);
 app.use(validateParams);
-app.use("/api", inputRoutes);
 app.use("/api", inputControlRoutes);
 app.use("/api", controlRoutes);
-app.use("/api", mashupRoutes);
 app.use("/api", catalogRoutes);
 app.use(verifyAuthority);
 app.use("/api", assistantRoutes);
@@ -82,10 +78,8 @@ async function insertEndpointsToConfig() {
         "/api/config",
         "/api/refresh",
         "/api/user",
-        "/api/inputs",
         "/api/input_controls",
         "/api/controls",
-        "/api/mashups",
         "/api/thread",
         "/api/catalogs",
         "/api/assistant",
