@@ -1,33 +1,37 @@
-import { DataTypes } from 'sequelize';
-import sequelize from '../../db/database.js';
+import { DataTypes } from "sequelize";
+import sequelize from "../../db/database.js";
 
-const Control = sequelize.define('Control', {
-    name: {
-        type: DataTypes.STRING(100),
-        allowNull: false
+const Control = sequelize.define(
+    "Control",
+    {
+        name: {
+            type: DataTypes.STRING(100),
+            allowNull: false,
+        },
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        period: {
+            type: DataTypes.ENUM("DAILY", "MONTHLY", "ANNUALLY"),
+            allowNull: false,
+        },
+        startDate: {
+            type: DataTypes.DATE,
+        },
+        endDate: {
+            type: DataTypes.DATE,
+        },
+        mashup_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
     },
-    description: {
-        type: DataTypes.TEXT,
-        allowNull: false
-    },
-    period: {
-        type: DataTypes.ENUM('DAILY', 'MONTHLY', 'ANNUALLY'),
-        allowNull: false
-    },
-    startDate: {
-        type: DataTypes.DATE
-    },
-    endDate: {
-        type: DataTypes.DATE
-    },
-    mashup_id: {
-        type: DataTypes.NUMBER,
-        allowNull: false
+    {
+        tableName: "control",
+        timestamps: false,
     }
-}, {
-    tableName: 'control',
-    timestamps: false
-});
+);
 
 export default Control;
 
