@@ -23,7 +23,7 @@ const Control = sequelize.define(
             type: DataTypes.DATE,
         },
         mashup_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.STRING(32),
             allowNull: false,
         },
     },
