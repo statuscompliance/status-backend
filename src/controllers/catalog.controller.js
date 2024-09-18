@@ -23,16 +23,21 @@ export const getCatalog = async (req, res) => {
 
 export const createCatalog = async (req, res) => {
     const {name,startDate,endDate} = req.body
+
+    const formattedStartDate = startDate ? startDate : null;
+    const formattedEndDate = endDate ? endDate : null;
+
     const rows = await models.Catalog.create({
         name,
-        startDate,
-        endDate
-    });
+        formattedStartDate,
+        formattedEndDate
+    }); 
+
     res.send({
         id: rows.id,
         name,
-        startDate,
-        endDate,
+        formattedStartDate,
+        formattedEndDate,
     })
 }
 
