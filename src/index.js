@@ -9,7 +9,7 @@ import refresh from "./routes/refresh.routes.js";
 import assistantRoutes from "./routes/assistant.routes.js";
 import threadRoutes from "./routes/thread.routes.js";
 import configRoutes from "./routes/configuration.routes.js";
-import dashboardRoutes from "./routes/dashboard.routes.js";
+import computationRoutes from "./routes/computation.routes.js";
 import cors from "cors";
 import { verifyAuthority } from "./middleware/verifyAuth.js";
 import { validateParams } from "./middleware/validation.js";
@@ -62,7 +62,7 @@ app.use(verifyAuthority);
 app.use("/api", inputControlRoutes);
 app.use("/api", controlRoutes);
 app.use("/api", catalogRoutes);
-app.use("/api", dashboardRoutes);
+app.use("/api", computationRoutes);
 app.use("/api", assistantRoutes);
 app.use("/api", threadRoutes);
 app.use(verifyAdmin);
@@ -87,7 +87,7 @@ async function insertEndpointsToConfig() {
         "/api/assistant",
         "/api/ghAccessToken",
         "/api/getAuth",
-        "/api/dashboard",
+        "/api/computation",
         "/docs",
     ];
     try {

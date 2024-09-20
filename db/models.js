@@ -9,8 +9,8 @@ import Catalog from "../src/models/catalog.model.js";
 import Control from "../src/models/control.model.js";
 import InputControl from "../src/models/input_control.model.js";
 import Configuration from "../src/models/configuration.model.js";
-import Dashboard from "../src/models/dashboard.model.js";
 import { associateModels } from "./model-utils.js";
+import Computation from "../src/models/computation.model.js";
 
 const models = {
     User,
@@ -21,7 +21,7 @@ const models = {
     Control,
     Configuration,
     InputControl,
-    Dashboard,
+    Computation,
 };
 
 try {

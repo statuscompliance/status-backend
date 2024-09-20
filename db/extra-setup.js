@@ -1,6 +1,13 @@
 export default function applyExtraSetup(sequelize) {
-    const { User, Thread, Message, Catalog, Control, InputControl, Dashboard } =
-        sequelize.models;
+    const {
+        User,
+        Thread,
+        Message,
+        Catalog,
+        Control,
+        InputControl,
+        Computation,
+    } = sequelize.models;
 
     User.hasMany(Thread);
     Thread.belongsTo(User);
@@ -14,6 +21,6 @@ export default function applyExtraSetup(sequelize) {
     Control.hasMany(InputControl, { foreignKey: "control_id" });
     InputControl.belongsTo(Control, { foreignKey: "control_id" });
 
-    Control.hasMany(Dashboard, { foreignKey: "control_id" });
-    Dashboard.belongsTo(Control, { foreignKey: "control_id" });
+    Control.hasMany(Computation, { foreignKey: "control_id" });
+    Computation.belongsTo(Control, { foreignKey: "control_id" });
 }
