@@ -1,6 +1,9 @@
 import models from "../../db/models.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import axios from "axios";
+
+const nodeRedUrl = process.env.NODE_RED_URL;
 
 export async function signUp(req, res) {
     const { username, password, email } = req.body;
@@ -32,6 +35,30 @@ export async function signUp(req, res) {
     }
 }
 
+function isValidNodeRedUrl(nodeRedUrl) {
+    const urlPattern = /^(http:\/\/|https:\/\/)[a-zA-Z0-9.-]+(:\d+)?$/;
+    return urlPattern.test(nodeRedUrl);
+}
+
+async function getNodeRedToken(username, password) {
+    if (!isValidNodeRedUrl(nodeRedUrl)) {
+        throw new Error("Invalid Node-RED URL");
+    }
+    try {
+        const response = await axios.post(`${nodeRedUrl}/auth/token`, {
+            client_id: "node-red-admin",
+            grant_type: "password",
+            scope: "*",
+            username: username,
+            password: password,
+        });
+        return response.data.access_token;
+    } catch (error) {
+        console.error("Error al obtener token de Node-RED:", error);
+        throw new Error("No se pudo obtener el token de Node-RED");
+    }
+}
+
 export async function signIn(req, res) {
     const { username, password } = req.body;
     try {
@@ -44,9 +71,10 @@ export async function signIn(req, res) {
         if (!user || user.length === 0) {
             return res.status(404).json({ message: "User not found" });
         }
-        const hashedPassword = user.password;
 
+        const hashedPassword = user.password;
         const isPasswordValid = await bcrypt.compare(password, hashedPassword);
+
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid password" });
         } else {
@@ -68,20 +96,19 @@ export async function signIn(req, res) {
                 process.env.REFRESH_JWT_SECRET,
                 { expiresIn: "1d" }
             );
+
             await models.User.update(
-                {
-                    refresh_token: refreshToken,
-                },
-                {
-                    where: {
-                        username,
-                    },
-                }
+                { refresh_token: refreshToken },
+                { where: { username } }
             );
+
+            const nodeRedToken = await getNodeRedToken(username, password);
+
             res.status(200).json({
                 username: username,
                 accessToken: accessToken,
                 refreshToken: refreshToken,
+                nodeRedToken: nodeRedToken,
             });
         }
     } catch (error) {
@@ -136,17 +163,23 @@ export async function getUsers(req, res) {
 }
 
 export async function getAuthority(req, res) {
-    const auth = req.headers?.["authorization"] ?? req.headers?.["Authorization"];
+    const auth =
+        req.headers?.["authorization"] ?? req.headers?.["Authorization"];
     const accessToken = auth?.split(" ")?.[1];
-    
+
     try {
         if (!auth || !accessToken) {
             throw new Error();
         } else {
-            const { authority } = jwt.verify(accessToken, process.env.JWT_SECRET);
+            const { authority } = jwt.verify(
+                accessToken,
+                process.env.JWT_SECRET
+            );
             res.status(200).json({ authority });
         }
     } catch {
-        return res.status(401).json({ message: "No token provided or it's malformed" });
+        return res
+            .status(401)
+            .json({ message: "No token provided or it's malformed" });
     }
 }
