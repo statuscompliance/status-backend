@@ -9,6 +9,7 @@ import refresh from "./routes/refresh.routes.js";
 import assistantRoutes from "./routes/assistant.routes.js";
 import threadRoutes from "./routes/thread.routes.js";
 import configRoutes from "./routes/configuration.routes.js";
+import grafanaRoutes from "./routes/grafana.routes.js";
 import cors from "cors";
 import { verifyAuthority } from "./middleware/verifyAuth.js";
 import { validateParams } from "./middleware/validation.js";
@@ -56,6 +57,7 @@ app.use(endpointAvailable);
 app.use("/api", ghAccess);
 app.use("/api", refresh);
 app.use("/api", userRoutes);
+app.use("/api", grafanaRoutes);
 app.use(validateParams);
 app.use("/api", inputControlRoutes);
 app.use("/api", controlRoutes);
@@ -80,6 +82,7 @@ async function insertEndpointsToConfig() {
         "/api/user",
         "/api/input_controls",
         "/api/controls",
+        "/api/grafana",
         "/api/thread",
         "/api/catalogs",
         "/api/assistant",
@@ -88,7 +91,7 @@ async function insertEndpointsToConfig() {
         "/docs",
     ];
     try {
-        await db.sync();
+        await db.sync({ alter: true });
         for (const endpoint of endpoints) {
             if (endpoint === "/api/assistant") {
                 await Configuration.findOrCreate({

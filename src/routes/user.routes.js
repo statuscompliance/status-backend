@@ -5,6 +5,7 @@ import {
     signOut,
     getUsers,
     getAuthority,
+    deleteUserById,
 } from "../controllers/user.controller.js";
 const router = Router();
 
@@ -17,6 +18,8 @@ router.get("/user/signOut", signOut);
 router.get("/user", getUsers);
 
 router.get("/user/auth/", getAuthority);
+
+router.delete("/user/:id", deleteUserById);
 
 export default router;
 /**

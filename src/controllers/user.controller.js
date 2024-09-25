@@ -2,8 +2,13 @@ import models from "../../db/models.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
+import {
+    createGrafanaUser,
+    deleteGrafanaUserById,
+    getGrafanaUserByUsername,
+} from "./grafana.controller.js";
 
-const nodeRedUrl = process.env.NODE_RED_URL;
+const nodeRedUrl = process.env.NODE_RED_URL || "http://localhost:1880";
 
 export async function signUp(req, res) {
     const { username, password, email } = req.body;
@@ -19,11 +24,13 @@ export async function signUp(req, res) {
     const authority = "ADMIN";
     const hashedPassword = await bcrypt.hash(password, 10);
     try {
+        await createGrafanaUser(null, null, username, password, email);
         await models.User.create({
             username,
             password: hashedPassword,
             authority,
             email,
+            grafana_service_account_id: grafanaServiceAccount.id,
         });
         res.status(201).json({
             message: `User ${username} created successfully with authority ${authority}`,
@@ -181,5 +188,22 @@ export async function getAuthority(req, res) {
         return res
             .status(401)
             .json({ message: "No token provided or it's malformed" });
+    }
+}
+
+export async function deleteUserById(req, res) {
+    const { id } = req.params;
+    try {
+        const user = await models.User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const actualGrafanaUser = await (null, null, user.username);
+        await deleteGrafanaUserById(null, null, actualGrafanaUser.id);
+        // await user.destroy();
+        return res.status(200).json({ message: "User deleted successfully" });
+    } catch (error) {
+        console.error("Error during delete user:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 }
