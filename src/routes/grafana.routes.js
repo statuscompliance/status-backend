@@ -1,16 +1,27 @@
 import { Router } from "express";
 
 import {
+    createGrafanaToken,
     createGrafanaUser,
     getGrafanaUserByUsername,
     deleteGrafanaUserById,
+    updateUserPermissions,
+    createFolder,
+    getFolderByUID,
+    createDashboard,
+    getDashboardByUID,
 } from "../controllers/grafana.controller.js";
 
 const router = Router();
-
 router.post("/grafana/user", createGrafanaUser);
 router.get("/grafana/user/:username", getGrafanaUserByUsername);
+router.put("/grafana/user/:id/permissions", updateUserPermissions);
 router.delete("/grafana/user/:id", deleteGrafanaUserById);
+router.post("/grafana/auth/token", createGrafanaToken);
+router.post("/grafana/folder", createFolder);
+router.get("/grafana/folder/:uid", getFolderByUID);
+router.post("/grafana/dashboard", createDashboard);
+router.get("/grafana/dashboard/:uid", getDashboardByUID);
 
 export default router;
 
