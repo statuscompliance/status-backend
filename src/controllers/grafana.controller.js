@@ -140,23 +140,75 @@ export async function getFolderByUID(req, res) {
     }
 }
 
-export async function createDashboard(req, res) {
+export async function importDashboard(req, res) {
     try {
-        const response = await methods.dashboard.postDashboard(
-            req.body
-            // dashboard: {
-            //     id: null,
-            //     uid: crypto.randomUUID(),
-            //     title: req.body.dashboard.title,
-            //     tags: req.body.dashboard.tags || [],
-            //     timezone: "browser",
-            //     schemaVersion: req.body.dashboard.schemaVersion || 16,
-            //     refresh: req.body.dashboard.refresh || "25s",
-            // },
-            // folderUid: req.body.folderUid,
-            // message: req.body.message,
-            // overwrite: req.body.overwrite || false,
+        const response = await methods.dashboard.importDashboard({
+            dashboard: {
+                annotations: req.body.dashboard.annotations || {
+                    list: [],
+                },
+                editable: req.body.dashboard.editable || true,
+                fiscalYearStartMonth:
+                    req.body.dashboard.fiscalYearStartMonth || 0,
+                graphTooltip: req.body.dashboard.graphTooltip || 0,
+                id: null,
+                links: [],
+                panels: req.body.dashboard.panels,
+                schemaVersion: req.body.dashboard.schemaVersion || 16,
+                tags: req.body.dashboard.tags || [],
+                templating: req.body.dashboard.templating || {
+                    list: [],
+                },
+                time: req.body.dashboard.time || {
+                    from: "now-6h",
+                    to: "now",
+                },
+                timepicker: req.body.dashboard.timepicker || {},
+                timezone: req.body.dashboard.timezone || "browser",
+                title: req.body.dashboard.title,
+                version: req.body.dashboard.version || 0,
+                weekStart: req.body.dashboard.weekStart || "",
+            },
+            overwrite: req.body.overwrite || true,
+            inputs: req.body.inputs || [],
+            folderUid: req.body.folderUid,
+        });
+        return res.status(201).json(response.data);
+    } catch (error) {
+        if (error.response) {
+            const { status } = error.response;
+            return res.status(status).json(error);
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to import dashboard in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
+export async function addDashboardPanel(req, res) {
+    try {
+        const dashboardResponse = await methods.dashboard.getDashboardByUID(
+            req.params.uid
         );
+        const dashboardMetadata = dashboardResponse.data.meta;
+        const actualDashboard = dashboardResponse.data.dashboard;
+        if (actualDashboard.panels) {
+            for (let panel of actualDashboard.panels) {
+                panel.gridPos.y += 8;
+            }
+        }
+        actualDashboard.panels.push(req.body.panel);
+
+        actualDashboard.version += 1;
+        const response = await methods.dashboard.postDashboard({
+            dashboard: actualDashboard,
+            message: "Panel added successfully",
+            folderUid: dashboardMetadata.folderUid,
+            overwrite: true,
+        });
         return res.status(201).json(response.data);
     } catch (error) {
         if (error.response) {

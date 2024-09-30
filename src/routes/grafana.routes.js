@@ -3,14 +3,14 @@ import { Router } from "express";
 import {
     createFolder,
     getFolderByUID,
-    createDashboard,
     getDashboardByUID,
     addDatasource,
     createServiceAccount,
     getServiceAccountById,
     createServiceAccountToken,
     getDatasources,
-    // importDashboard,
+    importDashboard,
+    addDashboardPanel,
 } from "../controllers/grafana.controller.js";
 
 const router = Router();
@@ -25,8 +25,8 @@ router.post("/grafana/folder", createFolder);
 router.get("/grafana/folder/:uid", getFolderByUID);
 
 //DASHBOARD
-router.post("/grafana/dashboard", createDashboard);
-// router.post("/grafana/dashboard/import", importDashboard);
+router.post("/grafana/dashboard/import", importDashboard);
+router.post("/grafana/dashboard/:uid/panel", addDashboardPanel);
 router.get("/grafana/dashboard/:uid", getDashboardByUID);
 
 //DATASOURCE
