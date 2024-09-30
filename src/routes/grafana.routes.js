@@ -25,7 +25,6 @@ router.post("/grafana/folder", createFolder);
 router.get("/grafana/folder/:uid", getFolderByUID);
 
 //DASHBOARD
-// router.post("/grafana/dashboard/import", importDashboard);
 router.post("/grafana/dashboard", createDashboard);
 // router.post("/grafana/dashboard/import", importDashboard);
 router.get("/grafana/dashboard/:uid", getDashboardByUID);
