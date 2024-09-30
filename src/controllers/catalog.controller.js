@@ -24,14 +24,14 @@ export const getCatalog = async (req, res) => {
 export const createCatalog = async (req, res) => {
     const {name,startDate,endDate} = req.body
 
-    const formattedStartDate = startDate ? startDate : null;
-    const formattedEndDate = endDate ? endDate : null;
-
+    const formattedStartDate = startDate ? new Date(startDate) : null;
+    const formattedEndDate = endDate ? new Date(endDate) : null;
+    
     const rows = await models.Catalog.create({
         name,
-        formattedStartDate,
-        formattedEndDate
-    }); 
+        startDate: formattedStartDate,
+        endDate: formattedEndDate
+    });
 
     res.send({
         id: rows.id,
@@ -88,6 +88,9 @@ export const updateCatalog = async (req, res) => {
     const {id} = req.params
     const {name, startDate, endDate} = req.body
 
+    const formattedStartDate = startDate ? new Date(startDate) : null;
+    const formattedEndDate = endDate ? new Date(endDate) : null;
+
     const currentCatalog = await models.Catalog.findByPk(id);
     if (!currentCatalog) {
         return res.status(404).json({ message: 'Catalog not found' });
@@ -95,8 +98,8 @@ export const updateCatalog = async (req, res) => {
 
     await models.Catalog.update({
         name,
-        startDate,
-        endDate,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
     }, {
         where: {
             id
