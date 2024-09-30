@@ -1,46 +1,39 @@
 import axios from "axios";
+import { methods } from "../grafana.js";
+
 const grafanaUrl = process.env.GRAFANA_URL || "http://localhost:3100";
 
-export async function createGrafanaToken(
+export async function createServiceAccount(
     req = null,
     res = null,
-    username = null,
-    password = null
+    name = null,
+    role = null
 ) {
-    if (req && res) {
-        username = process.env.GRAFANA_ADMIN_USER;
-        password = process.env.GRAFANA_ADMIN_PASS;
-    }
     try {
-        const randomString = Math.random().toString(36).substring(7);
-        const response = await axios.post(
-            `${grafanaUrl}/api/auth/keys`,
-            {
-                name: randomString,
-                role: "Admin",
-                secondsToLive: 604600,
-            },
-            {
-                auth: {
-                    username: username,
-                    password: password,
-                },
-            }
+        if (req && res) {
+            const { name: reqName, role: reqRole } = req.body;
+            name = reqName;
+            role = reqRole;
+        }
+        const serviceAccountData = {
+            isDisabled: false,
+            name: name,
+            role: role,
+        };
+
+        const response = await methods.serviceAccount.createServiceAccount(
+            serviceAccountData
         );
         if (req && res) {
-            return res.status(201).json({
-                message: "Token created successfully",
-                data: response.data,
-            });
+            return res.status(201).json(response.data);
         }
         return response.data;
     } catch (error) {
-        console.error("Error al crear token en Grafana:", error);
         if (error.response) {
             const { status, statusText, data } = error.response;
             if (req && res) {
                 return res.status(status).json({
-                    message: `Failed to create token in Grafana: ${statusText}`,
+                    message: `Failed to create service account in Grafana: ${statusText}`,
                     error: data.message || error.message,
                 });
             }
@@ -49,255 +42,76 @@ export async function createGrafanaToken(
             if (req && res) {
                 return res.status(500).json({
                     message:
-                        "Failed to create token in Grafana due to server error",
+                        "Failed to create service account in Grafana due to server error",
                     error: error.message,
                 });
             }
             throw new Error(
-                "No se pudo crear el token en Grafana debido a un error del servidor"
+                "No se pudo crear la cuenta de servicio en Grafana debido a un error del servidor"
             );
         }
     }
 }
 
-export async function createGrafanaUser(
-    req = null,
-    res = null,
-    username = null,
-    password = null,
-    email = null
-) {
-    if (req && res) {
-        const { username, password, email } = req.body;
-    }
+export async function getServiceAccountById(req, res) {
     try {
-        const response = await axios.post(
-            `${grafanaUrl}/api/admin/users`,
-            {
-                name: username,
-                email: email,
-                login: username,
-                password: password,
-            },
-            {
-                auth: {
-                    username: process.env.GRAFANA_ADMIN_USER,
-                    password: process.env.GRAFANA_ADMIN_PASS,
-                },
-            }
+        const response = await methods.serviceAccount.retrieveServiceAccount(
+            req.params.id
         );
-        if (req && res) {
-            return res.status(201).json({
-                message: "User created successfully in Grafana",
-                data: response.data,
-            });
-        }
-        return response.data;
+        return res.status(200).json(response.data);
     } catch (error) {
         if (error.response) {
-            const { status, statusText, data } = error.response;
-            if (req && res) {
-                return res.status(status).json({
-                    message: `Failed to create user in Grafana: ${statusText}`,
-                    error: data.message || error.message,
-                });
-            }
-            throw new Error(`Grafana Error ${status}: ${statusText}`);
+            const { status } = error.response;
+            return res.status(status).json(error);
         } else {
-            if (req && res) {
-                return res.status(500).json({
-                    message:
-                        "Failed to create user in Grafana due to server error",
-                    error: error.message,
-                });
-            }
-            throw new Error(
-                "No se pudo crear el usuario en Grafana debido a un error del servidor"
-            );
-        }
-    }
-}
-
-export async function getGrafanaUserByUsername(
-    req = null,
-    res = null,
-    username = null
-) {
-    if (req && res) {
-        username = req.query.username || req.params.username;
-    }
-    try {
-        const response = await axios.get(
-            `${grafanaUrl}/api/users/lookup?loginOrEmail=${username}`,
-            {
-                auth: {
-                    username: process.env.GRAFANA_ADMIN_USER,
-                    password: process.env.GRAFANA_ADMIN_PASS,
-                },
-            }
-        );
-        if (req && res) {
-            return res.status(200).json({
-                message: "User retrieved successfully",
-                data: response.data,
+            return res.status(500).json({
+                message:
+                    "Failed to retrieve service account in Grafana due to server error",
+                error: error.message,
             });
         }
-        return response.data;
-    } catch (error) {
-        console.error("Error al obtener usuario en Grafana:", error);
-
-        if (error.response) {
-            const { status, statusText, data } = error.response;
-            if (req && res) {
-                return res.status(status).json({
-                    message: `Failed to retrieve user in Grafana: ${statusText}`,
-                    error: data.message || error.message,
-                });
-            }
-            throw new Error(`Grafana Error ${status}: ${statusText}`);
-        } else {
-            if (req && res) {
-                return res.status(500).json({
-                    message:
-                        "Failed to retrieve user in Grafana due to server error",
-                    error: error.message,
-                });
-            }
-            throw new Error(
-                "No se pudo obtener el usuario en Grafana debido a un error del servidor"
-            );
-        }
     }
 }
 
-export async function deleteGrafanaUserById(req = null, res = null, id = null) {
-    if (req && res) {
-        id = req.params.id || req.body.id;
-    }
+export async function createServiceAccountToken(req, res) {
     try {
-        const response = await axios.delete(
-            `${grafanaUrl}/api/admin/users/${id}`,
-            {
-                auth: {
-                    username: process.env.GRAFANA_ADMIN_USER,
-                    password: process.env.GRAFANA_ADMIN_PASS,
-                },
-            }
+        const tokenData = {
+            name: req.body.name,
+            secondsToLive: req.body.secondsToLive,
+        };
+        const response = await methods.serviceAccount.createToken(
+            req.params.id,
+            tokenData
         );
-        if (req && res) {
-            return res.status(200).json({
-                message: "User deleted successfully",
-                data: response.data,
+        return res.status(201).json(response.data);
+    } catch (error) {
+        if (error.response) {
+            const { status } = error.response;
+            return res.status(status).json(error);
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to create service account token in Grafana due to server error",
+                error: error.message,
             });
         }
-        return response.data;
-    } catch (error) {
-        console.error("Error al eliminar usuario en Grafana:", error);
-        if (error.response) {
-            const { status, statusText, data } = error.response;
-            if (req && res) {
-                return res.status(status).json({
-                    message: `Failed to delete user in Grafana: ${statusText}`,
-                    error: data.message || error.message,
-                });
-            }
-            throw new Error(`Grafana Error ${status}: ${statusText}`);
-        } else {
-            if (req && res) {
-                return res.status(500).json({
-                    message:
-                        "Failed to delete user in Grafana due to server error",
-                    error: error.message,
-                });
-            }
-            throw new Error(
-                "No se pudo eliminar el usuario en Grafana debido a un error del servidor"
-            );
-        }
     }
 }
 
-export async function updateUserPermissions(req = null, res = null, id = null) {
-    if (req && res) {
-        id = req.params.id || req.body.id;
-    }
-    try {
-        const response = await axios.put(
-            `${grafanaUrl}/api/admin/users/${id}/permissions`,
-            {
-                isGrafanaAdmin: true, // Set to true to grant admin permissions
-            },
-            {
-                auth: {
-                    username: process.env.GRAFANA_ADMIN_USER,
-                    password: process.env.GRAFANA_ADMIN_PASS,
-                },
-            }
-        );
-        if (req && res) {
-            return res.status(200).json({
-                data: response.data,
-            });
-        }
-        return response.data;
-    } catch (error) {
-        console.error(
-            "Error al actualizar permisos de usuario en Grafana:",
-            error
-        );
-        if (error.response) {
-            const { status, statusText, data } = error.response;
-            if (req && res) {
-                return res.status(status).json({
-                    message: `Failed to update user permissions in Grafana: ${statusText}`,
-                    error: data.message || error.message,
-                });
-            }
-            throw new Error(`Grafana Error ${status}: ${statusText}`);
-        } else {
-            if (req && res) {
-                return res.status(500).json({
-                    message:
-                        "Failed to update user permissions in Grafana due to server error",
-                    error: error.message,
-                });
-            }
-            throw new Error(
-                "No se pudieron actualizar los permisos del usuario en Grafana debido a un error del servidor"
-            );
-        }
-    }
-}
 export async function createFolder(req, res) {
     try {
-        const newUID = [...Array(32)]
-            .map(() => Math.random().toString(36)[2])
-            .join("");
-        const response = await axios.post(
-            `${grafanaUrl}/api/folders`,
-            {
-                uid: newUID,
-                title: req.body.title,
-                parentUid: req.body.parentUid || null,
-            },
-            {
-                headers: {
-                    Authorization: req.headers.authorization,
-                },
-            }
-        );
-        return res.status(201).json({
-            message: "Folder created successfully",
-            data: response.data,
+        const newUID = crypto.randomUUID();
+        const response = await methods.folder.createFolder({
+            uid: newUID,
+            title: req.body.title,
+            parentUid: req.body.parentUid || null,
+            description: req.body.description || null,
         });
+        return res.status(201).json(response.data);
     } catch (error) {
-        console.error("Error al crear carpeta en Grafana:", error);
         if (error.response) {
-            const { status, statusText, data } = error.response;
-            return res.status(status).json({
-                message: `Failed to create folder in Grafana: ${statusText}`,
-                error: data.message || error.message,
-            });
+            const { status } = error.response;
+            return res.status(status).json(error);
         } else {
             return res.status(500).json({
                 message:
@@ -310,26 +124,12 @@ export async function createFolder(req, res) {
 
 export async function getFolderByUID(req, res) {
     try {
-        const response = await axios.get(
-            `${grafanaUrl}/api/folders/${req.params.uid}`,
-            {
-                headers: {
-                    Authorization: req.headers.authorization,
-                },
-            }
-        );
-        return res.status(200).json({
-            message: "Folder retrieved successfully",
-            data: response.data,
-        });
+        const response = await methods.folder.getFolderByUID(req.params.uid);
+        return res.status(200).json(response.data);
     } catch (error) {
-        console.error("Error al obtener carpeta en Grafana:", error);
         if (error.response) {
-            const { status, statusText, data } = error.response;
-            return res.status(status).json({
-                message: `Failed to retrieve folder in Grafana: ${statusText}`,
-                error: data.message || error.message,
-            });
+            const { status } = error.response;
+            return res.status(status).json(error);
         } else {
             return res.status(500).json({
                 message:
@@ -341,48 +141,31 @@ export async function getFolderByUID(req, res) {
 }
 
 export async function createDashboard(req, res) {
-    const newUID = [...Array(32)]
-        .map(() => Math.random().toString(36)[2])
-        .join("");
     try {
-        const response = await axios.post(
-            `${grafanaUrl}/api/dashboards/db`,
-            {
-                dashboard: {
-                    id: null,
-                    uid: newUID,
-                    title: req.body.title,
-                    tags: req.body.tags || [],
-                    timezone: "browser",
-                    schemaVersion: req.body.schemaVersion || 16,
-                    referesh: req.body.refresh || "25s",
-                },
-                folderUid: req.body.folderUid,
-                message: req.body.message,
-                overwrite: false,
-            },
-            {
-                headers: {
-                    Authorization: req.headers.authorization,
-                },
-            }
+        const response = await methods.dashboard.postDashboard(
+            req.body
+            // dashboard: {
+            //     id: null,
+            //     uid: crypto.randomUUID(),
+            //     title: req.body.dashboard.title,
+            //     tags: req.body.dashboard.tags || [],
+            //     timezone: "browser",
+            //     schemaVersion: req.body.dashboard.schemaVersion || 16,
+            //     refresh: req.body.dashboard.refresh || "25s",
+            // },
+            // folderUid: req.body.folderUid,
+            // message: req.body.message,
+            // overwrite: req.body.overwrite || false,
         );
-        return res.status(201).json({
-            message: "Dashboard created successfully",
-            data: response.data,
-        });
+        return res.status(201).json(response.data);
     } catch (error) {
-        console.error("Error al crear dashboard en Grafana:", error);
         if (error.response) {
-            const { status, statusText, data } = error.response;
-            return res.status(status).json({
-                message: `Failed to create dashboard in Grafana: ${statusText}`,
-                error: data.message || error.message,
-            });
+            const { status } = error.response;
+            return res.status(status).json(error);
         } else {
             return res.status(500).json({
                 message:
-                    "Failed to create dashboard in Grafana due to server error",
+                    "Failed to import dashboard in Grafana due to server error",
                 error: error.message,
             });
         }
@@ -391,30 +174,71 @@ export async function createDashboard(req, res) {
 
 export async function getDashboardByUID(req, res) {
     try {
-        const response = await axios.get(
-            `${grafanaUrl}/api/dashboards/uid/${req.params.uid}`,
-            {
-                headers: {
-                    Authorization: req.headers.authorization,
-                },
-            }
+        const response = await methods.dashboard.getDashboardByUID(
+            req.params.uid
         );
-        return res.status(200).json({
-            message: "Dashboard retrieved successfully",
-            data: response.data,
-        });
+        return res.status(200).json(response.data);
     } catch (error) {
-        console.error("Error al obtener dashboard en Grafana:", error);
+        if (error.response) {
+            const { status } = error.response;
+            return res.status(status).json(error);
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to retrieve dashboard in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
+export async function getDatasources(req, res) {
+    try {
+        const response = await methods.datasource.getDataSources();
+        return res.status(200).json(response.data);
+    } catch (error) {
+        if (error.response) {
+            const { status } = error.response;
+            return res.status(status).json(error);
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to retrieve datasources in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
+export async function addDatasource(req, res) {
+    console.log(req.body);
+    try {
+        const response = await methods.datasource.addDataSource({
+            access: req.body.access,
+            basicAuth: req.body.basicAuth,
+            basicAuthUser: process.env.GRAFANA_USER,
+            database: req.body.database,
+            isDefault: req.body.isDefault,
+            jsonData: req.body.jsonData,
+            name: req.body.datasourceName,
+            type: req.body.type,
+            uid: crypto.randomUUID(),
+            url: req.body.url,
+            user: req.body.user,
+            withCredentials: true,
+        });
+        return res.status(201).json(response.data);
+    } catch (error) {
         if (error.response) {
             const { status, statusText, data } = error.response;
             return res.status(status).json({
-                message: `Failed to retrieve dashboard in Grafana: ${statusText}`,
+                message: `Failed to create datasource in Grafana: ${statusText}`,
                 error: data.message || error.message,
             });
         } else {
             return res.status(500).json({
                 message:
-                    "Failed to retrieve dashboard in Grafana due to server error",
+                    "Failed to create datasource in Grafana due to server error",
                 error: error.message,
             });
         }

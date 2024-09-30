@@ -1,27 +1,38 @@
 import { Router } from "express";
 
 import {
-    createGrafanaToken,
-    createGrafanaUser,
-    getGrafanaUserByUsername,
-    deleteGrafanaUserById,
-    updateUserPermissions,
     createFolder,
     getFolderByUID,
     createDashboard,
     getDashboardByUID,
+    addDatasource,
+    createServiceAccount,
+    getServiceAccountById,
+    createServiceAccountToken,
+    getDatasources,
+    // importDashboard,
 } from "../controllers/grafana.controller.js";
 
 const router = Router();
-router.post("/grafana/user", createGrafanaUser);
-router.get("/grafana/user/:username", getGrafanaUserByUsername);
-router.put("/grafana/user/:id/permissions", updateUserPermissions);
-router.delete("/grafana/user/:id", deleteGrafanaUserById);
-router.post("/grafana/auth/token", createGrafanaToken);
+
+//SERVICE ACCOUNT
+router.post("/grafana/serviceaccount", createServiceAccount);
+router.get("/grafana/serviceaccount/:id", getServiceAccountById);
+router.post("/grafana/serviceaccount/:id/token", createServiceAccountToken);
+
+//FOLDER
 router.post("/grafana/folder", createFolder);
 router.get("/grafana/folder/:uid", getFolderByUID);
+
+//DASHBOARD
+// router.post("/grafana/dashboard/import", importDashboard);
 router.post("/grafana/dashboard", createDashboard);
+// router.post("/grafana/dashboard/import", importDashboard);
 router.get("/grafana/dashboard/:uid", getDashboardByUID);
+
+//DATASOURCE
+router.get("/grafana/datasource", getDatasources);
+router.post("/grafana/datasource", addDatasource);
 
 export default router;
 
