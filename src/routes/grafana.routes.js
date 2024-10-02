@@ -41,11 +41,19 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/user:
+ * tags:
+ *   name: Grafana
+ *   description: Grafana management
+ */
+
+/**
+ * @swagger
+ * /api/grafana/serviceaccount:
  *   post:
- *     summary: Creates a new Grafana user account
- *     tags:
- *       - Grafana
+ *     summary: Creates a new service account in Grafana
+ *     tags: [Grafana]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -53,15 +61,36 @@ export default router;
  *           schema:
  *             type: object
  *             properties:
- *               username:
+ *               name:
  *                 type: string
- *               password:
+ *                 description: Name of the service account
+ *                 example: "example-service-account"
+ *               role:
  *                 type: string
- *               email:
- *                 type: string
+ *                 description: Role assigned to the service account
+ *                 example: "Admin"
  *     responses:
  *       201:
- *         description: User created successfully in Grafana
+ *         description: Service account created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isDisabled:
+ *                   type: boolean
+ *                   description: Status of the service account
+ *                   example: false
+ *                 name:
+ *                   type: string
+ *                   description: Name of the service account
+ *                   example: "example-service-account"
+ *                 role:
+ *                   type: string
+ *                   description: Role assigned to the service account
+ *                   example: "Admin"
+ *       400:
+ *         description: Bad Request - Invalid input data
  *         content:
  *           application/json:
  *             schema:
@@ -69,38 +98,90 @@ export default router;
  *               properties:
  *                 message:
  *                   type: string
- *                 data:
- *                   type: object
- *       500:
- *         description: Failed to create user in Grafana
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
+ *                   example: "Invalid request data"
  *                 error:
  *                   type: string
+ *                   example: "The 'name' field is required."
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to create a service account."
+ *       500:
+ *         description: Failed to create service account in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: "Failed to create service account in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   description: Detailed error message
+ *                   example: "Internal Server Error"
  */
 
 /**
  * @swagger
- * /api/grafana/user/{username}:
+ * /api/grafana/serviceaccount/{id}:
  *   get:
- *     summary: Retrieves a Grafana user by username
- *     tags:
- *       - Grafana
+ *     summary: Retrieves a service account by ID from Grafana
+ *     tags: [Grafana]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: username
+ *       - name: id
+ *         in: path
  *         required: true
+ *         description: ID of the service account to retrieve
  *         schema:
  *           type: string
- *         description: The username of the Grafana user to retrieve
  *     responses:
  *       200:
- *         description: User retrieved successfully
+ *         description: Service account retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isDisabled:
+ *                   type: boolean
+ *                   description: Status of the service account
+ *                   example: false
+ *                 name:
+ *                   type: string
+ *                   description: Name of the service account
+ *                   example: "example-service-account"
+ *                 role:
+ *                   type: string
+ *                   description: Role assigned to the service account
+ *                   example: "Admin"
+ *       400:
+ *         description: Bad Request - Invalid input data
  *         content:
  *           application/json:
  *             schema:
@@ -108,21 +189,38 @@ export default router;
  *               properties:
  *                 message:
  *                   type: string
- *                 data:
- *                   type: object
+ *                   example: "Invalid request data"
+ *                 error:
+ *                   type: string
+ *                   example: "The 'id' parameter must be a valid UUID."
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to view this service account."
  *       404:
- *        description: User not found
- *        content:
- *          application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 error:
- *                   type: string
- *       500:
- *         description: Failed to retrieve Grafana user
+ *         description: Not Found - Service account with the specified ID does not exist
  *         content:
  *           application/json:
  *             schema:
@@ -130,27 +228,71 @@ export default router;
  *               properties:
  *                 message:
  *                   type: string
+ *                   example: "Service account not found."
  *                 error:
  *                   type: string
+ *                   example: "No service account found with ID: 123."
+ *       500:
+ *         description: Failed to retrieve service account in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: "Failed to retrieve service account in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   description: Detailed error message
+ *                   example: "Internal Server Error"
  */
 
 /**
  * @swagger
- * /api/grafana/user/{id}:
- *   delete:
- *     summary: Deletes a Grafana user by ID
- *     tags:
- *       - Grafana
+ * /api/grafana/serviceaccount/{id}/token:
+ *   post:
+ *     summary: Creates a new token for the specified service account in Grafana
+ *     tags: [Grafana]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
  *         required: true
+ *         description: ID of the service account for which to create a token
  *         schema:
  *           type: string
- *         description: The ID of the Grafana user to delete
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Name of the token
+ *                 example: "example-token"
+ *               secondsToLive:
+ *                 type: integer
+ *                 description: Duration in seconds before the token expires
+ *                 example: 3600
  *     responses:
- *       200:
- *         description: User deleted successfully
+ *       201:
+ *         description: Token created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: The created token
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR..."
+ *       400:
+ *         description: Bad Request - Invalid input data
  *         content:
  *           application/json:
  *             schema:
@@ -158,17 +300,927 @@ export default router;
  *               properties:
  *                 message:
  *                   type: string
- *                 data:
- *                   type: object
- *       500:
- *         description: Failed to delete Grafana user
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
+ *                   example: "Invalid request data"
  *                 error:
  *                   type: string
+ *                   example: "The 'name' field is required."
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to create a token for this service account."
+ *       404:
+ *         description: Not Found - Service account with the specified ID does not exist
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Service account not found."
+ *                 error:
+ *                   type: string
+ *                   example: "No service account found with ID: 123."
+ *       409:
+ *         description: Conflict - Token could not be created due to a conflict
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Conflict"
+ *                 error:
+ *                   type: string
+ *                   example: "A token already exists for this service account."
+ *       500:
+ *         description: Failed to create service account token in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: "Failed to create service account token in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   description: Detailed error message
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/folder:
+ *   post:
+ *     summary: Creates a new folder in Grafana
+ *     tags: [Grafana]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Title of the new folder
+ *                 example: "New Folder"
+ *               parentUid:
+ *                 type: string
+ *                 description: UID of the parent folder (optional)
+ *                 example: "1234"
+ *               description:
+ *                 type: string
+ *                 description: Description of the new folder (optional)
+ *                 example: "This is a description of the new folder."
+ *     responses:
+ *       201:
+ *         description: Folder created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 uid:
+ *                   type: string
+ *                   description: UID of the newly created folder
+ *                   example: "5678"
+ *       400:
+ *         description: Bad Request - Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid request data"
+ *                 error:
+ *                   type: string
+ *                   example: "The 'title' field is required."
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to create a folder."
+ *       409:
+ *         description: Conflict - Folder could not be created due to a conflict
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Conflict"
+ *                 error:
+ *                   type: string
+ *                   example: "A folder with the same title already exists."
+ *       500:
+ *         description: Failed to create folder in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: "Failed to create folder in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   description: Detailed error message
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/folder/{uid}:
+ *   get:
+ *     summary: Retrieves a folder by UID from Grafana
+ *     tags: [Grafana]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: uid
+ *         in: path
+ *         required: true
+ *         description: UID of the folder to retrieve
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Folder retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 uid:
+ *                   type: string
+ *                   description: UID of the folder
+ *                   example: "5678"
+ *                 title:
+ *                   type: string
+ *                   description: Title of the folder
+ *                   example: "New Folder"
+ *                 description:
+ *                   type: string
+ *                   description: Description of the folder
+ *                   example: "This is a description of the folder."
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to access this folder."
+ *       404:
+ *         description: Not Found - Folder with the specified UID does not exist
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Folder not found."
+ *                 error:
+ *                   type: string
+ *                   example: "No folder found with UID: 5678."
+ *       500:
+ *         description: Failed to retrieve folder in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: "Failed to retrieve folder in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   description: Detailed error message
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/datasource:
+ *   get:
+ *     summary: Retrieves all data sources from Grafana
+ *     tags: [Grafana]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of data sources
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     example: 1
+ *                   name:
+ *                     type: string
+ *                     example: "My Data Source"
+ *                   type:
+ *                     type: string
+ *                     example: "postgres"
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - User does not have permission to access this resource
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to access this resource."
+ *       500:
+ *         description: Failed to retrieve data sources in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to retrieve datasources in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/datasource:
+ *   post:
+ *     summary: Adds a new data source to Grafana
+ *     tags: [Grafana]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               access:
+ *                 type: string
+ *                 example: "proxy"
+ *               basicAuth:
+ *                 type: boolean
+ *                 example: true
+ *               database:
+ *                 type: string
+ *                 example: "my_database"
+ *               isDefault:
+ *                 type: boolean
+ *                 example: false
+ *               jsonData:
+ *                 type: object
+ *               datasourceName:
+ *                 type: string
+ *                 example: "My New Data Source"
+ *               type:
+ *                 type: string
+ *                 example: "postgres"
+ *               url:
+ *                 type: string
+ *                 example: "http://localhost:5432"
+ *               user:
+ *                 type: string
+ *                 example: "admin"
+ *     responses:
+ *       201:
+ *         description: Data source created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   example: 2
+ *                 name:
+ *                   type: string
+ *                   example: "My New Data Source"
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - User does not have permission to access this resource
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to access this resource."
+ *       409:
+ *         description: Conflict - Data source with the same name already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Conflict"
+ *                 error:
+ *                   type: string
+ *                   example: "Datasource with the same name already exists."
+ *       500:
+ *         description: Failed to create datasource in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to create datasource in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/sql:
+ *   post:
+ *     summary: Creates a SQL query based on provided parameters
+ *     tags: [Grafana]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               aggregations:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     func:
+ *                       type: string
+ *                       example: "COUNT"
+ *                     attr:
+ *                       type: string
+ *                       example: "id"
+ *               columns:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   example: "name"
+ *               whereConditions:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     key:
+ *                       type: string
+ *                       example: "status"
+ *                     operator:
+ *                       type: string
+ *                       example: "="
+ *                     value:
+ *                       type: string
+ *                       example: "active"
+ *               whereLogic:
+ *                 type: string
+ *                 example: "AND"
+ *               groupBy:
+ *                 type: string
+ *                 example: "category"
+ *               orderByAttr:
+ *                 type: string
+ *                 example: "created_at"
+ *               orderDirection:
+ *                 type: string
+ *                 example: "ASC"
+ *               table:
+ *                 type: string
+ *                 example: "Computations"
+ *     responses:
+ *       200:
+ *         description: SQL query created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "SQL query created successfully"
+ *                 query:
+ *                   type: string
+ *                   example: "SELECT COUNT(id) FROM Computations WHERE status = 'active'"
+ *       500:
+ *         description: Failed to create SQL query
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to create SQL query"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard/{uid}:
+ *   get:
+ *     summary: Retrieves the specified dashboard by UID
+ *     tags: [Grafana]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: uid
+ *         in: path
+ *         required: true
+ *         description: UID of the dashboard to retrieve
+ *         schema:
+ *           type: string
+ *           example: "abc123"
+ *     responses:
+ *       200:
+ *         description: Dashboard retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 meta:
+ *                   type: object
+ *                   description: Metadata about the dashboard
+ *                 dashboard:
+ *                   type: object
+ *                   description: The dashboard object
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - User does not have permission to access this resource
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to access this resource."
+ *       404:
+ *         description: Not Found - Dashboard with the specified UID does not exist
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Not Found"
+ *                 error:
+ *                   type: string
+ *                   example: "Dashboard not found."
+ *       500:
+ *         description: Failed to retrieve dashboard in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to retrieve dashboard in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard/import:
+ *   post:
+ *     summary: Imports a new dashboard into Grafana
+ *     tags: [Grafana]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               dashboard:
+ *                 type: object
+ *                 properties:
+ *                   annotations:
+ *                     type: object
+ *                     properties:
+ *                       list:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                   editable:
+ *                     type: boolean
+ *                     example: true
+ *                   fiscalYearStartMonth:
+ *                     type: integer
+ *                     example: 0
+ *                   graphTooltip:
+ *                     type: integer
+ *                     example: 0
+ *                   panels:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       description: Panel configuration
+ *                   schemaVersion:
+ *                     type: integer
+ *                     example: 16
+ *                   tags:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   templating:
+ *                     type: object
+ *                     properties:
+ *                       list:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                   time:
+ *                     type: object
+ *                     properties:
+ *                       from:
+ *                         type: string
+ *                         example: "now-6h"
+ *                       to:
+ *                         type: string
+ *                         example: "now"
+ *                   timepicker:
+ *                     type: object
+ *                     description: Timepicker configuration
+ *                   timezone:
+ *                     type: string
+ *                     example: "browser"
+ *                   title:
+ *                     type: string
+ *                     example: "Imported Dashboard"
+ *                   version:
+ *                     type: integer
+ *                     example: 0
+ *                   weekStart:
+ *                     type: string
+ *                     example: ""
+ *               overwrite:
+ *                 type: boolean
+ *                 example: true
+ *               inputs:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               folderUid:
+ *                 type: string
+ *                 example: "1234"
+ *     responses:
+ *       201:
+ *         description: Dashboard imported successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   description: ID of the imported dashboard
+ *                   example: 5678
+ *       400:
+ *         description: Bad Request - Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid request data"
+ *                 error:
+ *                   type: string
+ *                   example: "The 'title' field is required."
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       412:
+ *         description: Precondition Failed - The request was not applicable
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Precondition failed"
+ *                 error:
+ *                   type: string
+ *                   example: "Dashboard version is not compatible."
+ *       422:
+ *         description: Unprocessable Entity - Request data was well-formed but was unable to be followed due to semantic errors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unprocessable Entity"
+ *                 error:
+ *                   type: string
+ *                   example: "Dashboard title already exists."
+ *       500:
+ *         description: Failed to import dashboard in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Error message
+ *                   example: "Failed to import dashboard in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   description: Detailed error message
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard/{uid}/panel:
+ *   post:
+ *     summary: Adds a new panel to the specified dashboard
+ *     tags: [Grafana]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: uid
+ *         in: path
+ *         required: true
+ *         description: UID of the dashboard to which the panel will be added
+ *         schema:
+ *           type: string
+ *           example: "abc123"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: "Add panel testing"
+ *               type:
+ *                 type: string
+ *                 example: "gauge"
+ *               displayName:
+ *                 type: string
+ *                 example: "Test 01"
+ *               table:
+ *                 type: string
+ *                 example: "Configurations"
+ *               sqlQuery:
+ *                 type: object
+ *                 properties:
+ *                   aggregations:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         func:
+ *                           type: string
+ *                           example: "COUNT"
+ *                         attr:
+ *                           type: string
+ *                           example: "id"
+ *                   whereConditions:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         key:
+ *                           type: string
+ *                           example: "id"
+ *                         operator:
+ *                           type: string
+ *                           example: ">"
+ *                         value:
+ *                           type: integer
+ *                           example: 5
+ *                   whereLogic:
+ *                     type: string
+ *                     example: "AND"
+ *                   table:
+ *                     type: string
+ *                     example: "Configurations"
+ *     responses:
+ *       201:
+ *         description: Panel added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Panel added successfully"
+ *                 dashboard:
+ *                   type: object
+ *                   description: The updated dashboard object
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - User does not have permission to access this resource
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to access this resource."
+ *       404:
+ *         description: Not Found - Dashboard with the specified UID does not exist
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Not Found"
+ *                 error:
+ *                   type: string
+ *                   example: "Dashboard not found."
+ *       500:
+ *         description: Failed to add panel to dashboard in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to import dashboard in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
  */
