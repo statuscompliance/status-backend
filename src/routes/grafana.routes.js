@@ -11,6 +11,7 @@ import {
     getDatasources,
     importDashboard,
     addDashboardPanel,
+    createQuery,
 } from "../controllers/grafana.controller.js";
 
 const router = Router();
@@ -32,6 +33,9 @@ router.get("/grafana/dashboard/:uid", getDashboardByUID);
 //DATASOURCE
 router.get("/grafana/datasource", getDatasources);
 router.post("/grafana/datasource", addDatasource);
+
+//ENDPOINT FOR TESTING SQL QUERY BUILDER
+router.post("/grafana/sql", createQuery);
 
 export default router;
 
