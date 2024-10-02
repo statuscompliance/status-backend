@@ -89,6 +89,7 @@ export async function createServiceAccountToken(req, res) {
     } catch (error) {
         if (error.response) {
             const { status } = error.response;
+            error = error.response.data ? error.response.data : error;
             return res.status(status).json(error);
         } else {
             return res.status(500).json({
