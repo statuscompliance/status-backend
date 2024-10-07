@@ -3,8 +3,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
 
-const nodeRedUrl = process.env.NODE_RED_URL || "http://localhost:1880";
-
 export async function signUp(req, res) {
     const { username, password, email } = req.body;
     const rows = await models.User.findAll({
@@ -41,6 +39,8 @@ function isValidNodeRedUrl(nodeRedUrl) {
 }
 
 async function getNodeRedToken(username, password) {
+    const nodeRedUrl = process.env.NODE_RED_URL;
+
     if (!isValidNodeRedUrl(nodeRedUrl)) {
         throw new Error("Invalid Node-RED URL");
     }

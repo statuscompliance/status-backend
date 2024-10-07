@@ -1,9 +1,6 @@
-import axios from "axios";
 import { methods } from "../grafana.js";
 import createPanelTemplate from "../utils/panelStructures.js";
 import createSQLQuery from "../utils/sqlQueryBuilder.js";
-
-const grafanaUrl = process.env.GRAFANA_URL || "http://localhost:3100";
 
 export async function createServiceAccount(
     req = null,
