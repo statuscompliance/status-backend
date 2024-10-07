@@ -15,6 +15,7 @@ import {
     createQuery,
     parseQuery,
     getPanelQueryByID,
+    getDashboardPanelQueriesByUID,
 } from "../controllers/grafana.controller.js";
 
 const router = Router();
@@ -32,6 +33,10 @@ router.get("/grafana/folder/:uid", getFolderByUID);
 router.post("/grafana/dashboard", createDashboard);
 router.post("/grafana/dashboard/import", importDashboard);
 router.post("/grafana/dashboard/:uid/panel", addDashboardPanel);
+router.get(
+    "/grafana/dashboard/:uid/panel/query",
+    getDashboardPanelQueriesByUID
+);
 router.get("/grafana/dashboard/:uid", getDashboardByUID);
 router.get("/grafana/dashboard/:uid/panel/:id/query", getPanelQueryByID);
 
@@ -1024,6 +1029,75 @@ export default router;
  *                   example: "Dashboard not found."
  *       500:
  *         description: Failed to retrieve dashboard in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to retrieve dashboard in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard/{uid}/panel/query:
+ *   get:
+ *     summary: Retrieves queries and metadata of all panels in a Grafana Dashboard
+ *     tags: [Grafana Dashboards]
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The unique identifier of the Grafana Dashboard
+ *         example: "lLXkvvVGk"
+ *     responses:
+ *       200:
+ *         description: Queries and metadata of panels retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: The panel ID within the dashboard
+ *                     example: 3
+ *                   title:
+ *                     type: string
+ *                     description: The title of the panel
+ *                     example: "CPU Usage"
+ *                   displayName:
+ *                     type: string
+ *                     description: Display name for the data field
+ *                     example: "CPU Load"
+ *                   rawSql:
+ *                     type: string
+ *                     description: The raw SQL query used by the panel
+ *                     example: "SELECT * FROM server_metrics WHERE status = 'active'"
+ *                   type:
+ *                     type: string
+ *                     description: The type of the panel (e.g., graph, table, etc.)
+ *                     example: "graph"
+ *       404:
+ *         description: No panels found in dashboard
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "No panels found in dashboard"
+ *       500:
+ *         description: Failed to retrieve dashboard due to server error
  *         content:
  *           application/json:
  *             schema:

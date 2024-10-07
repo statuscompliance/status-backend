@@ -1,19 +1,11 @@
+import { type } from "os";
 import { methods } from "../grafana.js";
 import createPanelTemplate from "../utils/panelStructures.js";
 import { createSQLQuery, parseSQLQuery } from "../utils/sqlQueryBuilder.js";
 
-export async function createServiceAccount(
-    req = null,
-    res = null,
-    name = null,
-    role = null
-) {
+export async function createServiceAccount(req, res) {
     try {
-        if (req && res) {
-            const { name: reqName, role: reqRole } = req.body;
-            name = reqName;
-            role = reqRole;
-        }
+        const { name, role } = req.body;
         const serviceAccountData = {
             isDisabled: false,
             name: name,
@@ -23,31 +15,18 @@ export async function createServiceAccount(
         const response = await methods.serviceAccount.createServiceAccount(
             serviceAccountData
         );
-        if (req && res) {
-            return res.status(201).json(response.data);
-        }
-        return response.data;
+
+        return res.status(201).json(response.data);
     } catch (error) {
         if (error.response) {
-            const { status, statusText, data } = error.response;
-            if (req && res) {
-                return res.status(status).json({
-                    message: `Failed to create service account in Grafana: ${statusText}`,
-                    error: data.message || error.message,
-                });
-            }
-            throw new Error(`Grafana Error ${status}: ${statusText}`);
+            const { status } = error.response;
+            return res.status(status).json(error);
         } else {
-            if (req && res) {
-                return res.status(500).json({
-                    message:
-                        "Failed to create service account in Grafana due to server error",
-                    error: error.message,
-                });
-            }
-            throw new Error(
-                "No se pudo crear la cuenta de servicio en Grafana debido a un error del servidor"
-            );
+            return res.status(500).json({
+                message:
+                    "Failed to create service account in Grafana due to server error",
+                error: error.message,
+            });
         }
     }
 }
@@ -332,6 +311,40 @@ export async function getDashboardByUID(req, res) {
             req.params.uid
         );
         return res.status(200).json(response.data);
+    } catch (error) {
+        if (error.response) {
+            const { status } = error.response;
+            return res.status(status).json(error);
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to retrieve dashboard in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
+export async function getDashboardPanelQueriesByUID(req, res) {
+    try {
+        const response = await methods.dashboard.getDashboardByUID(
+            req.params.uid
+        );
+        if (response.data.dashboard.panels.length > 0) {
+            const panelQueries = response.data.dashboard.panels.map((panel) => {
+                return {
+                    id: panel.id,
+                    title: panel.title,
+                    displayName: panel.fieldConfig.defaults.displayName,
+                    rawSql: panel.targets[0].rawSql,
+                    type: panel.type,
+                };
+            });
+            return res.status(200).json(panelQueries);
+        }
+        return res.status(404).json({
+            message: "No panels found in dashboard",
+        });
     } catch (error) {
         if (error.response) {
             const { status } = error.response;
