@@ -1,6 +1,6 @@
 import { methods } from "../grafana.js";
 import createPanelTemplate from "../utils/panelStructures.js";
-import createSQLQuery from "../utils/sqlQueryBuilder.js";
+import { createSQLQuery, parseSQLQuery } from "../utils/sqlQueryBuilder.js";
 
 export async function createServiceAccount(
     req = null,
@@ -140,6 +140,55 @@ export async function getFolderByUID(req, res) {
     }
 }
 
+export async function createDashboard(req, res) {
+    try {
+        const response = await methods.dashboard.postDashboard({
+            dashboard: {
+                annotations: req.body.dashboard.annotations || {
+                    list: [],
+                },
+                editable: req.body.dashboard.editable || true,
+                fiscalYearStartMonth:
+                    req.body.dashboard.fiscalYearStartMonth || 0,
+                graphTooltip: req.body.dashboard.graphTooltip || 0,
+                id: null,
+                links: [],
+                panels: req.body.dashboard.panels,
+                schemaVersion: req.body.dashboard.schemaVersion || 16,
+                tags: req.body.dashboard.tags || [],
+                templating: req.body.dashboard.templating || {
+                    list: [],
+                },
+                time: req.body.dashboard.time || {
+                    from: "now-6h",
+                    to: "now",
+                },
+                timepicker: req.body.dashboard.timepicker || {},
+                timezone: req.body.dashboard.timezone || "browser",
+                title: req.body.dashboard.title,
+                version: req.body.dashboard.version || 0,
+                weekStart: req.body.dashboard.weekStart || "",
+            },
+            overwrite: req.body.overwrite || true,
+            inputs: req.body.inputs || [],
+            folderUid: req.body.folderUid,
+            message: "Dashboard created successfully",
+        });
+        return res.status(201).json(response.data);
+    } catch (error) {
+        if (error.response) {
+            const { status } = error.response;
+            return res.status(status).json(error);
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to create dashboard in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
 export async function importDashboard(req, res) {
     try {
         const response = await methods.dashboard.importDashboard({
@@ -198,6 +247,21 @@ export async function createQuery(req, res) {
     } catch (error) {
         return res.status(500).json({
             message: "Failed to create SQL query",
+            error: error.message,
+        });
+    }
+}
+
+export async function parseQuery(req, res) {
+    try {
+        const response = parseSQLQuery(req.body.rawSql);
+        return res.status(200).json({
+            message: "SQL query parsed successfully",
+            sql: response,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Failed to parse SQL query",
             error: error.message,
         });
     }
@@ -268,6 +332,36 @@ export async function getDashboardByUID(req, res) {
             req.params.uid
         );
         return res.status(200).json(response.data);
+    } catch (error) {
+        if (error.response) {
+            const { status } = error.response;
+            return res.status(status).json(error);
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to retrieve dashboard in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
+export async function getPanelQueryByID(req, res) {
+    try {
+        const response = await methods.dashboard.getDashboardByUID(
+            req.params.uid
+        );
+        if (response.data.dashboard.panels.length > 0) {
+            const panel = response.data.dashboard.panels.find(
+                (panel) => panel.id === parseInt(req.params.id)
+            );
+            return res.status(200).json({
+                rawSql: panel.targets[0].rawSql,
+            });
+        }
+        return res.status(404).json({
+            message: "Panel not found in dashboard",
+        });
     } catch (error) {
         if (error.response) {
             const { status } = error.response;

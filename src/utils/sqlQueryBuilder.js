@@ -71,7 +71,80 @@ function createSQLQuery({
     return query;
 }
 
-export default createSQLQuery;
+function parseSQLQuery(query) {
+    const result = {
+        aggregations: [],
+        columns: [],
+        whereConditions: [],
+        whereLogic: "AND",
+        groupBy: null,
+        orderByAttr: null,
+        orderDirection: null,
+        table: "Computations",
+    };
+
+    // Table
+    const tableMatch = query.match(/FROM\s+statusdb\.(\w+)/i);
+    if (tableMatch) {
+        result.table = tableMatch[1];
+    }
+
+    // Columns and Aggregations
+    const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i);
+    if (selectMatch) {
+        const selectFields = selectMatch[1].split(",");
+        selectFields.forEach((field) => {
+            field = field.trim();
+            const aggMatch = field.match(/(\w+)\((\w+)\)/); // ej: SUM(amount)
+            if (aggMatch) {
+                result.aggregations.push({
+                    func: aggMatch[1],
+                    attr: aggMatch[2],
+                });
+            } else {
+                result.columns.push(field);
+            }
+        });
+    }
+
+    // WHERE
+    const whereMatch = query.match(/WHERE\s+\((.+)\)/i);
+    if (whereMatch) {
+        const conditions = whereMatch[1].split(/\s+(AND|OR)\s+/i);
+        result.whereLogic = conditions[1].toUpperCase() || "AND"; // AND o OR
+        conditions.forEach((condition) => {
+            if (condition !== "AND" && condition !== "OR") {
+                const [key, operator, value] = condition.split(
+                    /\s+(=|>|<|>=|<=|!=)\s+/
+                );
+                result.whereConditions.push({
+                    key: key.trim(),
+                    operator: operator.trim(),
+                    value: value.replace(/['"]/g, "").trim(),
+                });
+            }
+        });
+    }
+
+    // GROUP BY
+    const groupByMatch = query.match(/GROUP\s+BY\s+(\w+)/i);
+    if (groupByMatch) {
+        result.groupBy = groupByMatch[1];
+    }
+
+    // ORDER BY
+    const orderByMatch = query.match(/ORDER\s+BY\s+(\w+)\s+(ASC|DESC)?/i);
+    if (orderByMatch) {
+        result.orderByAttr = orderByMatch[1];
+        result.orderDirection = orderByMatch[2]
+            ? orderByMatch[2].toUpperCase()
+            : "ASC";
+    }
+
+    return result;
+}
+
+export { createSQLQuery, parseSQLQuery };
 
 /* EJEMPLOS
 SELECT * FROM statusdb.Computations

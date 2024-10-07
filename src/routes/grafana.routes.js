@@ -10,8 +10,11 @@ import {
     createServiceAccountToken,
     getDatasources,
     importDashboard,
+    createDashboard,
     addDashboardPanel,
     createQuery,
+    parseQuery,
+    getPanelQueryByID,
 } from "../controllers/grafana.controller.js";
 
 const router = Router();
@@ -26,16 +29,19 @@ router.post("/grafana/folder", createFolder);
 router.get("/grafana/folder/:uid", getFolderByUID);
 
 //DASHBOARD
+router.post("/grafana/dashboard", createDashboard);
 router.post("/grafana/dashboard/import", importDashboard);
 router.post("/grafana/dashboard/:uid/panel", addDashboardPanel);
 router.get("/grafana/dashboard/:uid", getDashboardByUID);
+router.get("/grafana/dashboard/:uid/panel/:id/query", getPanelQueryByID);
 
 //DATASOURCE
 router.get("/grafana/datasource", getDatasources);
 router.post("/grafana/datasource", addDatasource);
 
 //ENDPOINT FOR TESTING SQL QUERY BUILDER
-router.post("/grafana/sql", createQuery);
+router.get("/grafana/sql/parse", parseQuery);
+router.get("/grafana/sql/build", createQuery);
 
 export default router;
 
@@ -751,8 +757,8 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/sql:
- *   post:
+ * /api/grafana/sql/build:
+ *   get:
  *     summary: Creates a SQL query based on provided parameters
  *     tags: [Grafana]
  *     requestBody:
@@ -838,6 +844,96 @@ export default router;
 
 /**
  * @swagger
+ * /api/grafana/sql/parse:
+ *   get:
+ *     summary: Parses a SQL query into JSON parameters
+ *     tags: [Grafana]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               query:
+ *                 type: string
+ *                 example: "SELECT COUNT(id) FROM Computations WHERE status = 'active' GROUP BY category ORDER BY created_at DESC"
+ *     responses:
+ *       200:
+ *         description: SQL query parsed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "SQL query parsed successfully"
+ *                 parsedQuery:
+ *                   type: object
+ *                   properties:
+ *                     aggregations:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           func:
+ *                             type: string
+ *                             example: "COUNT"
+ *                           attr:
+ *                             type: string
+ *                             example: "id"
+ *                     columns:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                         example: "name"
+ *                     whereConditions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           key:
+ *                             type: string
+ *                             example: "status"
+ *                           operator:
+ *                             type: string
+ *                             example: "="
+ *                           value:
+ *                             type: string
+ *                             example: "active"
+ *                     whereLogic:
+ *                       type: string
+ *                       example: "AND"
+ *                     groupBy:
+ *                       type: string
+ *                       example: "category"
+ *                     orderByAttr:
+ *                       type: string
+ *                       example: "created_at"
+ *                     orderDirection:
+ *                       type: string
+ *                       example: "DESC"
+ *                     table:
+ *                       type: string
+ *                       example: "Computations"
+ *       500:
+ *         description: Failed to parse SQL query
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to parse SQL query"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
  * /api/grafana/dashboard/{uid}:
  *   get:
  *     summary: Retrieves the specified dashboard by UID
@@ -915,6 +1011,179 @@ export default router;
  *                 message:
  *                   type: string
  *                   example: "Failed to retrieve dashboard in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard/{uid}/panel/{id}/query:
+ *   get:
+ *     summary: Retrieves the raw SQL query of a specific panel in a Grafana dashboard
+ *     tags: [Grafana]
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The unique identifier of the Grafana dashboard
+ *         example: "lLXkvvVGk"
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The panel ID within the dashboard
+ *         example: 3
+ *     responses:
+ *       200:
+ *         description: Raw SQL query of the specified panel retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 rawSql:
+ *                   type: string
+ *                   example: "SELECT * FROM Computations WHERE status = 'active'"
+ *       404:
+ *         description: Panel not found in dashboard
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Panel not found in dashboard"
+ *       500:
+ *         description: Failed to retrieve dashboard or panel due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to retrieve dashboard in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard:
+ *   post:
+ *     summary: Creates a new Grafana dashboard
+ *     tags: [Grafana]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               dashboard:
+ *                 type: object
+ *                 properties:
+ *                   annotations:
+ *                     type: object
+ *                     properties:
+ *                       list:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                     example:
+ *                       list: []
+ *                   editable:
+ *                     type: boolean
+ *                     example: true
+ *                   fiscalYearStartMonth:
+ *                     type: integer
+ *                     example: 0
+ *                   graphTooltip:
+ *                     type: integer
+ *                     example: 0
+ *                   panels:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                   schemaVersion:
+ *                     type: integer
+ *                     example: 16
+ *                   tags:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                     example: []
+ *                   templating:
+ *                     type: object
+ *                     properties:
+ *                       list:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                     example:
+ *                       list: []
+ *                   time:
+ *                     type: object
+ *                     properties:
+ *                       from:
+ *                         type: string
+ *                         example: "now-6h"
+ *                       to:
+ *                         type: string
+ *                         example: "now"
+ *                   timepicker:
+ *                     type: object
+ *                     example: {}
+ *                   timezone:
+ *                     type: string
+ *                     example: "browser"
+ *                   title:
+ *                     type: string
+ *                     example: "New Dashboard"
+ *                   version:
+ *                     type: integer
+ *                     example: 0
+ *                   weekStart:
+ *                     type: string
+ *                     example: ""
+ *               overwrite:
+ *                 type: boolean
+ *                 example: true
+ *               inputs:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               folderUid:
+ *                 type: string
+ *                 example: "abc123"
+ *     responses:
+ *       201:
+ *         description: Dashboard created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               example:
+ *                 id: 1
+ *                 uid: "nErXDvCkzz"
+ *                 url: "/d/nErXDvCkzz/new-dashboard"
+ *                 status: "success"
+ *       500:
+ *         description: Failed to create dashboard due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to create dashboard in Grafana due to server error"
  *                 error:
  *                   type: string
  *                   example: "Internal Server Error"
