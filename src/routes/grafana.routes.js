@@ -48,8 +48,29 @@ export default router;
 /**
  * @swagger
  * tags:
- *   name: Grafana
- *   description: Grafana management
+ *   name: Grafana Authentication
+ *   description: Grafana Authentication management
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Grafana Dashboards
+ *   description: Grafana Dashboards management
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Grafana Datasources
+ *   description: Grafana Datasources management
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Grafana Queries
+ *   description: Grafana SQL Query builder and parser
  */
 
 /**
@@ -57,7 +78,7 @@ export default router;
  * /api/grafana/serviceaccount:
  *   post:
  *     summary: Creates a new service account in Grafana
- *     tags: [Grafana]
+ *     tags: [Grafana Authentication]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -156,7 +177,7 @@ export default router;
  * /api/grafana/serviceaccount/{id}:
  *   get:
  *     summary: Retrieves a service account by ID from Grafana
- *     tags: [Grafana]
+ *     tags: [Grafana Authentication]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -260,7 +281,7 @@ export default router;
  * /api/grafana/serviceaccount/{id}/token:
  *   post:
  *     summary: Creates a new token for the specified service account in Grafana
- *     tags: [Grafana]
+ *     tags: [Grafana Authentication]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -384,7 +405,7 @@ export default router;
  * /api/grafana/folder:
  *   post:
  *     summary: Creates a new folder in Grafana
- *     tags: [Grafana]
+ *     tags: [Grafana Dashboards]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -492,7 +513,7 @@ export default router;
  * /api/grafana/folder/{uid}:
  *   get:
  *     summary: Retrieves a folder by UID from Grafana
- *     tags: [Grafana]
+ *     tags: [Grafana Dashboards]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -583,7 +604,7 @@ export default router;
  * /api/grafana/datasource:
  *   get:
  *     summary: Retrieves all data sources from Grafana
- *     tags: [Grafana]
+ *     tags: [Grafana Datasources]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -651,7 +672,7 @@ export default router;
  * /api/grafana/datasource:
  *   post:
  *     summary: Adds a new data source to Grafana
- *     tags: [Grafana]
+ *     tags: [Grafana Datasources]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -758,9 +779,9 @@ export default router;
 /**
  * @swagger
  * /api/grafana/sql/build:
- *   get:
+ *   post:
  *     summary: Creates a SQL query based on provided parameters
- *     tags: [Grafana]
+ *     tags: [Grafana Queries]
  *     requestBody:
  *       required: true
  *       content:
@@ -845,9 +866,9 @@ export default router;
 /**
  * @swagger
  * /api/grafana/sql/parse:
- *   get:
+ *   post:
  *     summary: Parses a SQL query into JSON parameters
- *     tags: [Grafana]
+ *     tags: [Grafana Queries]
  *     requestBody:
  *       required: true
  *       content:
@@ -855,7 +876,7 @@ export default router;
  *           schema:
  *             type: object
  *             properties:
- *               query:
+ *               rawSql:
  *                 type: string
  *                 example: "SELECT COUNT(id) FROM Computations WHERE status = 'active' GROUP BY category ORDER BY created_at DESC"
  *     responses:
@@ -937,7 +958,7 @@ export default router;
  * /api/grafana/dashboard/{uid}:
  *   get:
  *     summary: Retrieves the specified dashboard by UID
- *     tags: [Grafana]
+ *     tags: [Grafana Dashboards]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -1020,15 +1041,15 @@ export default router;
  * @swagger
  * /api/grafana/dashboard/{uid}/panel/{id}/query:
  *   get:
- *     summary: Retrieves the raw SQL query of a specific panel in a Grafana dashboard
- *     tags: [Grafana]
+ *     summary: Retrieves the raw SQL query of a specific panel in a Grafana Dashboards
+ *     tags: [Grafana Dashboards]
  *     parameters:
  *       - in: path
  *         name: uid
  *         required: true
  *         schema:
  *           type: string
- *         description: The unique identifier of the Grafana dashboard
+ *         description: The unique identifier of the Grafana Dashboards
  *         example: "lLXkvvVGk"
  *       - in: path
  *         name: id
@@ -1077,8 +1098,8 @@ export default router;
  * @swagger
  * /api/grafana/dashboard:
  *   post:
- *     summary: Creates a new Grafana dashboard
- *     tags: [Grafana]
+ *     summary: Creates a new Grafana Dashboards
+ *     tags: [Grafana Dashboards]
  *     requestBody:
  *       required: true
  *       content:
@@ -1194,7 +1215,7 @@ export default router;
  * /api/grafana/dashboard/import:
  *   post:
  *     summary: Imports a new dashboard into Grafana
- *     tags: [Grafana]
+ *     tags: [Grafana Dashboards]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -1362,7 +1383,7 @@ export default router;
  * /api/grafana/dashboard/{uid}/panel:
  *   post:
  *     summary: Adds a new panel to the specified dashboard
- *     tags: [Grafana]
+ *     tags: [Grafana Dashboards]
  *     security:
  *       - bearerAuth: []
  *     parameters:
