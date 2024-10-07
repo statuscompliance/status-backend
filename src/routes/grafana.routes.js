@@ -40,8 +40,8 @@ router.get("/grafana/datasource", getDatasources);
 router.post("/grafana/datasource", addDatasource);
 
 //ENDPOINT FOR TESTING SQL QUERY BUILDER
-router.get("/grafana/sql/parse", parseQuery);
-router.get("/grafana/sql/build", createQuery);
+router.post("/grafana/sql/parse", parseQuery);
+router.post("/grafana/sql/build", createQuery);
 
 export default router;
 

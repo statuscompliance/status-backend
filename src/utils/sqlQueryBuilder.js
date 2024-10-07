@@ -111,19 +111,30 @@ function parseSQLQuery(query) {
     const whereMatch = query.match(/WHERE\s+\((.+)\)/i);
     if (whereMatch) {
         const conditions = whereMatch[1].split(/\s+(AND|OR)\s+/i);
-        result.whereLogic = conditions[1].toUpperCase() || "AND"; // AND o OR
-        conditions.forEach((condition) => {
-            if (condition !== "AND" && condition !== "OR") {
-                const [key, operator, value] = condition.split(
-                    /\s+(=|>|<|>=|<=|!=)\s+/
-                );
-                result.whereConditions.push({
-                    key: key.trim(),
-                    operator: operator.trim(),
-                    value: value.replace(/['"]/g, "").trim(),
-                });
-            }
-        });
+        if (conditions.length === 1) {
+            const [key, operator, value] = conditions[0].split(
+                /\s+(=|>|<|>=|<=|!=)\s+/
+            );
+            result.whereConditions.push({
+                key: key.trim(),
+                operator: operator.trim(),
+                value: value.replace(/['"]/g, "").trim(),
+            });
+        } else {
+            result.whereLogic = conditions[1].toUpperCase() || "AND"; // AND or OR
+            conditions.forEach((condition) => {
+                if (condition !== "AND" && condition !== "OR") {
+                    const [key, operator, value] = condition.split(
+                        /\s+(=|>|<|>=|<=|!=)\s+/
+                    );
+                    result.whereConditions.push({
+                        key: key.trim(),
+                        operator: operator.trim(),
+                        value: value.replace(/['"]/g, "").trim(),
+                    });
+                }
+            });
+        }
     }
 
     // GROUP BY
