@@ -4,8 +4,6 @@ WORKDIR /status-backend
 
 COPY . .
 
-COPY .env.deploy .env
-
 RUN npm ci
 RUN npm install -g nodemon --unsafe-perm
 
