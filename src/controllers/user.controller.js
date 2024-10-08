@@ -191,9 +191,7 @@ export async function deleteUserById(req, res) {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        const actualGrafanaUser = await (null, null, user.username);
-        // await deleteGrafanaUserById(null, null, actualGrafanaUser.id);
-        // await user.destroy();
+        await user.destroy();
         return res.status(200).json({ message: "User deleted successfully" });
     } catch (error) {
         console.error("Error during delete user:", error);

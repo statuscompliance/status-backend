@@ -1,4 +1,3 @@
-import { type } from "os";
 import { methods } from "../grafana.js";
 import createPanelTemplate from "../utils/panelStructures.js";
 import { createSQLQuery, parseSQLQuery } from "../utils/sqlQueryBuilder.js";
@@ -65,8 +64,8 @@ export async function createServiceAccountToken(req, res) {
     } catch (error) {
         if (error.response) {
             const { status } = error.response;
-            error = error.response.data ? error.response.data : error;
-            return res.status(status).json(error);
+            const errorData = error.response.data ? error.response.data : error;
+            return res.status(status).json(errorData);
         } else {
             return res.status(500).json({
                 message:
@@ -271,6 +270,11 @@ export async function addDashboardPanel(req, res) {
             actualDashboard.panels.forEach((panel) => (panel.gridPos.y += 8));
         }
         const newPanel = createPanelTemplate(type);
+        if (!newPanel) {
+            return res.status(400).json({
+                message: `Unsupported panel type: ${type}`,
+            });
+        }
 
         newPanel.id = newPanelId;
         newPanel.title = title;
@@ -366,7 +370,7 @@ export async function getPanelQueryByID(req, res) {
         );
         if (response.data.dashboard.panels.length > 0) {
             const panel = response.data.dashboard.panels.find(
-                (panel) => panel.id === parseInt(req.params.id)
+                (panel) => panel.id === parseInt(req.params.id, 10)
             );
             return res.status(200).json({
                 rawSql: panel.targets[0].rawSql,
