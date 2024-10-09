@@ -1558,6 +1558,10 @@ export default router;
  *                     type: string
  *                     description: The type of the panel (e.g., graph, table, etc.)
  *                     example: "graph"
+ *                   rawSql:
+ *                     type: string
+ *                     description: The raw SQL query for the panel
+ *                     example: "SELECT * FROM statusdb.Computations"
  *                   displayName:
  *                     type: string
  *                     description: Display name for the data field
@@ -1908,9 +1912,26 @@ export default router;
  *             schema:
  *               type: object
  *               properties:
- *                 rawSql:
- *                   type: string
- *                   example: "SELECT * FROM Computations WHERE status = 'active'"
+ *                   id:
+ *                     type: integer
+ *                     description: The panel ID within the dashboard
+ *                     example: 3
+ *                   title:
+ *                     type: string
+ *                     description: The title of the panel
+ *                     example: "CPU Usage"
+ *                   displayName:
+ *                     type: string
+ *                     description: Display name for the data field
+ *                     example: "CPU Load"
+ *                   rawSql:
+ *                     type: string
+ *                     description: The raw SQL query used by the panel
+ *                     example: "SELECT * FROM server_metrics WHERE status = 'active'"
+ *                   type:
+ *                     type: string
+ *                     description: The type of the panel (e.g., graph, table, etc.)
+ *                     example: "graph"
  *       404:
  *         description: Panel not found in dashboard
  *         content:

@@ -373,7 +373,12 @@ export async function getPanelQueryByID(req, res) {
                 (panel) => panel.id === parseInt(req.params.id, 10)
             );
             return res.status(200).json({
+                id: panel.id,
+                title: panel.title,
+                type: panel.type,
                 rawSql: panel.targets[0].rawSql,
+                displayName: panel.fieldConfig.defaults.displayName,
+                gridPos: panel.gridPos,
             });
         }
         return res.status(404).json({
@@ -457,6 +462,7 @@ export async function getPanelsByDashboardUID(req, res) {
                     id: panel.id,
                     title: panel.title,
                     type: panel.type,
+                    rawSql: panel.targets[0].rawSql,
                     displayName: panel.fieldConfig.defaults.displayName,
                     gridPos: panel.gridPos,
                 };
