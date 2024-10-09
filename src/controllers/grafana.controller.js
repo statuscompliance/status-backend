@@ -445,3 +445,176 @@ export async function addDatasource(req, res) {
         }
     }
 }
+
+export async function getPanelsByDashboardUID(req, res) {
+    try {
+        const response = await methods.dashboard.getDashboardByUID(
+            req.params.uid
+        );
+        if (response.data.dashboard.panels.length > 0) {
+            const panels = response.data.dashboard.panels.map((panel) => {
+                return {
+                    id: panel.id,
+                    title: panel.title,
+                    type: panel.type,
+                    displayName: panel.fieldConfig.defaults.displayName,
+                    gridPos: panel.gridPos,
+                };
+            });
+            return res.status(200).json(panels);
+        }
+        return res.status(404).json({
+            message: "No panels found in dashboard",
+        });
+    } catch (error) {
+        if (error.response) {
+            const { status } = error.response;
+            return res.status(status).json(error);
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to retrieve dashboard in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
+export async function deleteDashboardByUID(req, res) {
+    try {
+        const response = await methods.dashboard.deleteDashboardByUID(
+            req.params.uid
+        );
+        return res.status(200).json(response.data);
+    } catch (error) {
+        if (error.response) {
+            const { status, statusText, data } = error.response;
+            return res.status(status).json({
+                message: `Failed to delete dashboard in Grafana: ${statusText}`,
+                error: data.message || error.message,
+            });
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to delete dashboard in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
+export async function deletePanelByID(req, res) {
+    try {
+        const response = await methods.dashboard.getDashboardByUID(
+            req.params.uid
+        );
+        if (response.data.dashboard.panels.length > 0) {
+            const panelIndex = response.data.dashboard.panels.findIndex(
+                (panel) => panel.id === parseInt(req.params.id, 10)
+            );
+            if (panelIndex >= 0) {
+                response.data.dashboard.panels.splice(panelIndex, 1);
+                response.data.dashboard.version += 1;
+                const deleteResponse = await methods.dashboard.postDashboard({
+                    dashboard: response.data.dashboard,
+                    folderUid: response.data.meta.folderUid,
+                    overwrite: true,
+                });
+                return res.status(200).json(deleteResponse.data);
+            }
+            return res.status(404).json({
+                message: "Panel not found in dashboard",
+            });
+        }
+        return res.status(404).json({
+            message: "No panels found in dashboard",
+        });
+    } catch (error) {
+        if (error.response) {
+            const { status, statusText, data } = error.response;
+            return res.status(status).json({
+                message: `Failed to delete panel in Grafana: ${statusText}`,
+                error: data.message || error.message,
+            });
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to delete panel in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
+export async function updatePanelByID(req, res) {
+    try {
+        const response = await methods.dashboard.getDashboardByUID(
+            req.params.uid
+        );
+        const {
+            title,
+            type,
+            sqlQuery,
+            table,
+            displayName,
+            gridPos = { x: 0, y: 0, w: 12, h: 8 },
+        } = req.body;
+
+        if (response.data.dashboard.panels.length > 0) {
+            const panelIndex = response.data.dashboard.panels.findIndex(
+                (panel) => panel.id === parseInt(req.params.id, 10)
+            );
+            if (panelIndex >= 0) {
+                const panel = response.data.dashboard.panels[panelIndex];
+                const updatedPanel =
+                    type === undefined
+                        ? createPanelTemplate(panel.type)
+                        : createPanelTemplate(type);
+                updatedPanel.id = parseInt(req.params.id, 10);
+                updatedPanel.title = title === undefined ? panel.title : title;
+                updatedPanel.fieldConfig.defaults.displayName =
+                    displayName === undefined
+                        ? panel.fieldConfig.defaults.displayName
+                        : displayName;
+                updatedPanel.gridPos =
+                    gridPos === undefined ? panel.gridPos : gridPos;
+                if (updatedPanel.targets && updatedPanel.targets.length > 0) {
+                    updatedPanel.targets[0].rawSql =
+                        sqlQuery === undefined
+                            ? panel.targets[0].rawSql
+                            : createSQLQuery(sqlQuery);
+                    updatedPanel.targets[0].table =
+                        table === undefined ? panel.targets[0].table : table;
+                }
+                response.data.dashboard.panels[panelIndex] = updatedPanel;
+                response.data.dashboard.version += 1;
+                const updateResponse = await methods.dashboard.postDashboard({
+                    dashboard: response.data.dashboard,
+                    folderUid: response.data.meta.folderUid,
+                    overwrite: true,
+                });
+                return res.status(200).json(updateResponse.data);
+            }
+            return res.status(404).json({
+                message: "Panel not found in dashboard",
+            });
+        }
+        return res.status(404).json({
+            message: "No panels found in dashboard",
+        });
+    } catch (error) {
+        if (error.response) {
+            const { status, statusText, data } = error.response;
+            return res.status(status).json({
+                message: `Failed to update panel in Grafana: ${statusText}`,
+                error: data.message || error.message,
+            });
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to update panel in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}

@@ -16,6 +16,10 @@ import {
     parseQuery,
     getPanelQueryByID,
     getDashboardPanelQueriesByUID,
+    deleteDashboardByUID,
+    deletePanelByID,
+    updatePanelByID,
+    getPanelsByDashboardUID,
 } from "../controllers/grafana.controller.js";
 
 const router = Router();
@@ -32,12 +36,16 @@ router.get("/grafana/folder/:uid", getFolderByUID);
 //DASHBOARD
 router.post("/grafana/dashboard", createDashboard);
 router.post("/grafana/dashboard/import", importDashboard);
+router.get("/grafana/dashboard/:uid", getDashboardByUID);
+router.delete("/grafana/dashboard/:uid", deleteDashboardByUID);
+router.get("/grafana/dashboard/:uid/panel", getPanelsByDashboardUID);
 router.post("/grafana/dashboard/:uid/panel", addDashboardPanel);
+router.patch("/grafana/dashboard/:uid/panel/:id", updatePanelByID);
+router.delete("/grafana/dashboard/:uid/panel/:id", deletePanelByID);
 router.get(
     "/grafana/dashboard/:uid/panel/query",
     getDashboardPanelQueriesByUID
 );
-router.get("/grafana/dashboard/:uid", getDashboardByUID);
 router.get("/grafana/dashboard/:uid/panel/:id/query", getPanelQueryByID);
 
 //DATASOURCE
@@ -1044,9 +1052,9 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard/{uid}/panel/query:
- *   get:
- *     summary: Retrieves queries and metadata of all panels in a Grafana Dashboard
+ * /api/grafana/dashboard/{uid}:
+ *   delete:
+ *     summary: Deletes a specific Grafana Dashboard by UID
  *     tags: [Grafana Dashboards]
  *     parameters:
  *       - in: path
@@ -1058,36 +1066,17 @@ export default router;
  *         example: "lLXkvvVGk"
  *     responses:
  *       200:
- *         description: Queries and metadata of panels retrieved successfully
+ *         description: Grafana Dashboard deleted successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                     description: The panel ID within the dashboard
- *                     example: 3
- *                   title:
- *                     type: string
- *                     description: The title of the panel
- *                     example: "CPU Usage"
- *                   displayName:
- *                     type: string
- *                     description: Display name for the data field
- *                     example: "CPU Load"
- *                   rawSql:
- *                     type: string
- *                     description: The raw SQL query used by the panel
- *                     example: "SELECT * FROM server_metrics WHERE status = 'active'"
- *                   type:
- *                     type: string
- *                     description: The type of the panel (e.g., graph, table, etc.)
- *                     example: "graph"
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Dashboard deleted successfully"
  *       404:
- *         description: No panels found in dashboard
+ *         description: Grafana Dashboard not found
  *         content:
  *           application/json:
  *             schema:
@@ -1095,9 +1084,9 @@ export default router;
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "No panels found in dashboard"
+ *                   example: "Dashboard not found"
  *       500:
- *         description: Failed to retrieve dashboard due to server error
+ *         description: Failed to delete dashboard due to server error
  *         content:
  *           application/json:
  *             schema:
@@ -1105,64 +1094,7 @@ export default router;
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "Failed to retrieve dashboard in Grafana due to server error"
- *                 error:
- *                   type: string
- *                   example: "Internal Server Error"
- */
-
-/**
- * @swagger
- * /api/grafana/dashboard/{uid}/panel/{id}/query:
- *   get:
- *     summary: Retrieves the raw SQL query of a specific panel in a Grafana Dashboards
- *     tags: [Grafana Dashboards]
- *     parameters:
- *       - in: path
- *         name: uid
- *         required: true
- *         schema:
- *           type: string
- *         description: The unique identifier of the Grafana Dashboards
- *         example: "lLXkvvVGk"
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: The panel ID within the dashboard
- *         example: 3
- *     responses:
- *       200:
- *         description: Raw SQL query of the specified panel retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 rawSql:
- *                   type: string
- *                   example: "SELECT * FROM Computations WHERE status = 'active'"
- *       404:
- *         description: Panel not found in dashboard
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Panel not found in dashboard"
- *       500:
- *         description: Failed to retrieve dashboard or panel due to server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Failed to retrieve dashboard in Grafana due to server error"
+ *                   example: "Failed to delete dashboard in Grafana due to server error"
  *                 error:
  *                   type: string
  *                   example: "Internal Server Error"
@@ -1206,9 +1138,10 @@ export default router;
  *                     type: array
  *                     items:
  *                       type: object
+ *                     example: []
  *                   schemaVersion:
  *                     type: integer
- *                     example: 16
+ *                     example: 27
  *                   tags:
  *                     type: array
  *                     items:
@@ -1234,7 +1167,7 @@ export default router;
  *                         example: "now"
  *                   timepicker:
  *                     type: object
- *                     example: {}
+ *                     example:
  *                   timezone:
  *                     type: string
  *                     example: "browser"
@@ -1249,14 +1182,14 @@ export default router;
  *                     example: ""
  *               overwrite:
  *                 type: boolean
- *                 example: true
+ *                 example: false
  *               inputs:
  *                 type: array
  *                 items:
  *                   type: object
  *               folderUid:
  *                 type: string
- *                 example: "abc123"
+ *                 example:
  *     responses:
  *       201:
  *         description: Dashboard created successfully
@@ -1584,6 +1517,420 @@ export default router;
  *                 message:
  *                   type: string
  *                   example: "Failed to import dashboard in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard/{uid}/panel:
+ *   get:
+ *     summary: Retrieves all panels in a specific Grafana Dashboard
+ *     tags: [Grafana Dashboards]
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The unique identifier of the Grafana Dashboard
+ *         example: "lLXkvvVGk"
+ *     responses:
+ *       200:
+ *         description: Panels retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: The panel ID within the dashboard
+ *                     example: 3
+ *                   title:
+ *                     type: string
+ *                     description: The title of the panel
+ *                     example: "CPU Usage"
+ *                   type:
+ *                     type: string
+ *                     description: The type of the panel (e.g., graph, table, etc.)
+ *                     example: "graph"
+ *                   displayName:
+ *                     type: string
+ *                     description: Display name for the data field
+ *                     example: "CPU Load"
+ *                   gridPos:
+ *                     type: object
+ *                     description: Position of the panel in the dashboard grid
+ *                     properties:
+ *                       x:
+ *                         type: integer
+ *                         example: 0
+ *                       y:
+ *                         type: integer
+ *                         example: 0
+ *                       w:
+ *                         type: integer
+ *                         example: 24
+ *                       h:
+ *                         type: integer
+ *                         example: 9
+ *       404:
+ *         description: No panels found in dashboard
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "No panels found in dashboard"
+ *       500:
+ *         description: Failed to retrieve dashboard due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to retrieve dashboard in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard/{uid}/panel/{id}:
+ *   patch:
+ *     summary: Updates a specific panel in a Grafana Dashboard
+ *     tags: [Grafana Dashboards]
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The unique identifier of the Grafana Dashboard
+ *         example: "lLXkvvVGk"
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The panel ID within the dashboard
+ *         example: 3
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: The title of the panel
+ *                 example: "Updated Panel Title"
+ *               type:
+ *                 type: string
+ *                 description: The type of the panel (e.g., graph, table, etc.)
+ *                 example: "gauge"
+ *               displayName:
+ *                 type: string
+ *                 description: Display name for the data field
+ *                 example: "New Display Name"
+ *               sqlQuery:
+ *                 type: object
+ *                 description: SQL query details for the panel
+ *                 properties:
+ *                   aggregations:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         func:
+ *                           type: string
+ *                           description: Aggregation function
+ *                           example: "SUM"
+ *                         attr:
+ *                           type: string
+ *                           description: Attribute to aggregate
+ *                           example: "`limit`"
+ *                   columns:
+ *                     type: array
+ *                     description: Columns to select
+ *                     example: []
+ *                   whereConditions:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         key:
+ *                           type: string
+ *                           description: Column name for the condition
+ *                           example: "id"
+ *                         operator:
+ *                           type: string
+ *                           description: Condition operator
+ *                           example: ">"
+ *                         value:
+ *                           type: string
+ *                           description: Condition value
+ *                           example: "1"
+ *                   whereLogic:
+ *                     type: string
+ *                     description: Logic for WHERE conditions (e.g., AND, OR)
+ *                     example: "AND"
+ *                   groupBy:
+ *                     type: string
+ *                     description: Group by column
+ *                     example: null
+ *                   orderByAttr:
+ *                     type: string
+ *                     description: Attribute to order by
+ *                     example: null
+ *                   orderDirection:
+ *                     type: string
+ *                     description: Order direction (ASC, DESC)
+ *                     example: null
+ *                   table:
+ *                     type: string
+ *                     description: Table to query
+ *                     example: "Configurations"
+ *               gridPos:
+ *                 type: object
+ *                 description: Position of the panel in the dashboard grid
+ *                 properties:
+ *                   x:
+ *                     type: integer
+ *                     example: 0
+ *                   y:
+ *                     type: integer
+ *                     example: 0
+ *                   w:
+ *                     type: integer
+ *                     example: 12
+ *                   h:
+ *                     type: integer
+ *                     example: 8
+ *     responses:
+ *       200:
+ *         description: Panel updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Panel updated successfully"
+ *       404:
+ *         description: Panel or dashboard not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Panel not found in dashboard"
+ *       500:
+ *         description: Failed to update panel due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to update panel in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard/{uid}/panel/{id}:
+ *   delete:
+ *     summary: Deletes a specific panel from a Grafana Dashboard
+ *     tags: [Grafana Dashboards]
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The unique identifier of the Grafana Dashboard
+ *         example: "lLXkvvVGk"
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The panel ID within the dashboard
+ *         example: 3
+ *     responses:
+ *       200:
+ *         description: Panel deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Panel deleted successfully"
+ *       404:
+ *         description: Panel or dashboard not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Panel not found in dashboard"
+ *       500:
+ *         description: Failed to delete panel due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to delete panel in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard/{uid}/panel/query:
+ *   get:
+ *     summary: Retrieves queries and metadata of all panels in a Grafana Dashboard
+ *     tags: [Grafana Dashboards]
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The unique identifier of the Grafana Dashboard
+ *         example: "lLXkvvVGk"
+ *     responses:
+ *       200:
+ *         description: Queries and metadata of panels retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: The panel ID within the dashboard
+ *                     example: 3
+ *                   title:
+ *                     type: string
+ *                     description: The title of the panel
+ *                     example: "CPU Usage"
+ *                   displayName:
+ *                     type: string
+ *                     description: Display name for the data field
+ *                     example: "CPU Load"
+ *                   rawSql:
+ *                     type: string
+ *                     description: The raw SQL query used by the panel
+ *                     example: "SELECT * FROM server_metrics WHERE status = 'active'"
+ *                   type:
+ *                     type: string
+ *                     description: The type of the panel (e.g., graph, table, etc.)
+ *                     example: "graph"
+ *       404:
+ *         description: No panels found in dashboard
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "No panels found in dashboard"
+ *       500:
+ *         description: Failed to retrieve dashboard due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to retrieve dashboard in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/dashboard/{uid}/panel/{id}/query:
+ *   get:
+ *     summary: Retrieves the raw SQL query of a specific panel in a Grafana Dashboards
+ *     tags: [Grafana Dashboards]
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The unique identifier of the Grafana Dashboards
+ *         example: "lLXkvvVGk"
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The panel ID within the dashboard
+ *         example: 3
+ *     responses:
+ *       200:
+ *         description: Raw SQL query of the specified panel retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 rawSql:
+ *                   type: string
+ *                   example: "SELECT * FROM Computations WHERE status = 'active'"
+ *       404:
+ *         description: Panel not found in dashboard
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Panel not found in dashboard"
+ *       500:
+ *         description: Failed to retrieve dashboard or panel due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to retrieve dashboard in Grafana due to server error"
  *                 error:
  *                   type: string
  *                   example: "Internal Server Error"
