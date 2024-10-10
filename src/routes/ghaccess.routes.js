@@ -1,7 +1,5 @@
 import { Router } from "express";
-
-const fetch = (...args) =>
-    import("node-fetch").then(({ default: fetch }) => fetch(...args));
+import axios from "axios";
 
 var client_id = process.env.GH_CLIENT_ID;
 var client_secret = process.env.GH_CLIENT_SECRET;
@@ -12,10 +10,9 @@ router.get("/ghAccessToken", async function (req, res) {
         const code = req.query.code;
 
         const params = `?client_id=${client_id}&client_secret=${client_secret}&code=${code}&redirect_uri=http://localhost:3000/profile`;
-        const response = await fetch(
+        const response = await axios.post(
             "https://github.com/login/oauth/access_token" + params,
             {
-                method: "POST",
                 headers: {
                     Accept: "application/json",
                 },
