@@ -22,22 +22,19 @@ export const getCatalog = async (req, res) => {
 }
 
 export const createCatalog = async (req, res) => {
-    const {name,startDate,endDate} = req.body
-
-    const formattedStartDate = startDate ? new Date(startDate) : null;
-    const formattedEndDate = endDate ? new Date(endDate) : null;
-    
+    const {name,startDate,endDate,dashboard_id} = req.body
     const rows = await models.Catalog.create({
         name,
-        startDate: formattedStartDate,
-        endDate: formattedEndDate
+        startDate,
+        endDate,
+        dashboard_id
     });
-
     res.send({
         id: rows.id,
         name,
-        formattedStartDate,
-        formattedEndDate,
+        startDate,
+        endDate,
+        dashboard_id
     })
 }
 
@@ -86,10 +83,7 @@ export const deleteTPAByCatalogId = async (req, res) => {
 
 export const updateCatalog = async (req, res) => {
     const {id} = req.params
-    const {name, startDate, endDate} = req.body
-
-    const formattedStartDate = startDate ? new Date(startDate) : null;
-    const formattedEndDate = endDate ? new Date(endDate) : null;
+    const {name, startDate, endDate, dashboard_id} = req.body
 
     const currentCatalog = await models.Catalog.findByPk(id);
     if (!currentCatalog) {
@@ -98,8 +92,9 @@ export const updateCatalog = async (req, res) => {
 
     await models.Catalog.update({
         name,
-        startDate: formattedStartDate,
-        endDate: formattedEndDate,
+        startDate,
+        endDate,
+        dashboard_id,
     }, {
         where: {
             id
