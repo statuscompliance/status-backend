@@ -131,6 +131,16 @@ export default router;
  *                 enum: [DAILY, MONTHLY, ANNUALLY]
  *                 description: The period of the control
  *                 example: MONTHLY
+ *               startDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: The start date of the control
+ *                 example: 2023-01-01T00:00:00.000Z
+ *               endDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: The end date of the control
+ *                 example: 2023-12-31T23:59:59.000Z
  *               mashup_id:
  *                 type: integer
  *                 description: The ID of the mashup associated with the control
@@ -158,6 +168,12 @@ export default router;
  *                 period:
  *                   type: string
  *                   enum: [DAILY, MONTHLY, ANNUALLY]
+ *                 startDate:
+ *                   type: string
+ *                   format: date-time
+ *                 endDate:
+ *                   type: string
+ *                   format: date-time
  *                 mashup_id:
  *                   type: integer
  *                 catalog_id:
