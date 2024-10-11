@@ -38,12 +38,16 @@ export const getInputControlsByControlId = async (req, res) => {
 
 export const createControl = async (req, res) => {
     const {name,description,period,startDate,endDate,mashup_id,catalog_id} = req.body
+
+    const formattedStartDate = startDate ? new Date(startDate) : null;
+    const formattedEndDate = endDate ? new Date(endDate) : null;
+
     const rows = await models.Control.create({
         name,
         description,
         period,
-        startDate,
-        endDate,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
         mashup_id,
         catalog_id
     });
@@ -53,8 +57,8 @@ export const createControl = async (req, res) => {
         name,
         description,
         period,
-        startDate,
-        endDate,
+        formattedStartDate,
+        formattedEndDate,
         mashup_id,
         catalog_id,
     })
@@ -63,6 +67,9 @@ export const createControl = async (req, res) => {
 export const updateControl = async (req, res) => {
     const {id} = req.params
     const {name,description,period,startDate,endDate,mashup_id,catalog_id} = req.body
+
+    const formattedStartDate = startDate ? new Date(startDate) : null;
+    const formattedEndDate = endDate ? new Date(endDate) : null;
 
     const currentControl = await models.Control.findByPk(id);
     if (!currentControl) {
@@ -73,8 +80,8 @@ export const updateControl = async (req, res) => {
         name,
         description,
         period,
-        startDate,
-        endDate,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
         mashup_id,
         catalog_id
     }, {
