@@ -1,13 +1,16 @@
 import { Router } from "express";
 import {
-  getControls,
-  getControl,
-  getCatalogControls,
-  getInputControlsByControlId,
-  createControl,
-  updateControl,
-  deleteControl,
-  deleteInputControlsByControlId,
+    getControls,
+    getControl,
+    getCatalogControls,
+    getInputControlsByControlId,
+    createControl,
+    updateControl,
+    deleteControl,
+    deleteInputControlsByControlId,
+    addPanelToControl,
+    getPanelsByControlId,
+    deletePanelFromControl,
 } from "../controllers/control.controller.js";
 
 const router = Router();
@@ -18,6 +21,10 @@ router.get("/controls/:id", getControl);
 router.post("/controls", createControl);
 router.patch("/controls/:id", updateControl);
 router.delete("/controls/:id", deleteControl);
+
+router.get("/controls/:id/panels", getPanelsByControlId);
+router.post("/controls/:id/panel/:panelId", addPanelToControl);
+router.delete("/controls/:id/panels/:panelId", deletePanelFromControl);
 
 // Catalog controls
 router.get("/catalogs/:catalog_id/controls", getCatalogControls);
@@ -410,6 +417,143 @@ export default router;
  *                   type: string
  *       500:
  *         description: Failed to delete input controls
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /api/controls/{id}/panels:
+ *   get:
+ *     summary: Retrieve panels by control ID
+ *     tags: [Controls Panel]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The control ID to retrieve panels for
+ *     responses:
+ *       200:
+ *         description: A list of panels for the specified control ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   control_id:
+ *                     type: integer
+ *                   name:
+ *                     type: string
+ *       500:
+ *         description: Failed to retrieve panels
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /api/controls/{id}/panel/{panelId}:
+ *   post:
+ *     summary: Add a panel to a control
+ *     tags: [Controls Panel]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The control ID to which the panel will be added
+ *       - in: path
+ *         name: panelId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The panel ID to add
+ *     responses:
+ *       201:
+ *         description: Panel added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     control_id:
+ *                       type: integer
+ *                     name:
+ *                       type: string
+ *       500:
+ *         description: Failed to add panel to control
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /api/controls/{id}/panels/{panelId}:
+ *   delete:
+ *     summary: Delete a specific panel from a control
+ *     tags: [Controls Panel]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The control ID from which the panel will be deleted
+ *       - in: path
+ *         name: panelId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the panel to delete
+ *     responses:
+ *       204:
+ *         description: Panel deleted successfully
+ *       404:
+ *         description: Panel not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to delete panel
  *         content:
  *           application/json:
  *             schema:

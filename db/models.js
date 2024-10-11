@@ -11,6 +11,7 @@ import InputControl from "../src/models/input_control.model.js";
 import Configuration from "../src/models/configuration.model.js";
 import { associateModels } from "./model-utils.js";
 import Computation from "../src/models/computation.model.js";
+import Panel from "../src/models/panel.model.js";
 
 const models = {
     User,
@@ -22,6 +23,7 @@ const models = {
     Configuration,
     InputControl,
     Computation,
+    Panel,
 };
 
 try {

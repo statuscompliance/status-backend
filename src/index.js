@@ -9,6 +9,7 @@ import refresh from "./routes/refresh.routes.js";
 import assistantRoutes from "./routes/assistant.routes.js";
 import threadRoutes from "./routes/thread.routes.js";
 import configRoutes from "./routes/configuration.routes.js";
+import grafanaRoutes from "./routes/grafana.routes.js";
 import computationRoutes from "./routes/computation.routes.js";
 import cors from "cors";
 import { verifyAuthority } from "./middleware/verifyAuth.js";
@@ -57,6 +58,7 @@ app.use(endpointAvailable);
 app.use("/api", ghAccess);
 app.use("/api", refresh);
 app.use("/api", userRoutes);
+app.use("/api", grafanaRoutes);
 app.use(validateParams);
 app.use(verifyAuthority);
 app.use("/api", inputControlRoutes);
@@ -82,6 +84,7 @@ async function insertEndpointsToConfig() {
         "/api/user",
         "/api/input_controls",
         "/api/controls",
+        "/api/grafana",
         "/api/thread",
         "/api/catalogs",
         "/api/assistant",

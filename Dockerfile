@@ -1,10 +1,10 @@
-FROM node:21.6.1
+FROM node:lts-alpine
 
 WORKDIR /status-backend
 
 COPY . .
 
-RUN npm ci
-RUN npm install -g nodemon --unsafe-perm
+RUN npm ci --production && \
+    rm -rf $(npm get cache)
 
-ENTRYPOINT ["npm", "run", "dev"]
+ENTRYPOINT ["npm", "start"]

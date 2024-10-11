@@ -3,8 +3,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
 
-const nodeRedUrl = process.env.NODE_RED_URL;
-
 export async function signUp(req, res) {
     const { username, password, email } = req.body;
     const rows = await models.User.findAll({
@@ -41,6 +39,8 @@ function isValidNodeRedUrl(nodeRedUrl) {
 }
 
 async function getNodeRedToken(username, password) {
+    const nodeRedUrl = process.env.NODE_RED_URL;
+
     if (!isValidNodeRedUrl(nodeRedUrl)) {
         throw new Error("Invalid Node-RED URL");
     }
@@ -181,5 +181,20 @@ export async function getAuthority(req, res) {
         return res
             .status(401)
             .json({ message: "No token provided or it's malformed" });
+    }
+}
+
+export async function deleteUserById(req, res) {
+    const { id } = req.params;
+    try {
+        const user = await models.User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        await user.destroy();
+        return res.status(200).json({ message: "User deleted successfully" });
+    } catch (error) {
+        console.error("Error during delete user:", error);
+        return res.status(500).json({ message: "Internal server error" });
     }
 }
