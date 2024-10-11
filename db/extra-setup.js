@@ -7,6 +7,7 @@ export default function applyExtraSetup(sequelize) {
         Control,
         InputControl,
         Computation,
+        Panel,
     } = sequelize.models;
 
     User.hasMany(Thread);
@@ -23,4 +24,7 @@ export default function applyExtraSetup(sequelize) {
 
     Control.hasMany(Computation, { foreignKey: "control_id" });
     Computation.belongsTo(Control, { foreignKey: "control_id" });
+
+    Control.hasMany(Panel, { foreignKey: "control_id" });
+    Panel.belongsTo(Control, { foreignKey: "control_id" });
 }
