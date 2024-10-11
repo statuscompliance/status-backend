@@ -1,64 +1,100 @@
 name: Build and Push Docker Image
 
 on:
-  push:
-    branches:
-      - develop
-      - main
-    tags:
-      - "*.*.*"
-  pull_request:
-    branches:
-      - develop
-      - main
+    push:
+        branches:
+            - develop
+            - main
+        tags:
+            - "*.*.*"
+    pull_request:
+        branches:
+            - develop
+            - main
+        types:
+            - labeled
 
+env:
+    REGISTRY_IMAGE: ${{ secrets.DOCKER_USERNAME }}/status-backend
+    PR_ID: ${{ github.event.pull_request.number }}
+    TAG: ${GITHUB_REF#refs/tags/}
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+    build:
+        runs-on: ubuntu-latest
+        if: github.event.label.name, 'dockerize' || github.event_name == 'push'
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+        strategy:
+            fail-fast: false
+            matrix:
+                platform: ["amd64", "arm64"]
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          install: true
+        steps:
+            - name: Checkout ⬇️
+              uses: actions/checkout@v4.1.7
+              with:
+                  show-progress: false
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+            - name: Configure QEMU ⚙️
+              uses: docker/setup-qemu-action@v3.2.0
 
-      - name: Create Docker Buildx Builder
-        run: |
-          docker buildx create --name mybuilder --use
-          docker buildx inspect --bootstrap
+            - name: Configure Docker Buildx ⚙️
+              uses: docker/setup-buildx-action@v3.6.1
 
-      - name: Build and Push Docker Image (Develop)
-        if: github.ref == 'refs/heads/develop'
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --push \
-            -t ${{ secrets.DOCKER_USERNAME }}/status-backend:develop .
+            - name: Login to DockerHub 🔑
+              uses: docker/login-action@v3.3.0
+              with:
+                  username: ${{ secrets.DOCKER_USERNAME }}
+                  password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push Docker Image (Version Tags)
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          TAG=$(echo "${GITHUB_REF#refs/tags/}")
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --push \
-            -t ${{ secrets.DOCKER_USERNAME }}/status-backend:$TAG .
+            - name: Build and Push Docker Image (Develop)
+              if: github.ref == 'refs/heads/develop'
+              uses: docker/build-push-action@v6.7.0
+              with:
+                  context: .
+                  file: Dockerfile
+                  platforms: linux/amd64,linux/arm64
+                  push: true
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+                  tags: |
+                      ${{ env.REGISTRY_IMAGE }}:develop
 
-      - name: Build and Push Docker Image for Pull Request
-        if: github.event_name == 'pull_request'
-        run: |
-          PR_ID=${{ github.event.pull_request.number }}
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --push \
-            -t ${{ secrets.DOCKER_USERNAME }}/status-backend:PR.$PR_ID .
+            - name: Build and Push Docker Image (Version Tags)
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: docker/build-push-action@v6.7.0
+              with:
+                  context: .
+                  file: Dockerfile
+                  platforms: linux/amd64,linux/arm64
+                  push: true
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+                  tags: |
+                      ${{ env.REGISTRY_IMAGE }}:${{ env.TAG }}
+
+            - name: Build and Push Docker Image for Pull Request
+              if: github.event_name == 'pull_request'
+              uses: docker/build-push-action@v6.7.0
+              with:
+                  context: .
+                  file: Dockerfile
+                  platforms: linux/amd64,linux/arm64
+                  push: true
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+                  tags: |
+                      ${{ env.REGISTRY_IMAGE }}:PR.${{ env.PR_ID }}
+
+            - name: Build and Push Docker Image for Workflow Dispatch
+              if: github.event_name == 'workflow_dispatch'
+              uses: docker/build-push-action@v6.7.0
+              with:
+                  context: .
+                  file: Dockerfile
+                  platforms: linux/amd64,linux/arm64
+                  push: true
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+                  tags: |
+                      ${{ env.REGISTRY_IMAGE }}:latest
