@@ -294,7 +294,16 @@ export async function addDashboardPanel(req, res) {
             folderUid: dashboardMetadata.folderUid,
             overwrite: true,
         });
-        return res.status(201).json(response.data);
+
+        return res.status(201).json({
+            panelId: newPanelId,
+            title: newPanel.title,
+            type: newPanel.type,
+            rawSql: newPanel.targets[0].rawSql,
+            displayName: newPanel.fieldConfig.defaults.displayName,
+            gridPos: newPanel.gridPos,
+            ...response.data,
+        });
     } catch (error) {
         if (error.response) {
             const { status } = error.response;
