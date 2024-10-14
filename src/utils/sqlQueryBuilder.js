@@ -9,7 +9,7 @@
  * @param {string} [sql.groupBy] - Columna por la que se agruparán los resultados.
  * @param {string} [sql.orderByAttr] - Columna por la que se ordenarán los resultados.
  * @param {string} [sql.orderDirection='ASC'] - Dirección de orden (ASC o DESC).
- * @param {string} [sql.table='Computations'] - Nombre de la tabla, por defecto 'Computations'.
+ * @param {string} [sql.table='computation'] - Nombre de la tabla, por defecto 'computation'.
  *
  * @returns {string} - La consulta SQL generada.
  */
@@ -22,7 +22,7 @@ function createSQLQuery({
     groupBy,
     orderByAttr,
     orderDirection,
-    table = "Computations",
+    table = "computation",
 }) {
     let query = `SELECT `;
 
@@ -39,7 +39,6 @@ function createSQLQuery({
         query += columns.map((col) => `${col}`).join(", ");
     }
 
-    // Default to select all columns if none are provided
     if (aggregations.length === 0 && columns.length === 0) {
         query += "*";
     }
@@ -49,7 +48,15 @@ function createSQLQuery({
     // WHERE
     if (whereConditions.length > 0) {
         const whereClause = whereConditions
-            .map((cond) => `${cond.key} ${cond.operator} '${cond.value}'`)
+            .map((cond) => {
+                const value =
+                    typeof cond.value === "number" ||
+                    cond.value === true ||
+                    cond.value === false
+                        ? cond.value
+                        : `'${cond.value}'`;
+                return `${cond.key} ${cond.operator} ${value}`;
+            })
             .join(` ${whereLogic} `);
         query += ` WHERE (${whereClause})`;
     }
@@ -80,7 +87,7 @@ function parseSQLQuery(query) {
         groupBy: null,
         orderByAttr: null,
         orderDirection: null,
-        table: "Computations",
+        table: "computation",
     };
 
     // Table
@@ -95,7 +102,7 @@ function parseSQLQuery(query) {
         const selectFields = selectMatch[1].split(",");
         selectFields.forEach((field) => {
             field = field.trim();
-            const aggMatch = field.match(/(\w+)\((\w+)\)/); // ej: SUM(amount)
+            const aggMatch = field.match(/(\w+)\((\*)\)/); // ej: COUNT(*)
             if (aggMatch) {
                 result.aggregations.push({
                     func: aggMatch[1],
@@ -118,7 +125,7 @@ function parseSQLQuery(query) {
             result.whereConditions.push({
                 key: key.trim(),
                 operator: operator.trim(),
-                value: value.replace(/['"]/g, "").trim(),
+                value: parseWhereValue(value.trim()),
             });
         } else {
             result.whereLogic = conditions[1].toUpperCase() || "AND"; // AND or OR
@@ -130,7 +137,7 @@ function parseSQLQuery(query) {
                     result.whereConditions.push({
                         key: key.trim(),
                         operator: operator.trim(),
-                        value: value.replace(/['"]/g, "").trim(),
+                        value: parseWhereValue(value.trim()),
                     });
                 }
             });
@@ -155,13 +162,26 @@ function parseSQLQuery(query) {
     return result;
 }
 
+function parseWhereValue(value) {
+    if (value.toLowerCase() === "true") {
+        return true;
+    }
+    if (value.toLowerCase() === "false") {
+        return false;
+    }
+    if (!isNaN(value)) {
+        return value;
+    }
+    return value.replace(/['"]/g, "");
+}
+
 export { createSQLQuery, parseSQLQuery };
 
 /* EJEMPLOS
-SELECT * FROM statusdb.Computations
+SELECT * FROM statusdb.computation
 {}
 
-SELECT id, date FROM statusdb.Computations WHERE (id > '5' AND limit < '5')
+SELECT id, date FROM statusdb.computation WHERE (id > '5' AND limit < '5')
 {
     "columns": ["id", "date"],
     "whereConditions": [
@@ -171,7 +191,7 @@ SELECT id, date FROM statusdb.Computations WHERE (id > '5' AND limit < '5')
     "whereLogic": "AND"
 }
 
-SELECT COUNT(limit), MAX(date) FROM statusdb.Computations
+SELECT COUNT(limit), MAX(date) FROM statusdb.computation
 {
     "aggregations": [
         { "func": "COUNT", "attr": "limit" },
@@ -179,7 +199,7 @@ SELECT COUNT(limit), MAX(date) FROM statusdb.Computations
     ]
 }
 
-SELECT COUNT(limit) FROM statusdb.Computations WHERE (available != '5' OR active = '1') GROUP BY limit
+SELECT COUNT(limit) FROM statusdb.computation WHERE (available != '5' OR active = '1') GROUP BY limit
 {
     "aggregations": [
         { "func": "COUNT", "attr": "limit" }
@@ -192,14 +212,14 @@ SELECT COUNT(limit) FROM statusdb.Computations WHERE (available != '5' OR active
     "groupBy": "limit"
 }
 
-SELECT id FROM statusdb.Computations ORDER BY limit ASC
+SELECT id FROM statusdb.computation ORDER BY limit ASC
 {
     "columns": ["id"],
     "orderByAttr": "limit",
     "orderDirection": "ASC"
 }
 
-SELECT COUNT(limit), id FROM statusdb.Computations WHERE (id > '5' AND limit <= '10')
+SELECT COUNT(limit), id FROM statusdb.computation WHERE (id > '5' AND limit <= '10')
 {
     "columns": ["id"],
     "aggregations": [
