@@ -489,6 +489,15 @@ export default router;
  *           type: string
  *         required: true
  *         description: The panel ID to add
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               dashboardUid:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Panel added successfully

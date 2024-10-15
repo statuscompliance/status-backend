@@ -9,6 +9,11 @@ const Panel = sequelize.define(
             primaryKey: true,
             defaultValue: UUIDV4,
         },
+        dashboardUid: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: null,
+        },
     },
     {
         tableName: "panel",
@@ -28,8 +33,16 @@ export default Panel;
  *        id:
  *          type: string
  *          description: The unique identifier for the panel (UUID)
+ *        dashboardUid:
+ *          type: string
+ *          description: The unique identifier for the dashboard (UUID)
+ *        control_id:
+ *          type: integer
+ *          description: The unique identifier for the control
  *      required:
  *        - id
+ *        - dashboardUid
+ *        - control_id
  *      example:
  *        id: "e9c7d71c-90b3-4c1c-bd84-3f1c73392b3c"
  */

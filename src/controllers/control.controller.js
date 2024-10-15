@@ -1,4 +1,5 @@
 import models from "../../db/models.js";
+import { methods } from "../grafana.js";
 
 export const getControls = async (req, res) => {
     const rows = await models.Control.findAll();
@@ -141,10 +142,13 @@ export const deleteInputControlsByControlId = async (req, res) => {
 export async function addPanelToControl(req, res) {
     const { id, panelId } = req.params;
 
+    const { dashboardUid } = req.body;
+
     try {
         const panel = await models.Panel.create({
             id: panelId,
             control_id: id,
+            dashboardUid: dashboardUid,
         });
         res.status(201).json({
             message: "Panel added to control",
