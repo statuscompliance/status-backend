@@ -141,6 +141,8 @@ export const deleteInputControlsByControlId = async (req, res) => {
 
 export async function addPanelToControl(req, res) {
     const { id, panelId } = req.params;
+    console.log(req.body);
+    console.log(req.params);
 
     const { dashboardUid } = req.body;
 
@@ -155,6 +157,7 @@ export async function addPanelToControl(req, res) {
             data: panel,
         });
     } catch (error) {
+        console.log(error);
         res.status(500).json({
             message: "Error adding panel to control",
             error: error.message,
@@ -171,7 +174,34 @@ export async function getPanelsByControlId(req, res) {
                 control_id: id,
             },
         });
-        res.status(200).json(panels);
+        let panelsDTO = [];
+
+        // THIS MUST BE CACHED AND REFACTORED
+        for (let panel of panels) {
+            panel = panel.dataValues;
+            let panelDTO = {};
+            if (Object.prototype.hasOwnProperty.call(panel, "dashboardUid")) {
+                const dashboardUid = panel.dashboardUid;
+                const dashboardResponse =
+                    await methods.dashboard.getDashboardByUID(dashboardUid);
+                const actualDashboard = dashboardResponse.data.dashboard;
+                console.log(panel.id);
+                const panelElement = actualDashboard.panels.find(
+                    (e) => e.id == panel.id
+                );
+                panelDTO = {
+                    ...panel,
+                    title: panelElement.title,
+                    type: panelElement.type,
+                    sqlQuery: panelElement.targets[0].rawSql,
+                    table: panelElement.targets[0].table,
+                    displayName: panelElement.targets[0].alias,
+                    gridPos: panelElement.gridPos,
+                };
+                panelsDTO.push(panelDTO);
+            }
+        }
+        res.status(200).json(panelsDTO);
     } catch (error) {
         res.status(500).json({
             message: "Error getting panels by control id",
