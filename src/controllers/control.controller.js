@@ -185,7 +185,6 @@ export async function getPanelsByControlId(req, res) {
                 const dashboardResponse =
                     await methods.dashboard.getDashboardByUID(dashboardUid);
                 const actualDashboard = dashboardResponse.data.dashboard;
-                console.log(panel.id);
                 const panelElement = actualDashboard.panels.find(
                     (e) => e.id == panel.id
                 );
@@ -203,10 +202,19 @@ export async function getPanelsByControlId(req, res) {
         }
         res.status(200).json(panelsDTO);
     } catch (error) {
-        res.status(500).json({
-            message: "Error getting panels by control id",
-            error: error.message,
-        });
+        if (error.response) {
+            const { status, statusText } = error.response;
+            return res.status(status).json({
+                message: statusText,
+                error: error,
+            });
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to get panels from control, error in Grafana API",
+                error: error.message,
+            });
+        }
     }
 }
 
