@@ -1,4 +1,3 @@
-import { query } from "express";
 import { methods } from "../grafana.js";
 import createPanelTemplate from "../utils/panelStructures.js";
 import { createSQLQuery, parseSQLQuery } from "../utils/sqlQueryBuilder.js";
