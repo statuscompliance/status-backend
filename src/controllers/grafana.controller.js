@@ -76,6 +76,46 @@ export async function createServiceAccountToken(req, res) {
     }
 }
 
+export async function getFolders(req, res) {
+    try {
+        const response = await methods.folder.getFolders();
+        return res.status(200).json(response.data);
+    } catch (error) {
+        if (error.response) {
+            const { status } = error.response;
+            return res.status(status).json(error);
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to retrieve folders in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
+export async function getFolderDashboardsByUID(req, res) {
+    try {
+        const folderUid = req.params.uid;
+        let folderUidArray = [folderUid];
+        const response = await methods.search.search({
+            folderUid: folderUidArray,
+        });
+        return res.status(200).json(response.data);
+    } catch (error) {
+        if (error.response) {
+            const { status } = error.response;
+            return res.status(status).json(error);
+        } else {
+            return res.status(500).json({
+                message:
+                    "Failed to retrieve dashboards in Grafana due to server error",
+                error: error.message,
+            });
+        }
+    }
+}
+
 export async function createFolder(req, res) {
     try {
         const newUID = crypto.randomUUID();

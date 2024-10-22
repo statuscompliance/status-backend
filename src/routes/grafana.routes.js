@@ -20,6 +20,8 @@ import {
     deletePanelByID,
     updatePanelByID,
     getPanelsByDashboardUID,
+    getFolders,
+    getFolderDashboardsByUID,
 } from "../controllers/grafana.controller.js";
 
 const router = Router();
@@ -30,8 +32,10 @@ router.get("/grafana/serviceaccount/:id", getServiceAccountById);
 router.post("/grafana/serviceaccount/:id/token", createServiceAccountToken);
 
 //FOLDER
+router.get("/grafana/folder", getFolders);
 router.post("/grafana/folder", createFolder);
 router.get("/grafana/folder/:uid", getFolderByUID);
+router.get("/grafana/folder/:uid/dashboard", getFolderDashboardsByUID);
 
 //DASHBOARD
 router.post("/grafana/dashboard", createDashboard);
@@ -70,6 +74,13 @@ export default router;
  * tags:
  *   name: Grafana Dashboards
  *   description: Grafana Dashboards management
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Grafana Folders
+ *   description: Grafana Folders management
  */
 
 /**
@@ -416,9 +427,78 @@ export default router;
 /**
  * @swagger
  * /api/grafana/folder:
+ *   get:
+ *     summary: Retrieves all folders from Grafana
+ *     tags: [Grafana Folders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Folders retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: ID of the folder
+ *                   uid:
+ *                     type: string
+ *                     description: UID of the folder
+ *                   title:
+ *                     type: string
+ *                     description: Title of the folder
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "UnauthorizedError"
+ *                 message:
+ *                   type: string
+ *                   example: "Request is not authenticated."
+ *                 status:
+ *                   type: string
+ *                   example: "401"
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "ForbiddenError"
+ *                 message:
+ *                   type: string
+ *                   example: "Insufficient permissions."
+ *                 status:
+ *                   type: string
+ *                   example: "403"
+ *       500:
+ *         description: Internal Server Error - Failed to retrieve folders
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "InternalServerError"
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to retrieve folders in Grafana due to server error."
  *   post:
  *     summary: Creates a new folder in Grafana
- *     tags: [Grafana Dashboards]
+ *     tags: [Grafana Folders]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -526,7 +606,7 @@ export default router;
  * /api/grafana/folder/{uid}:
  *   get:
  *     summary: Retrieves a folder by UID from Grafana
- *     tags: [Grafana Dashboards]
+ *     tags: [Grafana Folders]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -610,6 +690,87 @@ export default router;
  *                   type: string
  *                   description: Detailed error message
  *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /api/grafana/folder/{uid}/dashboard:
+ *   get:
+ *     summary: Retrieves dashboards for a specific folder by UID
+ *     tags: [Grafana Folders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: UID of the folder to retrieve dashboards from
+ *     responses:
+ *       200:
+ *         description: Dashboards retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: ID of the dashboard
+ *                   uid:
+ *                     type: string
+ *                     description: UID of the dashboard
+ *                   title:
+ *                     type: string
+ *                     description: Title of the dashboard
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "UnauthorizedError"
+ *                 message:
+ *                   type: string
+ *                   example: "Request is not authenticated."
+ *                 status:
+ *                   type: string
+ *                   example: "401"
+ *       422:
+ *         description: Unprocessable Entity - Invalid folder UID provided
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "UnprocessableEntityError"
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid UID for folder."
+ *                 status:
+ *                   type: string
+ *                   example: "422"
+ *       500:
+ *         description: Internal Server Error - Failed to retrieve dashboards
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "InternalServerError"
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to retrieve dashboards in Grafana due to server error."
  */
 
 /**
@@ -1056,6 +1217,8 @@ export default router;
  *   delete:
  *     summary: Deletes a specific Grafana Dashboard by UID
  *     tags: [Grafana Dashboards]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: uid
@@ -1106,6 +1269,8 @@ export default router;
  *   post:
  *     summary: Creates a new Grafana Dashboards
  *     tags: [Grafana Dashboards]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -1528,6 +1693,8 @@ export default router;
  *   get:
  *     summary: Retrieves all panels in a specific Grafana Dashboard
  *     tags: [Grafana Dashboards]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: uid
@@ -1613,6 +1780,8 @@ export default router;
  *   patch:
  *     summary: Updates a specific panel in a Grafana Dashboard
  *     tags: [Grafana Dashboards]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: uid
@@ -1763,6 +1932,8 @@ export default router;
  *   delete:
  *     summary: Deletes a specific panel from a Grafana Dashboard
  *     tags: [Grafana Dashboards]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: uid
@@ -1820,6 +1991,8 @@ export default router;
  *   get:
  *     summary: Retrieves queries and metadata of all panels in a Grafana Dashboard
  *     tags: [Grafana Dashboards]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: uid
@@ -1889,6 +2062,8 @@ export default router;
  *   get:
  *     summary: Retrieves the raw SQL query of a specific panel in a Grafana Dashboards
  *     tags: [Grafana Dashboards]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: uid
