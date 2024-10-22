@@ -85,16 +85,3 @@ jobs:
                   cache-to: type=gha,mode=max
                   tags: |
                       ${{ env.REGISTRY_IMAGE }}:PR.${{ env.PR_ID }}
-
-            - name: Build and Push Docker Image for Workflow Dispatch
-              if: github.event_name == 'workflow_dispatch'
-              uses: docker/build-push-action@v6.7.0
-              with:
-                  context: .
-                  file: Dockerfile
-                  platforms: linux/amd64,linux/arm64
-                  push: true
-                  cache-from: type=gha
-                  cache-to: type=gha,mode=max
-                  tags: |
-                      ${{ env.REGISTRY_IMAGE }}:latest
