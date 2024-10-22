@@ -1,3 +1,4 @@
+import { query } from "express";
 import { methods } from "../grafana.js";
 import createPanelTemplate from "../utils/panelStructures.js";
 import { createSQLQuery, parseSQLQuery } from "../utils/sqlQueryBuilder.js";
@@ -96,12 +97,22 @@ export async function getFolders(req, res) {
 
 export async function getFolderDashboardsByUID(req, res) {
     try {
-        const folderUid = req.params.uid;
-        let folderUidArray = [folderUid];
-        const response = await methods.search.search({
-            folderUid: folderUidArray,
-        });
-        return res.status(200).json(response.data);
+        const folderUid = req.params.uid === "{uid}" ? "" : req.params.uid;
+        const response = await methods.search.search(
+            undefined,
+            undefined,
+            "dash-db",
+            undefined,
+            undefined,
+            undefined,
+            folderUid,
+            undefined,
+            undefined
+        );
+        const dashboards = response.data.filter((dashboard) =>
+            folderUid === "" ? !dashboard.folderUid : true
+        );
+        return res.status(200).json(dashboards);
     } catch (error) {
         if (error.response) {
             const { status } = error.response;

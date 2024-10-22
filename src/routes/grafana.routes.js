@@ -705,7 +705,6 @@ export default router;
  *         name: uid
  *         schema:
  *           type: string
- *         required: true
  *         description: UID of the folder to retrieve dashboards from
  *     responses:
  *       200:
