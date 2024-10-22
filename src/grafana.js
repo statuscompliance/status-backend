@@ -4,6 +4,7 @@ import {
     DatasourcesApi,
     DashboardsApi,
     Configuration,
+    SearchApi,
 } from "../grafana-client/index";
 import axios from "axios";
 
@@ -26,4 +27,5 @@ export const methods = {
     folder: new FoldersApi(config, "", axiosInstance),
     datasource: new DatasourcesApi(config, "", axiosInstance),
     dashboard: new DashboardsApi(config, "", axiosInstance),
+    search: new SearchApi(config, "", axiosInstance),
 };
