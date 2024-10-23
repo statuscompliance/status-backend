@@ -158,19 +158,18 @@ export async function getAuthority(req, res) {
     const accessToken = auth?.split(" ")?.[1];
 
     try {
-        if (!auth || !accessToken) {
-            throw new Error();
-        } else {
+        if (auth || accessToken) {
             const { authority } = jwt.verify(
                 accessToken,
                 process.env.JWT_SECRET
             );
-            res.status(200).json({ authority });
+            return res.status(200).json({ authority });
         }
-    } catch {
         return res
             .status(401)
             .json({ message: "No token provided or it's malformed" });
+    } catch {
+        return res.status(403).json({ message: "Invalid token" });
     }
 }
 
