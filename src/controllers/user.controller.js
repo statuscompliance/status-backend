@@ -1,7 +1,7 @@
 import models from "../../db/models.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import axios from "axios";
+import nodered from "../nodered.js";
 
 export async function signUp(req, res) {
     const { username, password, email } = req.body;
@@ -33,19 +33,9 @@ export async function signUp(req, res) {
     }
 }
 
-function isValidNodeRedUrl(nodeRedUrl) {
-    const urlPattern = /^(http:\/\/|https:\/\/)[a-zA-Z0-9.-]+(:\d+)?$/;
-    return urlPattern.test(nodeRedUrl);
-}
-
 async function getNodeRedToken(username, password) {
-    const nodeRedUrl = process.env.NODE_RED_URL;
-
-    if (!isValidNodeRedUrl(nodeRedUrl)) {
-        throw new Error("Invalid Node-RED URL");
-    }
     try {
-        const response = await axios.post(`${nodeRedUrl}/auth/token`, {
+        const response = await nodered.post("/auth/token", {
             client_id: "node-red-admin",
             grant_type: "password",
             scope: "*",
