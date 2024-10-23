@@ -1,9 +1,4 @@
 import models from "../../db/models.js";
-import fs from "fs/promises";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export const getCatalogs = async (req, res) => {
     const catalogs = await models.Catalog.findAll();
