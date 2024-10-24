@@ -1,25 +1,53 @@
-import {pool} from '../db.js'
+import models from '../../db/models.js'
 
 export const getInputControls = async (req, res) => {
-    const [rows] = await pool.query('SELECT * FROM input_control')
+    const rows = await models.InputControl.findAll();
     res.json(rows)
 }
 
 export const getInputControl = async (req, res) => {
-    const [rows] = await pool.query('SELECT * FROM input_control WHERE id = ?', [req.params.id])
+    const row = await models.InputControl.findByPk(req.params.id);
 
-    if(rows.length <= 0) return res.status(404).json({
-        message: 'InputControl not found'
-    })
-
-    res.json(rows[0])
+    if (!row)
+        return res.status(404).json({
+          message: "InputControl not found",
+        });
+    
+    res.json(row);
 }
+
+export const getValuesByInputIdAndControlId = async (req, res) => {
+    const {input_id, control_id} = req.params
+
+    let result = await models.InputControl.findOne({
+        where: {
+            input_id: input_id,
+            control_id: control_id
+        }
+    });
+
+    if (result <= 0)
+        result = ""
+    
+    res.json(result);
+};
 
 export const createInputControl = async (req, res) => {
     const {value, input_id, control_id} = req.body
-    const [rows] = await pool.query('INSERT INTO input_control (value,input_id,control_id) VALUES(?,?,?)', [value,input_id,control_id])
+
+    if (!await models.Control.findByPk(control_id))
+        return res.status(404).json({
+          message: "Control not found",
+        });
+
+    const row = await models.InputControl.create({
+        value,
+        input_id,
+        control_id
+    });
+
     res.send({
-        id: rows.insertId,
+        id: row.id,
         value,
         input_id,
         control_id,
@@ -30,23 +58,36 @@ export const updateInputControl = async (req, res) => {
     const {id} = req.params
     const {value, input_id, control_id} = req.body
 
-    const [result] = await pool.query('UPDATE input_control SET value = IFNULL(?, value), input_id = IFNULL(?, input_id), control_id = IFNULL(?, control_id) WHERE id = ?', [value, input_id, control_id, id])
+    const currentInputControl = await models.InputControl.findByPk(id);
+    if (!currentInputControl) {
+        return res.status(404).json({ message: 'InputControl not found' });
+    }
 
-    if(result.affectedRows <= 0) return res.status(404).json({
-        message: 'InputControl not found'
-    })
-
-    const [rows] = await pool.query('SELECT * FROM input_control WHERE id = ?', [id])
-
-    res.json(rows[0])
+    await models.InputControl.update({
+        value,
+        input_id,
+        control_id
+    }, {
+        where: {
+            id
+        }
+    });
+    
+    const row = await models.InputControl.findByPk(id);
+    res.json(row);
 }
 
 export const deleteInputControl = async (req, res) => {
-    const [result] = await pool.query('DELETE FROM input_control WHERE id = ?', [req.params.id])
+    const result = await models.InputControl.destroy({
+        where: {
+            id: req.params.id
+        }
+    });
 
-    if(result.affectedRows <= 0) return res.status(404).json({
-        message: 'InputControl not found'
-    })
-
-    res.sendStatus(204)
+    if (result <= 0)
+        return res.status(404).json({
+          message: "InputControl not found",
+        });
+    
+    res.sendStatus(204);
 }
