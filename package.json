@@ -7,8 +7,7 @@
     "scripts": {
         "dev": "nodemon --exec 'tsx --env-file=.env' src/index.js",
         "start": "tsx --env-file=.env src/index.js",
-        "db": "node db/database.js",
-        "preinstall": "npx npm-force-resolutions"
+        "db": "node db/database.js"
     },
     "keywords": [],
     "author": "",
@@ -29,14 +28,6 @@
         "tsx": "4.19.1"
     },
     "devDependencies": {
-        "nodemon": "3.1.7",
-        "npm-force-resolutions": "0.0.10"
-    },
-    "overrides": {
-        "cookie": "0.7.2"
-    },
-    "resolutions": {
-        "cookie": "0.7.2",
-        "send": "1.1.0"
+        "nodemon": "3.1.7"
     }
 }
