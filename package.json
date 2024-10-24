@@ -33,10 +33,10 @@
         "npm-force-resolutions": "0.0.10"
     },
     "overrides": {
-        "cookie": "0.7.2"
+        "cookie": "1.0.1"
     },
     "resolutions": {
-        "cookie": "0.7.2",
+        "cookie": "1.0.1",
         "send": "0.19.0"
     }
 }
