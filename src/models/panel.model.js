@@ -5,7 +5,7 @@ const Panel = sequelize.define(
     "Panel",
     {
         uid: {
-            type: UUIDV4,
+            type: DataTypes.UUID,
             primaryKey: true,
             allowNull: false,
             defaultValue: UUIDV4,
