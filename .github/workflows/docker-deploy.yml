@@ -17,7 +17,7 @@ on:
 env:
     REGISTRY_IMAGE: ${{ secrets.DOCKER_USERNAME }}/status-backend
     PR_ID: ${{ github.event.pull_request.number }}
-    TAG: ${GITHUB_REF#refs/tags/}
+    TAG: ${{ github.ref_name }}
 
 jobs:
     build:
