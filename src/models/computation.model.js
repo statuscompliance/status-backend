@@ -24,7 +24,7 @@ const Computation = sequelize.define(
     },
     {
         tableName: "computation",
-        timestamps: false,
+        timestamps: true,
     }
 );
 
