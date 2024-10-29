@@ -256,7 +256,7 @@ export default router;
  *         name: createdAt
  *         schema:
  *           type: string
- *           format: date-time
+ *           format: date
  *         required: true
  *         description: The creation date of the computation
  *     security:
@@ -295,6 +295,13 @@ export default router;
  *           format: id
  *         required: true
  *         description: The control ID
+ *       - in: path
+ *         name: createdAt
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: true
+ *         description: The creation date of the computation
  *     requestBody:
  *       required: true
  *       content:
@@ -302,10 +309,6 @@ export default router;
  *           schema:
  *             type: object
  *             properties:
- *               createdAt:
- *                 type: string
- *                 format: date-time
- *                 description: The creation date of the computation
  *               start_compute:
  *                 type: string
  *                 format: date-time
