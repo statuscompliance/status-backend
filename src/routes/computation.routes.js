@@ -8,6 +8,8 @@ import {
     bulkCreateComputations,
     deleteComputations,
     deleteComputationByControlId,
+    getComputationsByControlIdAndCreationDate,
+    setComputeIntervalBytControlIdAndCreationDate,
 } from "../controllers/computation.controller.js";
 
 const router = Router();
@@ -15,11 +17,19 @@ const router = Router();
 router.get("/computation", getComputations);
 router.delete("/computation", deleteComputations);
 router.get("/computation/:id", getComputationsById);
-router.get("/control/:control_id/computations", getComputationsByControlId);
+router.get("/controls/:control_id/computations", getComputationsByControlId);
+router.get(
+    "/controls/:control_id/computations/:createdAt",
+    getComputationsByControlIdAndCreationDate
+);
+router.put(
+    "/controls/:control_id/computations",
+    setComputeIntervalBytControlIdAndCreationDate
+);
 router.post("/computation", createComputation);
 router.post("/computations", bulkCreateComputations);
 router.delete(
-    "/control/:control_id/computations",
+    "/controls/:control_id/computations",
     deleteComputationByControlId
 );
 
@@ -194,7 +204,7 @@ export default router;
 
 /**
  * @swagger
- * /api/control/{control_id}/computations:
+ * /api/controls/{control_id}/computations:
  *   get:
  *     summary: Retrieves computations by control ID
  *     tags: [Controls]
@@ -202,8 +212,8 @@ export default router;
  *       - in: path
  *         name: control_id
  *         schema:
- *           type: string
- *           format: uuid
+ *           type: integer
+ *           format: id
  *         required: true
  *         description: The control ID
  *     security:
@@ -230,7 +240,97 @@ export default router;
 
 /**
  * @swagger
- * /api/control/{control_id}/computations:
+ * /api/controls/{control_id}/computations/{createdAt}:
+ *   get:
+ *     summary: Retrieves computations by control ID and creation date
+ *     tags: [Controls]
+ *     parameters:
+ *       - in: path
+ *         name: control_id
+ *         schema:
+ *           type: integer
+ *           format: id
+ *         required: true
+ *         description: The control ID
+ *       - in: path
+ *         name: createdAt
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: true
+ *         description: The creation date of the computation
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of computations for the control with the specified creation date
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Computation'
+ *       500:
+ *         description: Failed to get computations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /api/controls/{control_id}/computations:
+ *   put:
+ *     summary: Sets compute interval for a computation by control ID and creation date
+ *     tags: [Controls]
+ *     parameters:
+ *       - in: path
+ *         name: control_id
+ *         schema:
+ *           type: integer
+ *           format: id
+ *         required: true
+ *         description: The control ID
+ *       - in: path
+ *         name: createdAt
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: true
+ *         description: The creation date of the computation
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               start_compute:
+ *                 type: string
+ *                 format: date-time
+ *                 description: The start time of the computation interval
+ *               end_compute:
+ *                 type: string
+ *                 format: date-time
+ *                 description: The end time of the computation interval
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       204:
+ *         description: Successfully updated the computation interval
+ *       500:
+ *         description: Failed to update computation
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
  *   delete:
  *     summary: Deletes computations by control ID
  *     tags: [Controls]
@@ -238,8 +338,8 @@ export default router;
  *       - in: path
  *         name: control_id
  *         schema:
- *           type: string
- *           format: uuid
+ *           type: integer
+ *           format: id
  *         required: true
  *         description: The control ID
  *     security:

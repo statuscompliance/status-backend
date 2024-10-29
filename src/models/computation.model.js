@@ -21,10 +21,18 @@ const Computation = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false,
         },
+        start_compute: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        end_compute: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
     },
     {
         tableName: "computation",
-        timestamps: false,
+        timestamps: true,
     }
 );
 

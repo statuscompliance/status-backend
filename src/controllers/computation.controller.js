@@ -1,4 +1,5 @@
 import models from "../../db/models.js";
+import { Op } from "sequelize";
 
 export async function getComputations(req, res) {
     try {
@@ -33,6 +34,50 @@ export async function getComputationsByControlId(req, res) {
     } catch (error) {
         res.status(500).json({
             message: `Failed to get computations, error: ${error.message}`,
+        });
+    }
+}
+
+export async function getComputationsByControlIdAndCreationDate(req, res) {
+    try {
+        const { control_id, createdAt } = req.params;
+
+        const startOfDay = new Date(createdAt);
+        startOfDay.setUTCHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(createdAt);
+        endOfDay.setUTCHours(23, 59, 59, 999);
+
+        const computations = await models.Computation.findAll({
+            where: {
+                control_id,
+                createdAt: {
+                    [Op.between]: [startOfDay, endOfDay],
+                },
+            },
+        });
+
+        res.status(200).json(computations);
+    } catch (error) {
+        res.status(500).json({
+            message: `Failed to get computations, error: ${error.message}`,
+        });
+    }
+}
+
+export async function setComputeIntervalBytControlIdAndCreationDate(req, res) {
+    try {
+        const { start_compute, end_compute } = req.body;
+        const { control_id, createdAt } = req.params;
+
+        const computation = await models.Computation.update(
+            { start_compute, end_compute },
+            { where: { control_id, createdAt } }
+        );
+        res.status(204).json(computation);
+    } catch (error) {
+        res.status(500).json({
+            message: `Failed to update computation, error: ${error.message}`,
         });
     }
 }
