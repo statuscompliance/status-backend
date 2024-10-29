@@ -37,6 +37,37 @@ export async function getComputationsByControlId(req, res) {
     }
 }
 
+export async function getComputationsByControlIdAndCreationDate(req, res) {
+    try {
+        const { control_id, createdAt } = req.params;
+        const computations = await models.Computation.findAll({
+            where: { control_id, createdAt },
+        });
+        res.status(200).json(computations);
+    } catch (error) {
+        res.status(500).json({
+            message: `Failed to get computations, error: ${error.message}`,
+        });
+    }
+}
+
+export async function setComputeIntervalBytControlIdAndCreationDate(req, res) {
+    try {
+        const { createdAt, start_compute, end_compute } = req.body;
+        const { control_id } = req.params;
+
+        const computation = await models.Computation.update(
+            { start_compute, end_compute },
+            { where: { control_id, createdAt } }
+        );
+        res.status(204).json(computation);
+    } catch (error) {
+        res.status(500).json({
+            message: `Failed to update computation, error: ${error.message}`,
+        });
+    }
+}
+
 export async function createComputation(req, res) {
     try {
         const computation = req.body;
