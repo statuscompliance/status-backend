@@ -3,6 +3,9 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import nodered from '../config/nodered.js';
 
+const token_expiration = parseInt(process.env.JWT_EXPIRATION) || 3600;
+const refreshToken_expiration = parseInt(process.env.JWT_REFRESH_EXPIRATION) || 3600 * 24 * 7;
+
 export async function signUp(req, res) {
   const { username, password, email } = req.body;
   const rows = await models.User.findAll({
@@ -84,7 +87,7 @@ export async function signIn(req, res) {
           authority: user.authority,
         },
         process.env.REFRESH_JWT_SECRET,
-        { expiresIn: '1d' }
+        { expiresIn: '7d' }
       );
 
       await models.User.update(
@@ -93,6 +96,10 @@ export async function signIn(req, res) {
       );
 
       const nodeRedToken = await getNodeRedToken(username, password);
+
+      res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: token_expiration * 1000, sameSite: 'none', secure: false });
+      res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: refreshToken_expiration * 1000, sameSite: 'none', secure: false });
+      res.cookie('nodeRedToken', nodeRedToken, { httpOnly: true, maxAge: refreshToken_expiration * 1000, sameSite: 'none', secure: false });
 
       res.status(200).json({
         username: username,
@@ -153,12 +160,10 @@ export async function getUsers(req, res) {
 }
 
 export async function getAuthority(req, res) {
-  const auth =
-        req.headers?.['authorization'] ?? req.headers?.['Authorization'];
-  const accessToken = auth?.split(' ')?.[1];
+  const accessToken = req.cookies?.accessToken;
 
   try {
-    if (auth || accessToken) {
+    if (accessToken) {
       const { authority } = jwt.verify(
         accessToken,
         process.env.JWT_SECRET

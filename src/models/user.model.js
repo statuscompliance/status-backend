@@ -34,10 +34,10 @@ export default User;
  * @swagger
  * components:
  *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
+ *     accessToken:
+ *       type: apiKey
+ *       in: cookie
+ *       name: accessToken
  */
 
 /**

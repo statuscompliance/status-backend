@@ -1,18 +1,10 @@
 import jwt from 'jsonwebtoken';
 
 export function verifyAuthority(req, res, next) {
-  if (
-    req.headers['authorization'] === undefined &&
-        req.headers['Authorization'] === undefined
-  ) {
+  if (req.cookies === undefined) {
     return res.status(401).json({ message: 'No token provided' });
   } else {
-    const authorizationHeader =
-            req.headers['authorization'] || req.headers['Authorization'];
-    if (!authorizationHeader) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
-    const accessToken = authorizationHeader.split(' ')[1];
+    const accessToken = req.cookies['accessToken'];
     if (!accessToken) {
       return res.status(401).json({ message: 'No token provided' });
     }
