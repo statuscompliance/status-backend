@@ -1,6 +1,17 @@
 import Redis from 'ioredis';
 
-export const redisClient = new Redis({
+const redis = new Redis({
   host: process.env.DRAGONFLY_HOST,
   port: process.env.DRAGONFLY_PORT,
 });
+
+
+redis.on('connect', () => {
+  console.log('Redis connected');
+});
+
+redis.on('error', (err) => {
+  console.log('Redis error', err);
+});
+
+export default redis;
