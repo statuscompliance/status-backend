@@ -11,6 +11,7 @@ import threadRoutes from './routes/thread.routes.js';
 import configRoutes from './routes/configuration.routes.js';
 import grafanaRoutes from './routes/grafana.routes.js';
 import computationRoutes from './routes/computation.routes.js';
+import scriptRoutes from './routes/script.routes.js';
 import cors from 'cors';
 import { verifyAuthority } from './middleware/verifyAuth.js';
 import { validateParams } from './middleware/validation.js';
@@ -22,6 +23,8 @@ import { verifyAdmin } from './middleware/verifyAdmin.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
+
+const API_PREFIX = process.env.API_PREFIX || '';
 const swaggerOptions = {
   swaggerDefinition: {
     openapi: '3.0.0',
@@ -33,8 +36,12 @@ const swaggerOptions = {
         name: 'Apache 2.0',
         url: 'https://www.apache.org/licenses/LICENSE-2.0.html',
       },
-      servers: ['http://localhost:3001'],
     },
+    servers: [
+      {
+        url: `${API_PREFIX}`,
+      },
+    ],
   },
   apis: ['./src/routes/*.js', './src/models/*.js'],
 };
@@ -55,20 +62,21 @@ app.use(cookieParser());
 app.use(indexRoutes);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use(endpointAvailable);
-app.use('/api', ghAccess);
-app.use('/api', refresh);
-app.use('/api', userRoutes);
+app.use(`${API_PREFIX}`, ghAccess);
+app.use(`${API_PREFIX}`, refresh);
+app.use(`${API_PREFIX}/user`, userRoutes);
 app.use(validateParams);
 app.use(verifyAuthority);
 app.use('/api', grafanaRoutes);
-app.use('/api', inputControlRoutes);
+app.use(`${API_PREFIX}/input_controls`, inputControlRoutes);
 app.use('/api', controlRoutes);
 app.use('/api', catalogRoutes);
 app.use('/api', computationRoutes);
-app.use('/api', assistantRoutes);
+app.use(`${API_PREFIX}/scripts`, scriptRoutes);
+app.use(`${API_PREFIX}/assistant`, assistantRoutes);
 app.use('/api', threadRoutes);
 app.use(verifyAdmin);
-app.use('/api', configRoutes);
+app.use(`${API_PREFIX}/config`, configRoutes);
 
 app.listen(3001, () => {
   console.log('Server on http://localhost:3001');
@@ -79,19 +87,20 @@ export default app;
 
 async function insertEndpointsToConfig() {
   const endpoints = [
-    '/api/config',
-    '/api/refresh',
-    '/api/user',
-    '/api/input_controls',
-    '/api/controls',
-    '/api/grafana',
-    '/api/thread',
-    '/api/catalogs',
-    '/api/assistant',
-    '/api/ghAccessToken',
-    '/api/getAuth',
-    '/api/computation',
-    '/docs',
+    `${API_PREFIX}/config`,
+    `${API_PREFIX}/refresh`,
+    `${API_PREFIX}/user`,
+    `${API_PREFIX}/input_controls`,
+    `${API_PREFIX}/scripts`,
+    `${API_PREFIX}/controls`,
+    `${API_PREFIX}/grafana`,
+    `${API_PREFIX}/thread`,
+    `${API_PREFIX}/catalogs`,
+    `${API_PREFIX}/assistant`,
+    `${API_PREFIX}/ghAccessToken`,
+    `${API_PREFIX}/getAuth`,
+    `${API_PREFIX}/computation`,
+    'docs',
   ];
   try {
     await db.sync({ alter: true });

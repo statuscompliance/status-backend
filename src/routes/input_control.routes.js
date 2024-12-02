@@ -11,12 +11,12 @@ import {
 const router = Router();
 
 // Input_controls
-router.get('/input_controls', getInputControls);
-router.get('/input_controls/:id', getInputControl);
-router.get('/input_controls/:input_id/controls/:control_id/values', getValuesByInputIdAndControlId);
-router.post('/input_controls', createInputControl);
-router.patch('/input_controls/:id', updateInputControl);
-router.delete('/input_controls/:id', deleteInputControl);
+router.get('', getInputControls);
+router.get('/:id', getInputControl);
+router.get('/:input_id/controls/:control_id/values', getValuesByInputIdAndControlId);
+router.post('', createInputControl);
+router.patch('/:id', updateInputControl);
+router.delete('/:id', deleteInputControl);
 
 export default router;
 
@@ -29,7 +29,7 @@ export default router;
 
 /**
  * @swagger
- * /api/input_controls:
+ * /input_controls:
  *   get:
  *     summary: Retrieves all input controls
  *     tags: [InputControls]
@@ -57,7 +57,7 @@ export default router;
 
 /**
  * @swagger
- * /api/input_controls/{id}:
+ * /input_controls/{id}:
  *   get:
  *     summary: Retrieves a single input control
  *     tags: [InputControls]
@@ -99,7 +99,7 @@ export default router;
 
 /**
  * @swagger
- * /api/input_controls/{input_id}/controls/{control_id}/values:
+ * /input_controls/{input_id}/controls/{control_id}/values:
  *   get:
  *     summary: Retrieves values by input ID and control ID
  *     tags: [InputControls]
@@ -150,7 +150,7 @@ export default router;
 
 /**
  * @swagger
- * /api/input_controls:
+ * /input_controls:
  *   post:
  *     summary: Creates a new input control
  *     tags: [InputControls]
@@ -222,7 +222,7 @@ export default router;
 
 /**
  * @swagger
- * /api/input_controls/{id}:
+ * /input_controls/{id}:
  *   patch:
  *     summary: Updates an existing input control
  *     tags: [InputControls]
@@ -286,7 +286,7 @@ export default router;
 
 /**
  * @swagger
- * /api/input_controls/{id}:
+ * /input_controls/{id}:
  *   delete:
  *     summary: Deletes an input control
  *     tags: [InputControls]

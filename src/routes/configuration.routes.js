@@ -9,18 +9,18 @@ import {
 
 const router = Router();
 
-router.get('/config', getConfiguration);
-router.get('/config/assistant/limit', getAssistantLimit);
-router.post('/config', getConfigurationByEndpoint);
-router.put('/config', updateConfiguration);
-router.put('/config/assistant/limit/:limit', updateAssistantLimit);
+router.get('', getConfiguration);
+router.get('/assistant/limit', getAssistantLimit);
+router.post('', getConfigurationByEndpoint);
+router.put('', updateConfiguration);
+router.put('/assistant/limit/:limit', updateAssistantLimit);
 
 export default router;
 
 /**
  * Retrieves all configurations.
  * @swagger
- * /api/config:
+ * /config:
  *   get:
  *     summary: Retrieves all configurations
  *     tags: [Configurations]
@@ -49,7 +49,7 @@ export default router;
 /**
  * Retrieves configuration by endpoint.
  * @swagger
- * /api/config:
+ * /config:
  *   post:
  *     summary: Retrieves configuration by endpoint
  *     tags: [Configurations]
@@ -95,7 +95,7 @@ export default router;
 /**
  * Updates configuration.
  * @swagger
- * /api/config:
+ * /config:
  *   put:
  *     summary: Updates configuration
  *     tags: [Configurations]
@@ -147,7 +147,7 @@ export default router;
 /**
  * Retrieves the assistant limit configuration.
  * @swagger
- * /api/config/assistant/limit:
+ * /config/assistant/limit:
  *   get:
  *     summary: Retrieves the assistant limit configuration
  *     tags: [Configurations]
@@ -187,7 +187,7 @@ export default router;
 /**
  * Updates the assistant limit configuration.
  * @swagger
- * /api/config/assistant/limit/{limit}:
+ * /config/assistant/limit/{limit}:
  *   put:
  *     summary: Updates the assistant limit configuration
  *     tags: [Configurations]

@@ -9,22 +9,22 @@ import {
 } from '../controllers/user.controller.js';
 const router = Router();
 
-router.post('/user/signIn', signIn);
+router.post('/signIn', signIn);
 
-router.post('/user/signUp', signUp);
+router.post('/signUp', signUp);
 
-router.get('/user/signOut', signOut);
+router.get('/signOut', signOut);
 
-router.get('/user', getUsers);
+router.get('', getUsers);
 
-router.get('/user/auth/', getAuthority);
+router.get('/auth/', getAuthority);
 
-router.delete('/user/:id', deleteUserById);
+router.delete('/:id', deleteUserById);
 
 export default router;
 /**
  * @swagger
- * /api/user/signUp:
+ * /user/signUp:
  *   post:
  *     summary: Creates a new user account
  *     tags:
@@ -74,7 +74,7 @@ export default router;
 
 /**
  * @swagger
- * /api/user/signIn:
+ * /user/signIn:
  *   post:
  *     summary: Authenticates a user and generates access and refresh tokens
  *     tags:
@@ -126,7 +126,7 @@ export default router;
 
 /**
  * @swagger
- * /api/user/signOut:
+ * /user/signOut:
  *   post:
  *     summary: Logs out a user by clearing the refresh token
  *     tags: [Auth]
@@ -146,7 +146,7 @@ export default router;
 
 /**
  * @swagger
- * /api/user/auth/:
+ * /user/auth/:
  *   get:
  *     summary: Retrieves the authority of the authenticated user
  *     tags: [Auth]

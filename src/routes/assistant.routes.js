@@ -14,20 +14,19 @@ import { assistantlimitReached } from '../middleware/endpoint.js';
 
 const router = Router();
 
-router.get('/assistant', getAssistants);
-router.get('/assistant/:id', getAssistantsById);
-router.get('/assistant/:id/instructions', getAssistantInstructions);
-router.post('/assistant', assistantlimitReached, createAssistant);
+router.get('', getAssistants);
+router.get('/:id', getAssistantsById);
+router.get('/:id/instructions', getAssistantInstructions);
+router.post('', assistantlimitReached, createAssistant);
 router.post(
-  '/assistant/admin',
+  '/admin',
   verifyAdmin,
   assistantlimitReached,
   createAssistantWithInstructions
 );
-// router.post('/assistant/renew', renewAssistant)
-router.put('/assistant/:id/instructions', updateAssistantInstructions);
-router.delete('/assistant/:id', deleteAssistantById);
-router.delete('/assistant', deleteAllAssistants);
+router.put('/:id/instructions', updateAssistantInstructions);
+router.delete('/:id', deleteAssistantById);
+router.delete('', deleteAllAssistants);
 
 export default router;
 
@@ -37,7 +36,7 @@ export default router;
  *   name: Assistants
  *   description: OpenAI Assistants management
  *
- * /api/assistant:
+ * /assistant:
  *   get:
  *     summary: Retrieves a list of all assistants
  *     tags: [Assistants]
@@ -96,7 +95,7 @@ export default router;
  *                   type: string
  *
  *
- * /api/assistant/admin:
+ * /assistant/admin:
  *   post:
  *     summary: Creates a new assistant
  *     tags: [Assistants]
@@ -141,7 +140,7 @@ export default router;
  */
 /**
  * @swagger
- * /api/assistant/{id}:
+ * /assistant/{id}:
  *   get:
  *     summary: Retrieves a specific assistant by ID
  *     tags: [Assistants]
@@ -173,7 +172,7 @@ export default router;
  */
 /**
  * @swagger
- * /api/assistant/{id}/instructions:
+ * /assistant/{id}/instructions:
  *   get:
  *     summary: Retrieves instructions of a specific assistant by ID
  *     tags: [Assistants]

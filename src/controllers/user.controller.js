@@ -44,8 +44,8 @@ async function getNodeRedToken(username, password) {
     });
     return response.data.access_token;
   } catch (error) {
-    console.error('Error al obtener token de Node-RED:', error);
-    throw new Error('No se pudo obtener el token de Node-RED');
+    console.error('Error during get Node-RED token:', error);
+    throw new Error('Failed to get Node-RED token');
   }
 }
 
