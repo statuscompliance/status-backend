@@ -7,7 +7,8 @@
     "scripts": {
         "dev": "nodemon --exec 'tsx --env-file=.env' src/index.js",
         "start": "tsx --env-file=.env src/index.js",
-        "db": "node db/database.js"
+        "lint": "eslint . --max-warnings=0 --cache --cache-location node_modules/.cache/eslint",
+        "lint-fix": "eslint . --fix --max-warnings=0 --cache --cache-location node_modules/.cache/eslint"
     },
     "keywords": [],
     "author": "",
@@ -19,6 +20,7 @@
         "cors": "2.8.5",
         "express": "4.21.1",
         "express-validator": "7.2.0",
+        "ioredis": "5.4.1",
         "jsonwebtoken": "9.0.2",
         "mysql2": "3.11.5",
         "openai": "4.73.1",
@@ -28,6 +30,10 @@
         "tsx": "4.19.2"
     },
     "devDependencies": {
-        "nodemon": "3.1.7"
+        "nodemon": "3.1.7",
+        "@eslint/js": "9.15.0",
+        "@stylistic/eslint-plugin-js": "2.11.0",
+        "eslint": "9.15.0",
+        "globals": "15.12.0"
     }
 }

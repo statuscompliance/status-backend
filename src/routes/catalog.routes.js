@@ -1,20 +1,20 @@
-import { Router } from "express";
+import { Router } from 'express';
 import {
-    getCatalogs,
-    getCatalog,
-    createCatalog,
-    updateCatalog,
-    deleteCatalog,
-} from "../controllers/catalog.controller.js";
+  getCatalogs,
+  getCatalog,
+  createCatalog,
+  updateCatalog,
+  deleteCatalog,
+} from '../controllers/catalog.controller.js';
 
 const router = Router();
 
 // Catalogs
-router.get("/catalogs", getCatalogs);
-router.get("/catalogs/:id", getCatalog);
-router.post("/catalogs", createCatalog);
-router.patch("/catalogs/:id", updateCatalog);
-router.delete("/catalogs/:id", deleteCatalog);
+router.get('/catalogs', getCatalogs);
+router.get('/catalogs/:id', getCatalog);
+router.post('/catalogs', createCatalog);
+router.patch('/catalogs/:id', updateCatalog);
+router.delete('/catalogs/:id', deleteCatalog);
 
 export default router;
 

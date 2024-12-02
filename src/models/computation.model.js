@@ -1,39 +1,39 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../../db/database.js";
+import { DataTypes } from 'sequelize';
+import sequelize from '../../db/database.js';
 
 const Computation = sequelize.define(
-    "Computation",
-    {
-        id: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
-            primaryKey: true,
-        },
-        result: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-        },
-        scope: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        evidence: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        start_compute: {
-            type: DataTypes.DATE,
-            allowNull: true,
-        },
-        end_compute: {
-            type: DataTypes.DATE,
-            allowNull: true,
-        },
+  'Computation',
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
     },
-    {
-        tableName: "computation",
-        timestamps: true,
-    }
+    result: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+    },
+    scope: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    evidence: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    start_compute: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    end_compute: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+  },
+  {
+    tableName: 'computation',
+    timestamps: true,
+  }
 );
 
 export default Computation;

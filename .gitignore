@@ -10,9 +10,6 @@ migrations
 # Seeders
 seeders
 
-# config
-config
-
 # others
 docker-compose.yml
 

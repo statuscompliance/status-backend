@@ -1,64 +1,64 @@
-import { Router } from "express";
+import { Router } from 'express';
 
 import {
-    createFolder,
-    getFolderByUID,
-    getDashboardByUID,
-    addDatasource,
-    createServiceAccount,
-    getServiceAccountById,
-    createServiceAccountToken,
-    getDatasources,
-    importDashboard,
-    createDashboard,
-    addDashboardPanel,
-    createQuery,
-    parseQuery,
-    getPanelQueryByID,
-    getDashboardPanelQueriesByUID,
-    deleteDashboardByUID,
-    deletePanelByID,
-    updatePanelByID,
-    getPanelsByDashboardUID,
-    getFolders,
-    getFolderDashboardsByUID,
-} from "../controllers/grafana.controller.js";
+  createFolder,
+  getFolderByUID,
+  getDashboardByUID,
+  addDatasource,
+  createServiceAccount,
+  getServiceAccountById,
+  createServiceAccountToken,
+  getDatasources,
+  importDashboard,
+  createDashboard,
+  addDashboardPanel,
+  createQuery,
+  parseQuery,
+  getPanelQueryByID,
+  getDashboardPanelQueriesByUID,
+  deleteDashboardByUID,
+  deletePanelByID,
+  updatePanelByID,
+  getPanelsByDashboardUID,
+  getFolders,
+  getFolderDashboardsByUID,
+} from '../controllers/grafana.controller.js';
 
 const router = Router();
 
 //SERVICE ACCOUNT
-router.post("/grafana/serviceaccount", createServiceAccount);
-router.get("/grafana/serviceaccount/:id", getServiceAccountById);
-router.post("/grafana/serviceaccount/:id/token", createServiceAccountToken);
+router.post('/grafana/serviceaccount', createServiceAccount);
+router.get('/grafana/serviceaccount/:id', getServiceAccountById);
+router.post('/grafana/serviceaccount/:id/token', createServiceAccountToken);
 
 //FOLDER
-router.get("/grafana/folder", getFolders);
-router.post("/grafana/folder", createFolder);
-router.get("/grafana/folder/:uid", getFolderByUID);
-router.get("/grafana/folder/:uid/dashboard", getFolderDashboardsByUID);
+router.get('/grafana/folder', getFolders);
+router.post('/grafana/folder', createFolder);
+router.get('/grafana/folder/:uid', getFolderByUID);
+router.get('/grafana/folder/:uid/dashboard', getFolderDashboardsByUID);
 
 //DASHBOARD
-router.post("/grafana/dashboard", createDashboard);
-router.post("/grafana/dashboard/import", importDashboard);
-router.get("/grafana/dashboard/:uid", getDashboardByUID);
-router.delete("/grafana/dashboard/:uid", deleteDashboardByUID);
-router.get("/grafana/dashboard/:uid/panel", getPanelsByDashboardUID);
-router.post("/grafana/dashboard/:uid/panel", addDashboardPanel);
-router.patch("/grafana/dashboard/:uid/panel/:id", updatePanelByID);
-router.delete("/grafana/dashboard/:uid/panel/:id", deletePanelByID);
+router.post('/grafana/dashboard', createDashboard);
+router.post('/grafana/dashboard/import', importDashboard);
+router.get('/grafana/dashboard/:uid', getDashboardByUID);
+router.delete('/grafana/dashboard/:uid', deleteDashboardByUID);
+router.get('/grafana/dashboard/:uid/panel', getPanelsByDashboardUID);
+router.post('/grafana/dashboard/:uid/panel', addDashboardPanel);
+router.patch('/grafana/dashboard/:uid/panel/:id', updatePanelByID);
+router.delete('/grafana/dashboard/:uid/panel/:id', deletePanelByID);
 router.get(
-    "/grafana/dashboard/:uid/panel/query",
-    getDashboardPanelQueriesByUID
+  '/grafana/dashboard/:uid/panel/query',
+  getDashboardPanelQueriesByUID
 );
-router.get("/grafana/dashboard/:uid/panel/:id/query", getPanelQueryByID);
+router.get('/grafana/dashboard/:uid/panel/:id/query', getPanelQueryByID);
 
 //DATASOURCE
-router.get("/grafana/datasource", getDatasources);
-router.post("/grafana/datasource", addDatasource);
+router.get('/grafana/datasource', getDatasources);
+router.post('/grafana/datasource', addDatasource);
 
 //ENDPOINT FOR TESTING SQL QUERY BUILDER
-router.post("/grafana/sql/parse", parseQuery);
-router.post("/grafana/sql/build", createQuery);
+router.post('/grafana/sql/parse', parseQuery);
+router.post('/grafana/sql/build', createQuery);
 
 export default router;
 

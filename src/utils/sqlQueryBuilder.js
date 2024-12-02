@@ -15,164 +15,164 @@
  */
 
 function createSQLQuery({
-    aggregations = [],
-    columns = [],
-    whereConditions = [],
-    whereLogic = "AND",
-    groupBy,
-    orderByAttr,
-    orderDirection,
-    table = "computation",
+  aggregations = [],
+  columns = [],
+  whereConditions = [],
+  whereLogic = 'AND',
+  groupBy,
+  orderByAttr,
+  orderDirection,
+  table = 'computation',
 }) {
-    let query = `SELECT `;
+  let query = 'SELECT ';
 
-    // Aggregations
-    if (aggregations.length > 0) {
-        query += aggregations
-            .map((agg) => `${agg.func}(${agg.attr})`)
-            .join(", ");
-    }
+  // Aggregations
+  if (aggregations.length > 0) {
+    query += aggregations
+      .map((agg) => `${agg.func}(${agg.attr})`)
+      .join(', ');
+  }
 
-    // Raw columns
-    if (columns.length > 0) {
-        if (aggregations.length > 0) query += ", ";
-        query += columns.map((col) => `${col}`).join(", ");
-    }
+  // Raw columns
+  if (columns.length > 0) {
+    if (aggregations.length > 0) query += ', ';
+    query += columns.map((col) => `${col}`).join(', ');
+  }
 
-    if (aggregations.length === 0 && columns.length === 0) {
-        query += "*";
-    }
+  if (aggregations.length === 0 && columns.length === 0) {
+    query += '*';
+  }
 
-    query += ` FROM statusdb.${table}`;
+  query += ` FROM statusdb.${table}`;
 
-    // WHERE
-    if (whereConditions.length > 0) {
-        const whereClause = whereConditions
-            .map((cond) => {
-                const value =
-                    typeof cond.value === "number" ||
+  // WHERE
+  if (whereConditions.length > 0) {
+    const whereClause = whereConditions
+      .map((cond) => {
+        const value =
+                    typeof cond.value === 'number' ||
                     cond.value === true ||
                     cond.value === false
-                        ? cond.value
-                        : `'${cond.value}'`;
-                return `${cond.key} ${cond.operator} ${value}`;
-            })
-            .join(` ${whereLogic} `);
-        query += ` WHERE (${whereClause})`;
-    }
+                      ? cond.value
+                      : `'${cond.value}'`;
+        return `${cond.key} ${cond.operator} ${value}`;
+      })
+      .join(` ${whereLogic} `);
+    query += ` WHERE (${whereClause})`;
+  }
 
-    // GROUP BY
-    if (groupBy) {
-        query += ` GROUP BY ${groupBy}`;
-    }
+  // GROUP BY
+  if (groupBy) {
+    query += ` GROUP BY ${groupBy}`;
+  }
 
-    // ORDER BY
-    if (orderByAttr) {
-        const direction =
-            orderDirection && orderDirection.toUpperCase() === "DESC"
-                ? "DESC"
-                : "ASC";
-        query += ` ORDER BY ${orderByAttr} ${direction}`;
-    }
+  // ORDER BY
+  if (orderByAttr) {
+    const direction =
+            orderDirection && orderDirection.toUpperCase() === 'DESC'
+              ? 'DESC'
+              : 'ASC';
+    query += ` ORDER BY ${orderByAttr} ${direction}`;
+  }
 
-    return query;
+  return query;
 }
 
 function parseSQLQuery(query) {
-    const result = {
-        aggregations: [],
-        columns: [],
-        whereConditions: [],
-        whereLogic: "AND",
-        groupBy: null,
-        orderByAttr: null,
-        orderDirection: null,
-        table: "computation",
-    };
+  const result = {
+    aggregations: [],
+    columns: [],
+    whereConditions: [],
+    whereLogic: 'AND',
+    groupBy: null,
+    orderByAttr: null,
+    orderDirection: null,
+    table: 'computation',
+  };
 
-    // Table
-    const tableMatch = query.match(/FROM\s+statusdb\.(\w+)/i);
-    if (tableMatch) {
-        result.table = tableMatch[1];
-    }
+  // Table
+  const tableMatch = query.match(/FROM\s+statusdb\.(\w+)/i);
+  if (tableMatch) {
+    result.table = tableMatch[1];
+  }
 
-    // Columns and Aggregations
-    const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i);
-    if (selectMatch) {
-        const selectFields = selectMatch[1].split(",");
-        selectFields.forEach((field) => {
-            field = field.trim();
-            const aggMatch = field.match(/(\w+)\((\*)\)/); // ej: COUNT(*)
-            if (aggMatch) {
-                result.aggregations.push({
-                    func: aggMatch[1],
-                    attr: aggMatch[2],
-                });
-            } else {
-                result.columns.push(field);
-            }
+  // Columns and Aggregations
+  const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i);
+  if (selectMatch) {
+    const selectFields = selectMatch[1].split(',');
+    selectFields.forEach((field) => {
+      field = field.trim();
+      const aggMatch = field.match(/(\w+)\((\*)\)/); // ej: COUNT(*)
+      if (aggMatch) {
+        result.aggregations.push({
+          func: aggMatch[1],
+          attr: aggMatch[2],
         });
-    }
+      } else {
+        result.columns.push(field);
+      }
+    });
+  }
 
-    // WHERE
-    const whereMatch = query.match(/WHERE\s+\((.+)\)/i);
-    if (whereMatch) {
-        const conditions = whereMatch[1].split(/\s+(AND|OR)\s+/i);
-        if (conditions.length === 1) {
-            const [key, operator, value] = conditions[0].split(
-                /\s+(=|>|<|>=|<=|!=)\s+/
-            );
-            result.whereConditions.push({
-                key: key.trim(),
-                operator: operator.trim(),
-                value: parseWhereValue(value.trim()),
-            });
-        } else {
-            result.whereLogic = conditions[1].toUpperCase() || "AND"; // AND or OR
-            conditions.forEach((condition) => {
-                if (condition !== "AND" && condition !== "OR") {
-                    const [key, operator, value] = condition.split(
-                        /\s+(=|>|<|>=|<=|!=)\s+/
-                    );
-                    result.whereConditions.push({
-                        key: key.trim(),
-                        operator: operator.trim(),
-                        value: parseWhereValue(value.trim()),
-                    });
-                }
-            });
+  // WHERE
+  const whereMatch = query.match(/WHERE\s+\((.+)\)/i);
+  if (whereMatch) {
+    const conditions = whereMatch[1].split(/\s+(AND|OR)\s+/i);
+    if (conditions.length === 1) {
+      const [key, operator, value] = conditions[0].split(
+        /\s+(=|>|<|>=|<=|!=)\s+/
+      );
+      result.whereConditions.push({
+        key: key.trim(),
+        operator: operator.trim(),
+        value: parseWhereValue(value.trim()),
+      });
+    } else {
+      result.whereLogic = conditions[1].toUpperCase() || 'AND'; // AND or OR
+      conditions.forEach((condition) => {
+        if (condition !== 'AND' && condition !== 'OR') {
+          const [key, operator, value] = condition.split(
+            /\s+(=|>|<|>=|<=|!=)\s+/
+          );
+          result.whereConditions.push({
+            key: key.trim(),
+            operator: operator.trim(),
+            value: parseWhereValue(value.trim()),
+          });
         }
+      });
     }
+  }
 
-    // GROUP BY
-    const groupByMatch = query.match(/GROUP\s+BY\s+(\w+)/i);
-    if (groupByMatch) {
-        result.groupBy = groupByMatch[1];
-    }
+  // GROUP BY
+  const groupByMatch = query.match(/GROUP\s+BY\s+(\w+)/i);
+  if (groupByMatch) {
+    result.groupBy = groupByMatch[1];
+  }
 
-    // ORDER BY
-    const orderByMatch = query.match(/ORDER\s+BY\s+(\w+)\s+(ASC|DESC)?/i);
-    if (orderByMatch) {
-        result.orderByAttr = orderByMatch[1];
-        result.orderDirection = orderByMatch[2]
-            ? orderByMatch[2].toUpperCase()
-            : "ASC";
-    }
+  // ORDER BY
+  const orderByMatch = query.match(/ORDER\s+BY\s+(\w+)\s+(ASC|DESC)?/i);
+  if (orderByMatch) {
+    result.orderByAttr = orderByMatch[1];
+    result.orderDirection = orderByMatch[2]
+      ? orderByMatch[2].toUpperCase()
+      : 'ASC';
+  }
 
-    return result;
+  return result;
 }
 
 function parseWhereValue(value) {
-    if (value.toLowerCase() === "true") {
-        return true;
-    }
-    if (value.toLowerCase() === "false") {
-        return false;
-    }
-    if (!isNaN(value)) {
-        return value;
-    }
-    return value.replace(/['"]/g, "");
+  if (value.toLowerCase() === 'true') {
+    return true;
+  }
+  if (value.toLowerCase() === 'false') {
+    return false;
+  }
+  if (!isNaN(value)) {
+    return value;
+  }
+  return value.replace(/['"]/g, '');
 }
 
 export { createSQLQuery, parseSQLQuery };

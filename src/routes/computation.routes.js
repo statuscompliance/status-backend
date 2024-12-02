@@ -1,36 +1,36 @@
-import { Router } from "express";
+import { Router } from 'express';
 
 import {
-    getComputations,
-    getComputationsById,
-    getComputationsByControlId,
-    createComputation,
-    bulkCreateComputations,
-    deleteComputations,
-    deleteComputationByControlId,
-    getComputationsByControlIdAndCreationDate,
-    setComputeIntervalBytControlIdAndCreationDate,
-} from "../controllers/computation.controller.js";
+  getComputations,
+  getComputationsById,
+  getComputationsByControlId,
+  createComputation,
+  bulkCreateComputations,
+  deleteComputations,
+  deleteComputationByControlId,
+  getComputationsByControlIdAndCreationDate,
+  setComputeIntervalBytControlIdAndCreationDate,
+} from '../controllers/computation.controller.js';
 
 const router = Router();
 
-router.get("/computation", getComputations);
-router.delete("/computation", deleteComputations);
-router.get("/computation/:id", getComputationsById);
-router.get("/controls/:control_id/computations", getComputationsByControlId);
+router.get('/computation', getComputations);
+router.delete('/computation', deleteComputations);
+router.get('/computation/:id', getComputationsById);
+router.get('/controls/:control_id/computations', getComputationsByControlId);
 router.get(
-    "/controls/:control_id/computations/:createdAt",
-    getComputationsByControlIdAndCreationDate
+  '/controls/:control_id/computations/:createdAt',
+  getComputationsByControlIdAndCreationDate
 );
 router.put(
-    "/controls/:control_id/computations",
-    setComputeIntervalBytControlIdAndCreationDate
+  '/controls/:control_id/computations',
+  setComputeIntervalBytControlIdAndCreationDate
 );
-router.post("/computation", createComputation);
-router.post("/computations", bulkCreateComputations);
+router.post('/computation', createComputation);
+router.post('/computations', bulkCreateComputations);
 router.delete(
-    "/controls/:control_id/computations",
-    deleteComputationByControlId
+  '/controls/:control_id/computations',
+  deleteComputationByControlId
 );
 
 export default router;

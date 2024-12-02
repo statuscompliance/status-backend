@@ -1,32 +1,32 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../../db/database.js";
+import { DataTypes } from 'sequelize';
+import sequelize from '../../db/database.js';
 
-const User = sequelize.define("User", {
-    username: {
-        type: DataTypes.STRING(60),
-        allowNull: false,
-        validate: {
-            isAlphanumeric: true,
-        },
+const User = sequelize.define('User', {
+  username: {
+    type: DataTypes.STRING(60),
+    allowNull: false,
+    validate: {
+      isAlphanumeric: true,
     },
-    password: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
+  },
+  password: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+  },
+  authority: {
+    type: DataTypes.ENUM('ADMIN', 'DEVELOPER', 'USER'),
+    allowNull: false,
+  },
+  email: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    validate: {
+      isEmail: true,
     },
-    authority: {
-        type: DataTypes.ENUM("ADMIN", "DEVELOPER", "USER"),
-        allowNull: false,
-    },
-    email: {
-        type: DataTypes.STRING(100),
-        allowNull: false,
-        validate: {
-            isEmail: true,
-        },
-    },
-    refresh_token: {
-        type: DataTypes.STRING(255),
-    },
+  },
+  refresh_token: {
+    type: DataTypes.STRING(255),
+  },
 });
 
 export default User;
