@@ -136,7 +136,7 @@ export default router;
  *       200:
  *         description: A script object
  *         content:
- *           application/json:
+ *           application/javascript:
  *             schema:
  *               type: object
  *               properties:

@@ -18,9 +18,8 @@ export const createScript = async (req, res) => {
     if (!code.includes('module.exports.main')) {
       return res.status(400).json({ error: 'The code must include a module.exports.main function.' });
     }
-    const espacedScript = JSON.stringify(code);
     const scriptData = {
-      espacedScript,
+      code,
       metadata: metadata || {},
       createdAt: new Date().toISOString(),
     };
@@ -57,8 +56,10 @@ export const getScriptById = async (req, res) => {
     if (!scriptData) {
       return res.status(404).json({ error: 'Script not found' });
     }
+    const jsCode = JSON.parse(scriptData).code;
+    const parsedCode = jsCode.replace(/\\"/g, '"').replace(/\\n/g, '\n');
 
-    return res.status(200).json({ id, ...JSON.parse(scriptData) });
+    return res.status(200).send(parsedCode);
   } catch (error) {
     console.error('Error getting script by ID:', error);
     return res.status(500).json({ error: 'Internal server error' });
