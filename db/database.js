@@ -12,10 +12,10 @@ const sequelize = new Sequelize({
 });
 
 // Test connection
-console.info('SETUP - Connecting database...');
+console.info('[database] Connecting...');
 
 sequelize.authenticate().then(() => {
-  console.info('INFO - Database connected.');
+  console.info('[database] Successully connected.');
 });
 
 export default sequelize;

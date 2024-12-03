@@ -67,20 +67,20 @@ app.use(`${API_PREFIX}`, refresh);
 app.use(`${API_PREFIX}/user`, userRoutes);
 app.use(validateParams);
 app.use(verifyAuthority);
-app.use('/api', grafanaRoutes);
+app.use(`${API_PREFIX}/grafana`, grafanaRoutes);
 app.use(`${API_PREFIX}/input_controls`, inputControlRoutes);
-app.use('/api', controlRoutes);
-app.use('/api', catalogRoutes);
-app.use('/api', computationRoutes);
+app.use(`${API_PREFIX}/controls`, controlRoutes);
+app.use(`${API_PREFIX}/catalogs`, catalogRoutes);
+app.use(`${API_PREFIX}/computation`, computationRoutes);
 app.use(`${API_PREFIX}/scripts`, scriptRoutes);
 app.use(`${API_PREFIX}/assistant`, assistantRoutes);
-app.use('/api', threadRoutes);
+app.use(`${API_PREFIX}/thread`, threadRoutes);
 app.use(verifyAdmin);
 app.use(`${API_PREFIX}/config`, configRoutes);
 
 app.listen(3001, () => {
-  console.log('Server on http://localhost:3001');
-  console.log('API doc available at http://localhost:3001/docs');
+  console.log('[server] Running on http://localhost:3001');
+  console.log('[server] Doc on http://localhost:3001/docs');
 });
 
 export default app;
@@ -105,7 +105,7 @@ async function insertEndpointsToConfig() {
   try {
     await db.sync({ alter: true });
     for (const endpoint of endpoints) {
-      if (endpoint === '/api/assistant') {
+      if (endpoint === `${API_PREFIX}/assistant`) {
         await Configuration.findOrCreate({
           where: { endpoint },
           defaults: { endpoint, available: true, limit: 5 },
@@ -117,9 +117,8 @@ async function insertEndpointsToConfig() {
         });
       }
     }
-    console.log('Endpoints added to the configuration');
   } catch (error) {
-    console.error('Error al insertar endpoints:', error);
+    console.error('[server] Error al insertar endpoints:', error);
   }
 }
 insertEndpointsToConfig();

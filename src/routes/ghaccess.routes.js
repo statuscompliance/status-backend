@@ -53,7 +53,7 @@ export default router;
 /**
  * Retrieves GitHub access token using the provided authorization code.
  * @swagger
- * /api/ghAccessToken:
+ * /ghAccessToken:
  *   get:
  *     summary: Retrieves GitHub access token
  *     tags: [Auth]
@@ -93,7 +93,7 @@ export default router;
 /**
  * Retrieves authorization header.
  * @swagger
- * /api/getAuth:
+ * /getAuth:
  *   get:
  *     summary: Retrieves authorization header
  *     tags: [Auth]

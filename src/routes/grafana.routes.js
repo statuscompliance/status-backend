@@ -27,38 +27,38 @@ import {
 const router = Router();
 
 //SERVICE ACCOUNT
-router.post('/grafana/serviceaccount', createServiceAccount);
-router.get('/grafana/serviceaccount/:id', getServiceAccountById);
-router.post('/grafana/serviceaccount/:id/token', createServiceAccountToken);
+router.post('/serviceaccount', createServiceAccount);
+router.get('/serviceaccount/:id', getServiceAccountById);
+router.post('/serviceaccount/:id/token', createServiceAccountToken);
 
 //FOLDER
-router.get('/grafana/folder', getFolders);
-router.post('/grafana/folder', createFolder);
-router.get('/grafana/folder/:uid', getFolderByUID);
-router.get('/grafana/folder/:uid/dashboard', getFolderDashboardsByUID);
+router.get('/folder', getFolders);
+router.post('/folder', createFolder);
+router.get('/folder/:uid', getFolderByUID);
+router.get('/folder/:uid/dashboard', getFolderDashboardsByUID);
 
 //DASHBOARD
-router.post('/grafana/dashboard', createDashboard);
-router.post('/grafana/dashboard/import', importDashboard);
-router.get('/grafana/dashboard/:uid', getDashboardByUID);
-router.delete('/grafana/dashboard/:uid', deleteDashboardByUID);
-router.get('/grafana/dashboard/:uid/panel', getPanelsByDashboardUID);
-router.post('/grafana/dashboard/:uid/panel', addDashboardPanel);
-router.patch('/grafana/dashboard/:uid/panel/:id', updatePanelByID);
-router.delete('/grafana/dashboard/:uid/panel/:id', deletePanelByID);
+router.post('/dashboard', createDashboard);
+router.post('/dashboard/import', importDashboard);
+router.get('/dashboard/:uid', getDashboardByUID);
+router.delete('/dashboard/:uid', deleteDashboardByUID);
+router.get('/dashboard/:uid/panel', getPanelsByDashboardUID);
+router.post('/dashboard/:uid/panel', addDashboardPanel);
+router.patch('/dashboard/:uid/panel/:id', updatePanelByID);
+router.delete('/dashboard/:uid/panel/:id', deletePanelByID);
 router.get(
-  '/grafana/dashboard/:uid/panel/query',
+  '/dashboard/:uid/panel/query',
   getDashboardPanelQueriesByUID
 );
-router.get('/grafana/dashboard/:uid/panel/:id/query', getPanelQueryByID);
+router.get('/dashboard/:uid/panel/:id/query', getPanelQueryByID);
 
 //DATASOURCE
-router.get('/grafana/datasource', getDatasources);
-router.post('/grafana/datasource', addDatasource);
+router.get('/datasource', getDatasources);
+router.post('/datasource', addDatasource);
 
 //ENDPOINT FOR TESTING SQL QUERY BUILDER
-router.post('/grafana/sql/parse', parseQuery);
-router.post('/grafana/sql/build', createQuery);
+router.post('/sql/parse', parseQuery);
+router.post('/sql/build', createQuery);
 
 export default router;
 
@@ -99,7 +99,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/serviceaccount:
+ * /grafana/serviceaccount:
  *   post:
  *     summary: Creates a new service account in Grafana
  *     tags: [Grafana Authentication]
@@ -198,7 +198,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/serviceaccount/{id}:
+ * /grafana/serviceaccount/{id}:
  *   get:
  *     summary: Retrieves a service account by ID from Grafana
  *     tags: [Grafana Authentication]
@@ -302,7 +302,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/serviceaccount/{id}/token:
+ * /grafana/serviceaccount/{id}/token:
  *   post:
  *     summary: Creates a new token for the specified service account in Grafana
  *     tags: [Grafana Authentication]
@@ -426,7 +426,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/folder:
+ * /grafana/folder:
  *   get:
  *     summary: Retrieves all folders from Grafana
  *     tags: [Grafana Folders]
@@ -603,7 +603,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/folder/{uid}:
+ * /grafana/folder/{uid}:
  *   get:
  *     summary: Retrieves a folder by UID from Grafana
  *     tags: [Grafana Folders]
@@ -694,7 +694,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/folder/{uid}/dashboard:
+ * /grafana/folder/{uid}/dashboard:
  *   get:
  *     summary: Retrieves dashboards for a specific folder by UID
  *     tags: [Grafana Folders]
@@ -774,7 +774,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/datasource:
+ * /grafana/datasource:
  *   get:
  *     summary: Retrieves all data sources from Grafana
  *     tags: [Grafana Datasources]
@@ -842,7 +842,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/datasource:
+ * /grafana/datasource:
  *   post:
  *     summary: Adds a new data source to Grafana
  *     tags: [Grafana Datasources]
@@ -951,7 +951,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/sql/build:
+ * /grafana/sql/build:
  *   post:
  *     summary: Creates a SQL query based on provided parameters
  *     tags: [Grafana Queries]
@@ -1038,7 +1038,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/sql/parse:
+ * /grafana/sql/parse:
  *   post:
  *     summary: Parses a SQL query into JSON parameters
  *     tags: [Grafana Queries]
@@ -1128,7 +1128,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard/{uid}:
+ * /grafana/dashboard/{uid}:
  *   get:
  *     summary: Retrieves the specified dashboard by UID
  *     tags: [Grafana Dashboards]
@@ -1212,7 +1212,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard/{uid}:
+ * /grafana/dashboard/{uid}:
  *   delete:
  *     summary: Deletes a specific Grafana Dashboard by UID
  *     tags: [Grafana Dashboards]
@@ -1264,7 +1264,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard:
+ * /grafana/dashboard:
  *   post:
  *     summary: Creates a new Grafana Dashboards
  *     tags: [Grafana Dashboards]
@@ -1383,7 +1383,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard/import:
+ * /grafana/dashboard/import:
  *   post:
  *     summary: Imports a new dashboard into Grafana
  *     tags: [Grafana Dashboards]
@@ -1551,7 +1551,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard/{uid}/panel:
+ * /grafana/dashboard/{uid}/panel:
  *   post:
  *     summary: Adds a new panel to the specified dashboard
  *     tags: [Grafana Dashboards]
@@ -1688,7 +1688,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard/{uid}/panel:
+ * /grafana/dashboard/{uid}/panel:
  *   get:
  *     summary: Retrieves all panels in a specific Grafana Dashboard
  *     tags: [Grafana Dashboards]
@@ -1775,7 +1775,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard/{uid}/panel/{id}:
+ * /grafana/dashboard/{uid}/panel/{id}:
  *   patch:
  *     summary: Updates a specific panel in a Grafana Dashboard
  *     tags: [Grafana Dashboards]
@@ -1927,7 +1927,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard/{uid}/panel/{id}:
+ * /grafana/dashboard/{uid}/panel/{id}:
  *   delete:
  *     summary: Deletes a specific panel from a Grafana Dashboard
  *     tags: [Grafana Dashboards]
@@ -1986,7 +1986,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard/{uid}/panel/query:
+ * /grafana/dashboard/{uid}/panel/query:
  *   get:
  *     summary: Retrieves queries and metadata of all panels in a Grafana Dashboard
  *     tags: [Grafana Dashboards]
@@ -2057,7 +2057,7 @@ export default router;
 
 /**
  * @swagger
- * /api/grafana/dashboard/{uid}/panel/{id}/query:
+ * /grafana/dashboard/{uid}/panel/{id}/query:
  *   get:
  *     summary: Retrieves the raw SQL query of a specific panel in a Grafana Dashboards
  *     tags: [Grafana Dashboards]

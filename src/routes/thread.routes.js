@@ -15,19 +15,19 @@ import { validateParams } from '../middleware/validation.js';
 
 const router = Router();
 
-router.get('/threads', validateParams, verifyAuthority, getThreads);
-router.get('/thread', validateParams, verifyAuthority, getThreadsByUserId);
+router.get('s', validateParams, verifyAuthority, getThreads);
+router.get('', validateParams, verifyAuthority, getThreadsByUserId);
 router.get(
-  '/thread/:gptId',
+  '/:gptId',
   validateParams,
   verifyAuthority,
   getThreadMessages
 );
-router.post('/thread', validateParams, verifyAuthority, createThread);
-router.post('/thread/:gptId', validateParams, verifyAuthority, addNewMessage);
-router.delete('/thread/:gptId', validateParams, verifyAuthority, deleteThread);
-router.delete('/thread/', validateParams, verifyAuthority, deleteUserThreads);
-router.put('/thread/:gptId', validateParams, verifyAuthority, changeThreadName);
+router.post('', validateParams, verifyAuthority, createThread);
+router.post('/:gptId', validateParams, verifyAuthority, addNewMessage);
+router.delete('/:gptId', validateParams, verifyAuthority, deleteThread);
+router.delete('', validateParams, verifyAuthority, deleteUserThreads);
+router.put('/:gptId', validateParams, verifyAuthority, changeThreadName);
 
 export default router;
 
@@ -37,7 +37,7 @@ export default router;
  * tags:
  *   name: Threads
  *   description: OpenAI Threads management
- * /api/threads:
+ * /threads:
  *   get:
  *     summary: Retrieves all threads
  *     tags: [Threads]
@@ -66,7 +66,7 @@ export default router;
 /**
  * Retrieves threads by user ID.
  * @swagger
- * /api/thread:
+ * /thread:
  *   get:
  *     summary: Retrieves threads by user ID
  *     tags: [Threads]
@@ -95,7 +95,7 @@ export default router;
 /**
  * Retrieves messages of a thread by GPT ID.
  * @swagger
- * /api/thread/{gptId}:
+ * /thread/{gptId}:
  *   get:
  *     summary: Retrieves messages of a thread by GPT ID
  *     tags: [Threads]
@@ -135,7 +135,7 @@ export default router;
 /**
  * Creates a new thread.
  * @swagger
- * /api/thread:
+ * /thread:
  *   post:
  *     summary: Creates a new thread
  *     tags: [Threads]
@@ -203,7 +203,7 @@ export default router;
 /**
  * Adds a new message to a thread.
  * @swagger
- * /api/thread/{gptId}:
+ * /thread/{gptId}:
  *   post:
  *     summary: Adds a new message to a thread
  *     tags: [Threads]
@@ -265,7 +265,7 @@ export default router;
 /**
  * Deletes a thread.
  * @swagger
- * /api/thread/{gptId}:
+ * /thread/{gptId}:
  *   delete:
  *     summary: Deletes a thread
  *     tags: [Threads]
@@ -314,7 +314,7 @@ export default router;
 /**
  * Deletes all threads of the current user.
  * @swagger
- * /api/thread/:
+ * /thread/:
  *   delete:
  *     summary: Deletes all threads of the current user
  *     tags: [Threads]
@@ -346,7 +346,7 @@ export default router;
 /**
  * Changes the name of a thread.
  * @swagger
- * /api/thread/{gptId}:
+ * /thread/{gptId}:
  *   put:
  *     summary: Changes the name of a thread
  *     tags: [Threads]

@@ -2,7 +2,6 @@ import { Router } from 'express';
 import {
   getControls,
   getControl,
-  getCatalogControls,
   getInputControlsByControlId,
   createControl,
   updateControl,
@@ -13,25 +12,45 @@ import {
   deletePanelFromControl,
 } from '../controllers/control.controller.js';
 
+import { 
+  getComputationsByControlId,
+  deleteComputationByControlId,
+  getComputationsByControlIdAndCreationDate,
+  setComputeIntervalBytControlIdAndCreationDate,
+} from '../controllers/computation.controller.js';
+
 const router = Router();
 
 // Controls
-router.get('/controls', getControls);
-router.get('/controls/:id', getControl);
-router.post('/controls', createControl);
-router.patch('/controls/:id', updateControl);
-router.delete('/controls/:id', deleteControl);
+router.get('', getControls);
+router.get('/:id', getControl);
+router.post('', createControl);
+router.patch('/:id', updateControl);
+router.delete('/:id', deleteControl);
 
-router.get('/controls/:id/panels', getPanelsByControlId);
-router.post('/controls/:id/panel/:panelId', addPanelToControl);
-router.delete('/controls/:id/panels/:panelId', deletePanelFromControl);
-
-// Catalog controls
-router.get('/catalogs/:catalog_id/controls', getCatalogControls);
+router.get('/:id/panels', getPanelsByControlId);
+router.post('/:id/panel/:panelId', addPanelToControl);
+router.delete('/:id/panels/:panelId', deletePanelFromControl);
 
 // Input_controls
-router.get('/controls/:id/input_controls', getInputControlsByControlId);
-router.delete('/controls/:id/input_controls', deleteInputControlsByControlId);
+router.get('/:id/input_controls', getInputControlsByControlId);
+router.delete('/:id/input_controls', deleteInputControlsByControlId);
+
+
+// Controls computations 
+router.get('/controls/:control_id/computations', getComputationsByControlId);
+router.get(
+  '/controls/:control_id/computations/:createdAt',
+  getComputationsByControlIdAndCreationDate
+);
+router.put(
+  '/controls/:control_id/computations',
+  setComputeIntervalBytControlIdAndCreationDate
+);
+router.delete(
+  '/controls/:control_id/computations',
+  deleteComputationByControlId
+);
 
 export default router;
 
@@ -44,7 +63,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls:
+ * /controls:
  *   get:
  *     summary: Retrieves all controls
  *     tags: [Controls]
@@ -72,7 +91,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{id}:
+ * /controls/{id}:
  *   get:
  *     summary: Retrieves a single control
  *     tags: [Controls]
@@ -114,7 +133,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls:
+ * /controls:
  *   post:
  *     summary: Creates a new control
  *     tags: [Controls]
@@ -207,7 +226,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{id}:
+ * /controls/{id}:
  *   patch:
  *     summary: Updates an existing control
  *     tags: [Controls]
@@ -264,7 +283,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{id}:
+ * /controls/{id}:
  *   delete:
  *     summary: Deletes a control
  *     tags: [Controls]
@@ -302,7 +321,7 @@ export default router;
 
 /**
  * @swagger
- * /api/catalogs/{catalog_id}/controls:
+ * /catalogs/{catalog_id}/controls:
  *   get:
  *     summary: Retrieves all controls for a catalog
  *     tags: [Controls]
@@ -346,7 +365,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{id}/input_controls:
+ * /controls/{id}/input_controls:
  *   get:
  *     summary: Retrieves input controls for a control
  *     tags: [Controls]
@@ -390,7 +409,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{id}/input_controls:
+ * /controls/{id}/input_controls:
  *   delete:
  *     summary: Deletes input controls by control ID
  *     tags: [Controls]
@@ -428,7 +447,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{id}/panels:
+ * /controls/{id}/panels:
  *   get:
  *     summary: Retrieve panels by control ID
  *     tags: [Controls Panel]
@@ -470,7 +489,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{id}/panel/{panelId}:
+ * /controls/{id}/panel/{panelId}:
  *   post:
  *     summary: Add a panel to a control
  *     tags: [Controls Panel]
@@ -530,7 +549,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{id}/panels/{panelId}:
+ * /controls/{id}/panels/{panelId}:
  *   delete:
  *     summary: Delete a specific panel from a control
  *     tags: [Controls Panel]

@@ -6,15 +6,18 @@ import {
   updateCatalog,
   deleteCatalog,
 } from '../controllers/catalog.controller.js';
+import { getCatalogControls } from '../controllers/control.controller.js';
+
 
 const router = Router();
 
 // Catalogs
-router.get('/catalogs', getCatalogs);
-router.get('/catalogs/:id', getCatalog);
-router.post('/catalogs', createCatalog);
-router.patch('/catalogs/:id', updateCatalog);
-router.delete('/catalogs/:id', deleteCatalog);
+router.get('', getCatalogs);
+router.get('/:id', getCatalog);
+router.post('', createCatalog);
+router.patch('/:id', updateCatalog);
+router.delete('/:id', deleteCatalog);
+router.get('/:catalog_id/controls', getCatalogControls);
 
 export default router;
 
@@ -27,7 +30,7 @@ export default router;
 
 /**
  * @swagger
- * /api/catalogs:
+ * /catalogs:
  *   get:
  *     summary: Retrieves all catalogs
  *     tags: [Catalogs]
@@ -55,7 +58,7 @@ export default router;
 
 /**
  * @swagger
- * /api/catalogs/{id}:
+ * /catalogs/{id}:
  *   get:
  *     summary: Retrieves a single catalog
  *     tags: [Catalogs]
@@ -97,7 +100,7 @@ export default router;
 
 /**
  * @swagger
- * /api/catalogs:
+ * /catalogs:
  *   post:
  *     summary: Creates a new catalog
  *     tags: [Catalogs]
@@ -138,7 +141,7 @@ export default router;
 
 /**
  * @swagger
- * /api/catalogs/{id}:
+ * /catalogs/{id}:
  *   patch:
  *     summary: Updates an existing catalog
  *     tags: [Catalogs]
@@ -195,7 +198,7 @@ export default router;
 
 /**
  * @swagger
- * /api/catalogs/{id}:
+ * /catalogs/{id}:
  *   delete:
  *     summary: Deletes a catalog
  *     tags: [Catalogs]

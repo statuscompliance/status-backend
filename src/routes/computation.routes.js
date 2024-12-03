@@ -3,35 +3,18 @@ import { Router } from 'express';
 import {
   getComputations,
   getComputationsById,
-  getComputationsByControlId,
   createComputation,
   bulkCreateComputations,
-  deleteComputations,
-  deleteComputationByControlId,
-  getComputationsByControlIdAndCreationDate,
-  setComputeIntervalBytControlIdAndCreationDate,
+  deleteComputations
 } from '../controllers/computation.controller.js';
 
 const router = Router();
 
-router.get('/computation', getComputations);
-router.delete('/computation', deleteComputations);
-router.get('/computation/:id', getComputationsById);
-router.get('/controls/:control_id/computations', getComputationsByControlId);
-router.get(
-  '/controls/:control_id/computations/:createdAt',
-  getComputationsByControlIdAndCreationDate
-);
-router.put(
-  '/controls/:control_id/computations',
-  setComputeIntervalBytControlIdAndCreationDate
-);
-router.post('/computation', createComputation);
-router.post('/computations', bulkCreateComputations);
-router.delete(
-  '/controls/:control_id/computations',
-  deleteComputationByControlId
-);
+router.get('', getComputations);
+router.delete('', deleteComputations);
+router.get('/:id', getComputationsById);
+router.post('', createComputation);
+router.post('s', bulkCreateComputations);
 
 export default router;
 
@@ -43,7 +26,7 @@ export default router;
  */
 /**
  * @swagger
- * /api/computation:
+ * /computation:
  *   get:
  *     summary: Retrieves all computations
  *     tags: [Computations]
@@ -71,7 +54,7 @@ export default router;
 
 /**
  * @swagger
- * /api/computation/{id}:
+ * /computation/{id}:
  *   get:
  *     summary: Retrieves a single computation
  *     tags: [Computations]
@@ -114,7 +97,7 @@ export default router;
 
 /**
  * @swagger
- * /api/computation:
+ * /computation:
  *   post:
  *     summary: Creates a new computation
  *     tags: [Computations]
@@ -146,7 +129,7 @@ export default router;
 
 /**
  * @swagger
- * /api/computations:
+ * /computations:
  *   post:
  *     summary: Creates multiple computations
  *     tags: [Computations]
@@ -182,7 +165,7 @@ export default router;
 
 /**
  * @swagger
- * /api/computation:
+ * /computation:
  *   delete:
  *     summary: Deletes all computations
  *     tags: [Computations]
@@ -204,7 +187,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{control_id}/computations:
+ * /controls/{control_id}/computations:
  *   get:
  *     summary: Retrieves computations by control ID
  *     tags: [Controls]
@@ -240,7 +223,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{control_id}/computations/{createdAt}:
+ * /controls/{control_id}/computations/{createdAt}:
  *   get:
  *     summary: Retrieves computations by control ID and creation date
  *     tags: [Controls]
@@ -283,7 +266,7 @@ export default router;
 
 /**
  * @swagger
- * /api/controls/{control_id}/computations:
+ * /controls/{control_id}/computations:
  *   put:
  *     summary: Sets compute interval for a computation by control ID and creation date
  *     tags: [Controls]
