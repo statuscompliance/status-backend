@@ -125,3 +125,19 @@ export const deleteAllScripts = async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+
+export const parseScript = async (req, res) => {
+  try {
+    const code = req.body;
+    if (!code.includes('module.exports.main')) {
+      return res.status(400).json({ error: 'The code must include a module.exports.main function.' });
+    }
+    let parsedCode = code.replace(/\n/g, '\n').replace(/ {4}/g, '\t');
+    parsedCode = JSON.stringify(parsedCode);
+    return res.status(200).send(parsedCode);
+  } catch (error) {
+    console.error('Error parsing script:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};

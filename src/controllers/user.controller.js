@@ -97,9 +97,9 @@ export async function signIn(req, res) {
 
       const nodeRedToken = await getNodeRedToken(username, password);
 
-      res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: token_expiration * 1000, sameSite: 'none', secure: false });
-      res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: refreshToken_expiration * 1000, sameSite: 'none', secure: false });
-      res.cookie('nodeRedToken', nodeRedToken, { httpOnly: true, maxAge: refreshToken_expiration * 1000, sameSite: 'none', secure: false });
+      res.cookie('accessToken', accessToken, { httpOnly: true, path:'/', maxAge: token_expiration * 1000, sameSite: 'none', secure: false });
+      res.cookie('refreshToken', refreshToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000, sameSite: 'none', secure: false });
+      res.cookie('nodeRedToken', nodeRedToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000, sameSite: 'none', secure: false });
 
       res.status(200).json({
         username: username,

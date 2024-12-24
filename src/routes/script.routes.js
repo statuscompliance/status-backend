@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import express from 'express';
 import {
   createScript,
   getAllScripts,
@@ -6,16 +7,20 @@ import {
   updateScript,
   deleteScript,
   deleteAllScripts,
+  parseScript,
 } from '../controllers/script.controller.js';
+
+import { verifyAuthority } from '../middleware/verifyAuth.js';
 
 const router = Router();
 
-router.post('', createScript);
-router.get('', getAllScripts);
-router.delete('', deleteAllScripts);
+router.post('', verifyAuthority, createScript);
+router.get('', verifyAuthority, getAllScripts);
+router.delete('', verifyAuthority, deleteAllScripts);
+router.post('/parse', express.text(), parseScript);
 router.get('/:id', getScriptById);
-router.put('/:id', updateScript);
-router.delete('/:id', deleteScript);
+router.put('/:id', verifyAuthority, updateScript);
+router.delete('/:id', verifyAuthority, deleteScript);
 
 export default router;
 
@@ -119,12 +124,63 @@ export default router;
 
 /**
  * @swagger
+ * /scripts/parse:
+ *   post:
+ *     summary: Parses a JavaScript code snippet
+ *     description: >
+ *       Receives a JavaScript code snippet, validates that it includes a `module.exports.main` function,
+ *       and returns the parsed version of the code.
+ *     tags:
+ *       - Scripts
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         text/plain:
+ *           schema:
+ *             type: string
+ *           description: The JavaScript code snippet to parse, sent as plain text.
+ *     responses:
+ *       200:
+ *         description: Successfully parsed JavaScript code.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: |
+ *                 module.exports.main = async () => {
+ *                   console.log("Hello World");
+ *                 };
+ *       400:
+ *         description: Bad request - the code snippet does not include a `module.exports.main` function.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *               example:
+ *                 error: The code must include a module.exports.main function.
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *               example:
+ *                 error: Internal server error
+ */
+
+
+/**
+ * @swagger
  * /scripts/{id}:
  *   get:
  *     summary: Retrieves a script by ID
  *     tags: [Scripts]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
