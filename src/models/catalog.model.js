@@ -14,7 +14,7 @@ const Catalog = sequelize.define('Catalog', {
   },
   dashboard_id: {
     type: DataTypes.STRING(32)
-},
+  },
 }, {
   tableName: 'catalog',
   timestamps: false

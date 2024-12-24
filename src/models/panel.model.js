@@ -1,29 +1,29 @@
-import { DataTypes, UUIDV4 } from "sequelize";
-import sequelize from "../../db/database.js";
+import { DataTypes, UUIDV4 } from 'sequelize';
+import sequelize from '../../db/database.js';
 
 const Panel = sequelize.define(
-    "Panel",
-    {
-        uid: {
-            type: DataTypes.UUID,
-            primaryKey: true,
-            allowNull: false,
-            defaultValue: UUIDV4,
-        },
-        id: {
-            type: DataTypes.STRING,
-            defaultValue: UUIDV4,
-        },
-        dashboardUid: {
-            type: DataTypes.STRING,
-            allowNull: true,
-            defaultValue: null,
-        },
+  'Panel',
+  {
+    uid: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      allowNull: false,
+      defaultValue: UUIDV4,
     },
-    {
-        tableName: "panel",
-        timestamps: false,
-    }
+    id: {
+      type: DataTypes.STRING,
+      defaultValue: UUIDV4,
+    },
+    dashboardUid: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null,
+    },
+  },
+  {
+    tableName: 'panel',
+    timestamps: false,
+  }
 );
 
 export default Panel;

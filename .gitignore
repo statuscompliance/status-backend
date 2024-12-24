@@ -10,11 +10,8 @@ migrations
 # Seeders
 seeders
 
-# config
-config
-
-# others
-docker-compose.yml
-
 # Mac files
 .DS_Store
+
+## DB volume
+mysql
