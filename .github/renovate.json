@@ -2,22 +2,34 @@
     "timezone": "Europe/Madrid",
     "packageRules": [
         {
-            "matchManagers": ["npm"],
-            "matchDepTypes": ["devDependencies"],
+            "matchManagers": [
+                "npm"
+            ],
+            "matchDepTypes": [
+                "devDependencies"
+            ],
             "groupName": "npm (development)"
         },
         {
-            "matchManagers": ["npm"],
-            "matchDepTypes": ["dependencies"],
+            "matchManagers": [
+                "npm"
+            ],
+            "matchDepTypes": [
+                "dependencies"
+            ],
             "groupName": "npm (runtime)"
         },
         {
-            "matchManagers": ["github-actions"],
+            "matchManagers": [
+                "github-actions"
+            ],
             "separateMajorMinor": false,
             "groupName": "ci"
         },
         {
-            "matchUpdateTypes": ["lockFileMaintenance"],
+            "matchUpdateTypes": [
+                "lockFileMaintenance"
+            ],
             "groupName": "lockfiles",
             "dependencyDashboardApproval": true
         }
@@ -29,19 +41,41 @@
     "vulnerabilityAlerts": {
         "enabled": true,
         "groupName": "vulnerable",
-        "labels": ["security", "dependencies"]
+        "labels": [
+            "security",
+            "dependencies"
+        ]
     },
-    "ignoreDeps": ["npm", "node"],
-    "enabledManagers": ["npm", "github-actions"],
-    "labels": ["dependencies"],
+    "ignoreDeps": [
+        "npm",
+        "node"
+    ],
+    "enabledManagers": [
+        "npm",
+        "github-actions"
+    ],
+    "labels": [
+        "dependencies"
+    ],
     "rebaseWhen": "behind-base-branch",
     "rangeStrategy": "pin",
     "lockFileMaintenance": {
         "enabled": true,
         "groupName": "lockfiles",
-        "schedule": ["every month"]
+        "schedule": [
+            "every month"
+        ]
     },
-    "assignees": ["alvarobernal2412"],
-    "reviewers": ["alvarobernal2412"],
-    "extends": ["mergeConfidence:age-confidence-badges"]
+    "assignees": [
+        "alvarobernal2412"
+    ],
+    "reviewers": [
+        "alvarobernal2412"
+    ],
+    "extends": [
+        "mergeConfidence:age-confidence-badges"
+    ],
+    "baseBranches": [
+        "develop"
+    ]
 }
