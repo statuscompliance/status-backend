@@ -14,7 +14,7 @@ router.get('', getComputations);
 router.delete('', deleteComputations);
 router.get('/:id', getComputationsById);
 router.post('', createComputation);
-router.post('s', bulkCreateComputations);
+router.post('/bulk', bulkCreateComputations);
 
 export default router;
 
@@ -56,7 +56,7 @@ export default router;
  * @swagger
  * /computation/{id}:
  *   get:
- *     summary: Retrieves a single computation
+ *     summary: Retrieves a computation by computationGroup
  *     tags: [Computations]
  *     parameters:
  *       - in: path
@@ -65,7 +65,7 @@ export default router;
  *           type: string
  *           format: uuid
  *         required: true
- *         description: The computation ID
+ *         description:  The computationGroup
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -75,6 +75,15 @@ export default router;
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Computation'
+ *       202:
+ *         description: Computation not ready yet
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
  *       404:
  *         description: Computation not found
  *         content:
@@ -99,7 +108,7 @@ export default router;
  * @swagger
  * /computation:
  *   post:
- *     summary: Creates a new computation
+ *     summary: Start a new Node-RED computation
  *     tags: [Computations]
  *     security:
  *       - bearerAuth: []
@@ -109,6 +118,13 @@ export default router;
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/Computation'
+ *           example:
+ *             metric:
+ *               endpoint: "/test"
+ *               params:
+ *                 example: "value1"
+ *             config:
+ *               backendUrl: "http://status-backend:3001/api/v1/computation/bulk"
  *     responses:
  *       201:
  *         description: The created computation
@@ -129,7 +145,7 @@ export default router;
 
 /**
  * @swagger
- * /computations:
+ * /computation/bulk:
  *   post:
  *     summary: Creates multiple computations
  *     tags: [Computations]
@@ -140,9 +156,14 @@ export default router;
  *       content:
  *         application/json:
  *           schema:
- *             type: array
- *             items:
- *               $ref: '#/components/schemas/Computation'
+ *             type: object
+ *             properties:
+ *               computations:
+ *                 type: array
+ *                 items:
+ *                   $ref: '#/components/schemas/Computation'
+ *               done:
+ *                 type: boolean
  *     responses:
  *       201:
  *         description: The created computations
@@ -292,14 +313,6 @@ export default router;
  *           schema:
  *             type: object
  *             properties:
- *               start_compute:
- *                 type: string
- *                 format: date-time
- *                 description: The start time of the computation interval
- *               end_compute:
- *                 type: string
- *                 format: date-time
- *                 description: The end time of the computation interval
  *     security:
  *       - bearerAuth: []
  *     responses:
