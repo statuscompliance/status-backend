@@ -1,13 +1,13 @@
 import { Sequelize } from 'sequelize';
 
 const sequelize = new Sequelize({
-  dialect: process.env.DB_DIALECT || 'mysql',
+  dialect: 'postgres',
+  port: process.env.DB_PORT || 5432,
   host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 3306,
   username: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
+  password: process.env.DB_PASSWORD || 'root',
   database: process.env.DB_NAME || 'statusdb',
-  dialectOptions: process.env.DB_CONFIG || {},
+  ssl: true,
   logging: false, // Disable logging - Add console.log to see the queries
 });
 
