@@ -2,9 +2,11 @@ import models from '../../db/models.js';
 import { Op } from 'sequelize';
 import { checkRequiredProperties } from '../middleware/validation.js';
 import nodered from '../config/nodered.js';
+import registry from '../config/registry.js';
 import { v4 as uuidv4 } from 'uuid';
 import redis from '../config/redis.js';
 import { calculateCompliance } from '../utils/calculateCompliance.js';
+import { storeGuaranteePoints } from '../utils/storeGuaranteePoints.js';
 
 export async function getComputations(req, res) {
   try {
@@ -190,6 +192,24 @@ export async function deleteComputationByControlId(req, res) {
   } catch (error) {
     res.status(500).json({
       message: `Failed to delete computation, error: ${error.message}`,
+    });
+  }
+}
+
+
+export async function calculatePoints(req, res) {
+  try {
+    const agreementId = req.params.id;
+    const { from, to } = req.query;
+    const guaranteesStates = await registry.get(`api/v6/states/${agreementId}/guarantees`, {
+      params: { from, to, newPeriodsFromGuarantees: false },
+      headers: { 'x-access-token': req.cookies.accessToken }
+    });
+    const points = await storeGuaranteePoints(guaranteesStates.data, agreementId);
+    res.status(200).json(points);
+  } catch (error) {
+    res.status(500).json({
+      message: `Failed to get points, error: ${error.message}`,
     });
   }
 }
