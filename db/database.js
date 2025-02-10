@@ -7,7 +7,7 @@ const sequelize = new Sequelize({
   username: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || 'root',
   database: process.env.DB_NAME || 'statusdb',
-  ssl: true,
+  ssl: false,
   logging: false, // Disable logging - Add console.log to see the queries
 });
 

@@ -5,7 +5,8 @@ import {
   getComputationsById,
   createComputation,
   bulkCreateComputations,
-  deleteComputations
+  deleteComputations,
+  calculatePoints,
 } from '../controllers/computation.controller.js';
 
 const router = Router();
@@ -15,6 +16,7 @@ router.delete('', deleteComputations);
 router.get('/:id', getComputationsById);
 router.post('', createComputation);
 router.post('/bulk', bulkCreateComputations);
+router.get('/:id/points', calculatePoints);
 
 export default router;
 
@@ -103,6 +105,8 @@ export default router;
  *                 message:
  *                   type: string
  */
+
+
 
 /**
  * @swagger
@@ -197,6 +201,57 @@ export default router;
  *         description: No content, all computations deleted
  *       500:
  *         description: Failed to delete computations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+
+
+/**
+ * @swagger
+ * /computation/{id}/points:
+ *   get:
+ *     summary: Calculates and retrieves points for a computation by ID
+ *     tags: [Computations]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The computation ID
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: The start date for the points calculation
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: The end date for the points calculation
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of calculated points
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Point'
+ *       500:
+ *         description: Failed to get points
  *         content:
  *           application/json:
  *             schema:
