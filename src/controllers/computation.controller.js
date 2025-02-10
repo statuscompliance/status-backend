@@ -4,6 +4,7 @@ import { checkRequiredProperties } from '../middleware/validation.js';
 import nodered from '../config/nodered.js';
 import { v4 as uuidv4 } from 'uuid';
 import redis from '../config/redis.js';
+import { calculateCompliance } from '../utils/calculateCompliance.js';
 
 export async function getComputations(req, res) {
   try {
@@ -25,12 +26,20 @@ export async function getComputationsById(req, res) {
       res.status(200).json({
         code: 200,
         message: 'OK',
-        computations: computations
+        computations: calculateCompliance(computations)
       });
     } else if (ready === 'false' && computations.length > 0) {
       res.status(202).json({ message: 'Not ready yet' });
     } else {
-      res.status(404).json({ message: 'Not found' });
+      if(computations.length === 0){
+        res.status(404).json({ message: 'Not found' });
+      } else {
+        res.status(200).json({
+          code: 200,
+          message: 'OK',
+          computations: calculateCompliance(computations)
+        });
+      }
     }
   } catch (error) {
     res.status(500).json({
@@ -108,10 +117,14 @@ export async function createComputation(req, res) {
     }
     const endpoint = `/api/v1${metric.endpoint}`;
     const computationId = uuidv4();
+    const { end: to, ...restWindow } = metric.window;
     const params = {
       computationGroup: computationId,
       backendUrl: config.backendUrl,
-      ...metric.params
+      ...metric.params,
+      scope: metric.scope,
+      to,
+      ...restWindow
     };
     const headers = {
       'x-access-token': req.cookies.accessToken
