@@ -5,7 +5,6 @@ const Point = sequelize.define('Point', {
     type: DataTypes.UUID,
     defaultValue: UUIDV4,
     primaryKey: true
-
   },
   agreementId: {
     type: DataTypes.STRING,
@@ -34,7 +33,11 @@ const Point = sequelize.define('Point', {
   scope: {
     type: DataTypes.JSONB,
     allowNull: false
-  }
+  },
+  computationGroup: {
+    type: DataTypes.UUID,
+    allowNull: true
+  },
 });
 
 export default Point;
@@ -73,4 +76,8 @@ export default Point;
  *         scope:
  *           type: object
  *           description: Scope of the point
+ *         computationGroup:
+ *           type: string
+ *           format: uuid
+ *           description: Identifier for the computation group
  */
