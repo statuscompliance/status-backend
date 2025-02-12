@@ -7,7 +7,6 @@ import Thread from '../src/models/thread.model.js';
 import Message from '../src/models/message.model.js';
 import Catalog from '../src/models/catalog.model.js';
 import Control from '../src/models/control.model.js';
-import InputControl from '../src/models/input_control.model.js';
 import Configuration from '../src/models/configuration.model.js';
 import { associateModels } from './model-utils.js';
 import Computation from '../src/models/computation.model.js';
@@ -22,7 +21,6 @@ const models = {
   Catalog,
   Control,
   Configuration,
-  InputControl,
   Computation,
   Panel,
   Point

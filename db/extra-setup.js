@@ -5,7 +5,6 @@ export default function applyExtraSetup(sequelize) {
     Message,
     Catalog,
     Control,
-    InputControl,
     Computation,
     Panel,
   } = sequelize.models;
@@ -16,15 +15,12 @@ export default function applyExtraSetup(sequelize) {
   Thread.hasMany(Message);
   Message.belongsTo(Thread);
 
-  Catalog.hasMany(Control, { foreignKey: 'catalog_id' });
-  Control.belongsTo(Catalog, { foreignKey: 'catalog_id' });
+  Catalog.hasMany(Control, { foreignKey: 'catalogId' });
+  Control.belongsTo(Catalog, { foreignKey: 'catalogId' });
 
-  Control.hasMany(InputControl, { foreignKey: 'control_id' });
-  InputControl.belongsTo(Control, { foreignKey: 'control_id' });
+  Control.hasMany(Computation, { foreignKey: 'controlId' });
+  Computation.belongsTo(Control, { foreignKey: 'controlId' });
 
-  Control.hasMany(Computation, { foreignKey: 'control_id' });
-  Computation.belongsTo(Control, { foreignKey: 'control_id' });
-
-  Control.hasMany(Panel, { foreignKey: 'control_id' });
-  Panel.belongsTo(Control, { foreignKey: 'control_id' });
+  Control.hasMany(Panel, { foreignKey: 'controlId' });
+  Panel.belongsTo(Control, { foreignKey: 'controlId' });
 }
