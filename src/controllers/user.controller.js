@@ -1,4 +1,4 @@
-import models from '../../db/models.js';
+import models from '../models/models.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import nodered from '../config/nodered.js';
