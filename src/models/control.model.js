@@ -13,7 +13,7 @@ const Control = sequelize.define(
       allowNull: false,
     },
     period: {
-      type: DataTypes.ENUM('DAILY', 'MONTHLY', 'ANNUALLY'),
+      type: DataTypes.ENUM('HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'ANNUALLY'),
       allowNull: false,
     },
     startDate: {
@@ -22,9 +22,13 @@ const Control = sequelize.define(
     endDate: {
       type: DataTypes.DATE,
     },
-    mashup_id: {
+    mashupId: {
       type: DataTypes.STRING(32),
       allowNull: false,
+    },
+    params: {
+      type: DataTypes.JSONB,
+      allowNull: true
     },
   },
   {
@@ -50,7 +54,7 @@ export default Control;
  *           description: The description of the control
  *         period:
  *           type: string
- *           enum: [DAILY, MONTHLY, ANNUALLY]
+ *           enum: [HOURLY, DAILY, WEEKLY, MONTHLY, ANNUALLY]
  *           description: The period of the control
  *         startDate:
  *           type: string
@@ -60,14 +64,23 @@ export default Control;
  *           type: string
  *           format: date-time
  *           description: The end date of the control
+ *         mashupId:
+ *           type: string
+ *           description: The mashup ID associated with the control
+ *         params:
+ *           type: object
+ *           description: Input parameters for the control
  *       required:
  *         - name
  *         - description
  *         - period
+ *         - mashupId
  *       example:
  *         name: number of sections is greater than 10
  *         description: The document has more than 10 sections
  *         period: MONTHLY
  *         startDate: 2023-01-01T00:00:00.000Z
  *         endDate: 2023-12-31T23:59:59.000Z
+ *         mashupId: abc123
+ *         params: { "threshold": 10 }
  */
