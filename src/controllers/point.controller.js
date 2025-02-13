@@ -1,4 +1,4 @@
-import models from '../../db/models.js';
+import models from '../models/models.js';
 import { validate as uuidValidate } from 'uuid';
 
 export const getPoints = async (req, res) => {

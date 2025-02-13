@@ -1,4 +1,4 @@
-import models from '../../db/models.js';
+import models from '../models/models.js';
 import { storeGuaranteePoints } from '../utils/storeGuaranteePoints.js';
 import registry from '../config/registry.js';
 import { createAgreement } from '../utils/agreementTranslator.js';

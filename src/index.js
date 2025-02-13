@@ -12,6 +12,7 @@ import grafanaRoutes from './routes/grafana.routes.js';
 import computationRoutes from './routes/computation.routes.js';
 import scriptRoutes from './routes/script.routes.js';
 import pointRoutes from './routes/point.routes.js';
+import scopeRoutes from './routes/scope.routes.js';
 import cors from 'cors';
 import { verifyAuthority } from './middleware/verifyAuth.js';
 import { validateParams } from './middleware/validation.js';
@@ -68,6 +69,7 @@ app.use(`${API_PREFIX}/user`, userRoutes);
 app.use(validateParams);
 app.use(`${API_PREFIX}/scripts`, scriptRoutes);
 app.use(verifyAuthority);
+app.use(`${API_PREFIX}/scope`, scopeRoutes);
 app.use(`${API_PREFIX}/point`, pointRoutes);
 app.use(`${API_PREFIX}/grafana`, grafanaRoutes);
 app.use(`${API_PREFIX}/controls`, controlRoutes);
@@ -100,6 +102,7 @@ async function insertEndpointsToConfig() {
     `${API_PREFIX}/getAuth`,
     `${API_PREFIX}/computation`,
     `${API_PREFIX}/point`,
+    `${API_PREFIX}/scope`,
     'docs',
   ];
   try {
