@@ -1,4 +1,5 @@
 import { Sequelize } from 'sequelize';
+import mongoose from 'mongoose';
 
 const sequelize = new Sequelize({
   dialect: 'postgres',
@@ -12,10 +13,16 @@ const sequelize = new Sequelize({
 });
 
 // Test connection
-console.info('[database] Connecting...');
+console.info('[database] Connecting to Postgres...');
 
 sequelize.authenticate().then(() => {
-  console.info('[database] Successully connected.');
+  console.info('[database] Postgres successully connected.');
 });
+
+
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log('[database] MongoDB connected'))
+  .catch((err) => console.log(err));
 
 export default sequelize;

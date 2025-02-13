@@ -65,16 +65,16 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
 app.use(endpointAvailable);
 app.use(`${API_PREFIX}`, ghAccess);
 app.use(`${API_PREFIX}`, refresh);
-app.use(`${API_PREFIX}/user`, userRoutes);
+app.use(`${API_PREFIX}/users`, userRoutes);
 app.use(validateParams);
 app.use(`${API_PREFIX}/scripts`, scriptRoutes);
 app.use(verifyAuthority);
-app.use(`${API_PREFIX}/scope`, scopeRoutes);
-app.use(`${API_PREFIX}/point`, pointRoutes);
+app.use(`${API_PREFIX}/scopes`, scopeRoutes);
+app.use(`${API_PREFIX}/points`, pointRoutes);
 app.use(`${API_PREFIX}/grafana`, grafanaRoutes);
 app.use(`${API_PREFIX}/controls`, controlRoutes);
-app.use(`${API_PREFIX}/catalog`, catalogRoutes);
-app.use(`${API_PREFIX}/computation`, computationRoutes);
+app.use(`${API_PREFIX}/catalogs`, catalogRoutes);
+app.use(`${API_PREFIX}/computations`, computationRoutes);
 app.use(`${API_PREFIX}/assistant`, assistantRoutes);
 app.use(`${API_PREFIX}/thread`, threadRoutes);
 app.use(verifyAdmin);
@@ -91,18 +91,18 @@ async function insertEndpointsToConfig() {
   const endpoints = [
     `${API_PREFIX}/config`,
     `${API_PREFIX}/refresh`,
-    `${API_PREFIX}/user`,
+    `${API_PREFIX}/users`,
     `${API_PREFIX}/scripts`,
     `${API_PREFIX}/controls`,
     `${API_PREFIX}/grafana`,
     `${API_PREFIX}/thread`,
-    `${API_PREFIX}/catalog`,
+    `${API_PREFIX}/catalogs`,
     `${API_PREFIX}/assistant`,
     `${API_PREFIX}/ghAccessToken`,
     `${API_PREFIX}/getAuth`,
-    `${API_PREFIX}/computation`,
-    `${API_PREFIX}/point`,
-    `${API_PREFIX}/scope`,
+    `${API_PREFIX}/computations`,
+    `${API_PREFIX}/points`,
+    `${API_PREFIX}/scopes`,
     'docs',
   ];
   try {

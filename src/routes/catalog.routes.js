@@ -32,7 +32,7 @@ export default router;
 
 /**
  * @swagger
- * /catalog:
+ * /catalogs:
  *   get:
  *     summary: Retrieves all catalogs
  *     tags: [Catalogs]
@@ -60,7 +60,7 @@ export default router;
 
 /**
  * @swagger
- * /catalog/{id}:
+ * /catalogs/{id}:
  *   get:
  *     summary: Retrieves a single catalog
  *     tags: [Catalogs]
@@ -102,7 +102,7 @@ export default router;
 
 /**
  * @swagger
- * /catalog:
+ * /catalogs:
  *   post:
  *     summary: Creates a new catalog
  *     tags: [Catalogs]
@@ -143,7 +143,7 @@ export default router;
 
 /**
  * @swagger
- * /catalog/{id}:
+ * /catalogs/{id}:
  *   patch:
  *     summary: Updates an existing catalog
  *     tags: [Catalogs]
@@ -200,7 +200,7 @@ export default router;
 
 /**
  * @swagger
- * /catalog/{id}:
+ * /catalogs/{id}:
  *   delete:
  *     summary: Deletes a catalog
  *     tags: [Catalogs]
@@ -238,7 +238,7 @@ export default router;
 
 /**
  * @swagger
- * /catalog/{tpaId}/points:
+ * /catalogs/{tpaId}/points:
  *   get:
  *     summary: Calculates and retrieves points for a computation by tpaId
  *     tags: [Catalogs]

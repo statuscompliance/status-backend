@@ -24,7 +24,7 @@ router.delete('/:id', deleteUserById);
 export default router;
 /**
  * @swagger
- * /user/signUp:
+ * /users/signUp:
  *   post:
  *     summary: Creates a new user account
  *     tags:
@@ -74,7 +74,7 @@ export default router;
 
 /**
  * @swagger
- * /user/signIn:
+ * /users/signIn:
  *   post:
  *     summary: Authenticates a user and generates access and refresh tokens
  *     tags:
@@ -126,7 +126,7 @@ export default router;
 
 /**
  * @swagger
- * /user/signOut:
+ * /users/signOut:
  *   post:
  *     summary: Logs out a user by clearing the refresh token
  *     tags: [Auth]
@@ -146,7 +146,7 @@ export default router;
 
 /**
  * @swagger
- * /user/auth/:
+ * /users/auth/:
  *   get:
  *     summary: Retrieves the authority of the authenticated user
  *     tags: [Auth]

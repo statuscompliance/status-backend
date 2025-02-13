@@ -1,4 +1,5 @@
 import models from '../models/models.js';
+import ScopeSet from '../models/scopeSet.model.js';
 
 export async function getAllScopes(req, res) {
   try {
@@ -62,3 +63,34 @@ export async function deleteScope(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
+
+export async function createScopeSet(req, res) {
+  try {
+    const { controlId, scopes } = req.body;
+    const newScopeSet = new ScopeSet({ controlId, scopes });
+    await newScopeSet.save();
+    res.status(201).json(newScopeSet);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function getAllScopeSets(req, res) {
+  try {
+    const scopeSets = await ScopeSet.find();
+    res.status(200).json(scopeSets);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function getScopeSetsByControlId(req, res) {
+  try {
+    const { controlId } = req.params;
+    const scopeSets = await ScopeSet.find({ controlId });
+    res.status(200).json(scopeSets);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+

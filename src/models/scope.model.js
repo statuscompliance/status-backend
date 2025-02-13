@@ -17,11 +17,19 @@ const Scope = sequelize.define('Scope', {
   },
   type: {
     type: DataTypes.STRING,
+    defaultValue: 'string',
     allowNull: false
   },
   default : {
     type: DataTypes.STRING,
     allowNull: false
+  },
+  key: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.name.toLowerCase().replace(/\s+/g, '_');
+    },
+    allowNull: true
   }
 });
 

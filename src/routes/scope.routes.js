@@ -6,15 +6,22 @@ import {
   deleteScope,
   createScope,
   updateScope,
+  getAllScopeSets,
+  createScopeSet,
+  getScopeSetsByControlId,
 } from '../controllers/scope.controller.js';
 
 const router = Router();
 
+router.get('/sets', getAllScopeSets);
+router.post('/sets', createScopeSet);
+router.get('/sets/:controlId', getScopeSetsByControlId);
 router.get('', getAllScopes);
 router.get('/:id', validateUUID('id'), getScopeById);
 router.post('', createScope);
 router.put('/:id', validateUUID('id'), updateScope);
 router.delete('/:id', validateUUID('id'), deleteScope);
+
 
 export default router;
 
@@ -194,6 +201,105 @@ export default router;
  *                   type: string
  *       500:
  *         description: Failed to delete scope
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
+
+
+/**
+ * @swagger
+ * /scopes/sets:
+ *   get:
+ *     summary: Retrieves all scope sets
+ *     tags: [Scopes]
+ *     responses:
+ *       200:
+ *         description: A list of scope sets
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ScopeSet'
+ *       500:
+ *         description: Failed to get scope sets
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /scopes/sets:
+ *   post:
+ *     summary: Creates a new scope set
+ *     tags: [Scopes]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ScopeSet'
+ *     responses:
+ *       201:
+ *         description: The created scope set
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ScopeSet'
+ *       500:
+ *         description: Failed to create scope set
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /scopes/sets/{controlId}:
+ *   get:
+ *     summary: Retrieves scope sets by control ID
+ *     tags: [Scopes]
+ *     parameters:
+ *       - in: path
+ *         name: controlId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The control ID
+ *     responses:
+ *       200:
+ *         description: A list of scope sets
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ScopeSet'
+ *       404:
+ *         description: Scope sets not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Failed to get scope sets
  *         content:
  *           application/json:
  *             schema:
