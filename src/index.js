@@ -2,7 +2,6 @@ import express from 'express';
 import catalogRoutes from './routes/catalog.routes.js';
 import controlRoutes from './routes/control.routes.js';
 import indexRoutes from './routes/index.routes.js';
-import inputControlRoutes from './routes/input_control.routes.js';
 import ghAccess from './routes/ghaccess.routes.js';
 import userRoutes from './routes/user.routes.js';
 import refresh from './routes/refresh.routes.js';
@@ -12,6 +11,7 @@ import configRoutes from './routes/configuration.routes.js';
 import grafanaRoutes from './routes/grafana.routes.js';
 import computationRoutes from './routes/computation.routes.js';
 import scriptRoutes from './routes/script.routes.js';
+import pointRoutes from './routes/point.routes.js';
 import cors from 'cors';
 import { verifyAuthority } from './middleware/verifyAuth.js';
 import { validateParams } from './middleware/validation.js';
@@ -68,10 +68,10 @@ app.use(`${API_PREFIX}/user`, userRoutes);
 app.use(validateParams);
 app.use(`${API_PREFIX}/scripts`, scriptRoutes);
 app.use(verifyAuthority);
+app.use(`${API_PREFIX}/point`, pointRoutes);
 app.use(`${API_PREFIX}/grafana`, grafanaRoutes);
-app.use(`${API_PREFIX}/input_controls`, inputControlRoutes);
 app.use(`${API_PREFIX}/controls`, controlRoutes);
-app.use(`${API_PREFIX}/catalogs`, catalogRoutes);
+app.use(`${API_PREFIX}/catalog`, catalogRoutes);
 app.use(`${API_PREFIX}/computation`, computationRoutes);
 app.use(`${API_PREFIX}/assistant`, assistantRoutes);
 app.use(`${API_PREFIX}/thread`, threadRoutes);
@@ -90,16 +90,16 @@ async function insertEndpointsToConfig() {
     `${API_PREFIX}/config`,
     `${API_PREFIX}/refresh`,
     `${API_PREFIX}/user`,
-    `${API_PREFIX}/input_controls`,
     `${API_PREFIX}/scripts`,
     `${API_PREFIX}/controls`,
     `${API_PREFIX}/grafana`,
     `${API_PREFIX}/thread`,
-    `${API_PREFIX}/catalogs`,
+    `${API_PREFIX}/catalog`,
     `${API_PREFIX}/assistant`,
     `${API_PREFIX}/ghAccessToken`,
     `${API_PREFIX}/getAuth`,
     `${API_PREFIX}/computation`,
+    `${API_PREFIX}/point`,
     'docs',
   ];
   try {
