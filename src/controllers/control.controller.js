@@ -1,5 +1,6 @@
 import models from '../../db/models.js';
 import { methods } from '../config/grafana.js';
+import { checkRequiredProperties } from '../utils/checkRequiredProperties.js';
 
 export const getControls = async (req, res) => {
   const rows = await models.Control.findAll();
@@ -14,28 +15,19 @@ export const getControl = async (req, res) => {
       message: 'Control not found',
     });
 
-  res.json(row);
+  res.status(200).json(row);
 };
 
 export const getCatalogControls = async (req, res) => {
   const rows = await models.Control.findAll({
     where: {
-      catalog_id: req.params.catalog_id,
+      catalogId: req.params.catalogId,
     },
   });
 
   res.json(rows);
 };
 
-export const getInputControlsByControlId = async (req, res) => {
-  const rows = await models.InputControl.findAll({
-    where: {
-      control_id: req.params.id,
-    },
-  });
-
-  res.json(rows);
-};
 
 export const createControl = async (req, res) => {
   const {
@@ -44,9 +36,15 @@ export const createControl = async (req, res) => {
     period,
     startDate,
     endDate,
-    mashup_id,
-    catalog_id,
+    mashupId,
+    catalogId,
+    params, // Should include endpoint and threshold at least
   } = req.body;
+  const {validation, textError} = checkRequiredProperties( params, ['endpoint', 'threshold']);
+
+  if(!validation){
+    res.status(400).json({error: textError});
+  }
 
   const formattedStartDate = startDate ? new Date(startDate) : null;
   const formattedEndDate = endDate ? new Date(endDate) : null;
@@ -57,19 +55,20 @@ export const createControl = async (req, res) => {
     period,
     startDate: formattedStartDate,
     endDate: formattedEndDate,
-    mashup_id,
-    catalog_id,
+    mashupId,
+    catalogId,
+    params,
   });
 
-  res.send({
+  res.status(201).json({
     id: rows.id,
     name,
     description,
     period,
     formattedStartDate,
     formattedEndDate,
-    mashup_id,
-    catalog_id,
+    mashupId,
+    catalogId,
   });
 };
 
@@ -81,9 +80,16 @@ export const updateControl = async (req, res) => {
     period,
     startDate,
     endDate,
-    mashup_id,
-    catalog_id,
+    mashupId,
+    catalogId,
+    params,
   } = req.body;
+  
+  const {validation, textError} = checkRequiredProperties( params, ['endpoint', 'threshold']);
+
+  if(!validation){
+    res.status(400).json({error: textError});
+  }
 
   const formattedStartDate = startDate ? new Date(startDate) : null;
   const formattedEndDate = endDate ? new Date(endDate) : null;
@@ -100,8 +106,9 @@ export const updateControl = async (req, res) => {
       period,
       startDate: formattedStartDate,
       endDate: formattedEndDate,
-      mashup_id,
-      catalog_id,
+      mashupId,
+      catalogId,
+      params,
     },
     {
       where: {
@@ -111,7 +118,7 @@ export const updateControl = async (req, res) => {
   );
 
   const row = await models.Control.findByPk(id);
-  res.json(row);
+  res.status(200).json(row);
 };
 
 export const deleteControl = async (req, res) => {
@@ -126,17 +133,7 @@ export const deleteControl = async (req, res) => {
       message: 'Control not found',
     });
 
-  res.sendStatus(204);
-};
-
-export const deleteInputControlsByControlId = async (req, res) => {
-  await models.InputControl.destroy({
-    where: {
-      control_id: req.params.id,
-    },
-  });
-
-  res.sendStatus(204);
+  res.status(204);
 };
 
 export async function addPanelToControl(req, res) {
@@ -149,7 +146,7 @@ export async function addPanelToControl(req, res) {
   try {
     const panel = await models.Panel.create({
       id: panelId,
-      control_id: id,
+      controlId: id,
       dashboardUid: dashboardUid,
     });
     res.status(201).json({
@@ -171,7 +168,7 @@ export async function getPanelsByControlId(req, res) {
   try {
     const panels = await models.Panel.findAll({
       where: {
-        control_id: id,
+        controlId: id,
       },
     });
     let panelsDTO = [];
@@ -224,7 +221,7 @@ export async function deletePanelFromControl(req, res) {
   try {
     await models.Panel.destroy({
       where: {
-        control_id: id,
+        controlId: id,
         id: panelId,
       },
     });

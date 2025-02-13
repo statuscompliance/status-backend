@@ -77,5 +77,5 @@ export default Computation;
  *         scope: {"project": "showcase-GH-governify_bluejay-showcase", "class": "showcase", "member": "Javi_Fdez" }
  *         evidences: [{"document": "Document confirming the computation"}]
  *         period: { "from": "2022-04-07T02:00:00.000Z", "to": "2022-04-07T02:59:59.999Z" }
- *         control_id: 2
+ *         controlId: 2
  */

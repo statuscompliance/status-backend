@@ -5,6 +5,7 @@ import {
   createCatalog,
   updateCatalog,
   deleteCatalog,
+  calculatePoints,
 } from '../controllers/catalog.controller.js';
 import { getCatalogControls } from '../controllers/control.controller.js';
 
@@ -17,7 +18,8 @@ router.get('/:id', getCatalog);
 router.post('', createCatalog);
 router.patch('/:id', updateCatalog);
 router.delete('/:id', deleteCatalog);
-router.get('/:catalog_id/controls', getCatalogControls);
+router.get('/:tpaId/points', calculatePoints);
+router.get('/:catalogId/controls', getCatalogControls);
 
 export default router;
 
@@ -30,7 +32,7 @@ export default router;
 
 /**
  * @swagger
- * /catalogs:
+ * /catalog:
  *   get:
  *     summary: Retrieves all catalogs
  *     tags: [Catalogs]
@@ -58,7 +60,7 @@ export default router;
 
 /**
  * @swagger
- * /catalogs/{id}:
+ * /catalog/{id}:
  *   get:
  *     summary: Retrieves a single catalog
  *     tags: [Catalogs]
@@ -100,7 +102,7 @@ export default router;
 
 /**
  * @swagger
- * /catalogs:
+ * /catalog:
  *   post:
  *     summary: Creates a new catalog
  *     tags: [Catalogs]
@@ -141,7 +143,7 @@ export default router;
 
 /**
  * @swagger
- * /catalogs/{id}:
+ * /catalog/{id}:
  *   patch:
  *     summary: Updates an existing catalog
  *     tags: [Catalogs]
@@ -198,7 +200,7 @@ export default router;
 
 /**
  * @swagger
- * /catalogs/{id}:
+ * /catalog/{id}:
  *   delete:
  *     summary: Deletes a catalog
  *     tags: [Catalogs]
@@ -225,6 +227,55 @@ export default router;
  *                   type: string
  *       500:
  *         description: Failed to delete catalog
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /catalog/{tpaId}/points:
+ *   get:
+ *     summary: Calculates and retrieves points for a computation by tpaId
+ *     tags: [Catalogs]
+ *     parameters:
+ *       - in: path
+ *         name: tpaId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The Bluejay Agreement ID (tpaId)
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: The start date for the points calculation
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         required: false
+ *         description: The end date for the points calculation
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of calculated points
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Point'
+ *       500:
+ *         description: Failed to get points
  *         content:
  *           application/json:
  *             schema:

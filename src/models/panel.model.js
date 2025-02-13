@@ -41,13 +41,13 @@ export default Panel;
  *        dashboardUid:
  *          type: string
  *          description: The unique identifier for the dashboard (UUID)
- *        control_id:
+ *        controlId:
  *          type: integer
  *          description: The unique identifier for the control
  *      required:
  *        - id
  *        - dashboardUid
- *        - control_id
+ *        - controlId
  *      example:
  *        id: "e9c7d71c-90b3-4c1c-bd84-3f1c73392b3c"
  */

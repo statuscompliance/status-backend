@@ -1,12 +1,10 @@
 import models from '../../db/models.js';
 import { Op } from 'sequelize';
-import { checkRequiredProperties } from '../middleware/validation.js';
+import { checkRequiredProperties } from '../utils/checkRequiredProperties.js';
 import nodered from '../config/nodered.js';
-import registry from '../config/registry.js';
 import { v4 as uuidv4 } from 'uuid';
 import redis from '../config/redis.js';
 import { calculateCompliance } from '../utils/calculateCompliance.js';
-import { storeGuaranteePoints } from '../utils/storeGuaranteePoints.js';
 
 export async function getComputations(req, res) {
   try {
@@ -52,9 +50,9 @@ export async function getComputationsById(req, res) {
 
 export async function getComputationsByControlId(req, res) {
   try {
-    const { control_id } = req.params;
+    const { controlId } = req.params;
     const computations = await models.Computation.findAll({
-      where: { control_id },
+      where: { controlId },
     });
     res.status(200).json(computations);
   } catch (error) {
@@ -66,7 +64,7 @@ export async function getComputationsByControlId(req, res) {
 
 export async function getComputationsByControlIdAndCreationDate(req, res) {
   try {
-    const { control_id, createdAt } = req.params;
+    const { controlId, createdAt } = req.params;
 
     const startOfDay = new Date(createdAt);
     startOfDay.setUTCHours(0, 0, 0, 0);
@@ -76,7 +74,7 @@ export async function getComputationsByControlIdAndCreationDate(req, res) {
 
     const computations = await models.Computation.findAll({
       where: {
-        control_id,
+        controlId,
         createdAt: {
           [Op.between]: [startOfDay, endOfDay],
         },
@@ -96,11 +94,11 @@ export async function getComputationsByControlIdAndCreationDate(req, res) {
 export async function setComputeIntervalBytControlIdAndCreationDate(req, res) {
   try {
     const { start_compute, end_compute } = req.body;
-    const { control_id, createdAt } = req.params;
+    const { controlId, createdAt } = req.params;
 
     const computation = await models.Computation.update(
       { start_compute, end_compute },
-      { where: { control_id, createdAt } }
+      { where: { controlId, createdAt } }
     );
     res.status(204).json(computation);
   } catch (error) {
@@ -186,30 +184,12 @@ export async function deleteComputations(req, res) {
 
 export async function deleteComputationByControlId(req, res) {
   try {
-    const { control_id } = req.params;
-    await models.Computation.destroy({ where: { control_id } });
+    const { controlId } = req.params;
+    await models.Computation.destroy({ where: { controlId } });
     res.status(204).end();
   } catch (error) {
     res.status(500).json({
       message: `Failed to delete computation, error: ${error.message}`,
-    });
-  }
-}
-
-
-export async function calculatePoints(req, res) {
-  try {
-    const agreementId = req.params.id;
-    const { from, to } = req.query;
-    const guaranteesStates = await registry.get(`api/v6/states/${agreementId}/guarantees`, {
-      params: { from, to, newPeriodsFromGuarantees: false },
-      headers: { 'x-access-token': req.cookies.accessToken }
-    });
-    const points = await storeGuaranteePoints(guaranteesStates.data, agreementId);
-    res.status(200).json(points);
-  } catch (error) {
-    res.status(500).json({
-      message: `Failed to get points, error: ${error.message}`,
     });
   }
 }

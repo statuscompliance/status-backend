@@ -1,22 +1,20 @@
 import { Router } from 'express';
-
+import { validateUUID} from '../middleware/validation.js';
 import {
   getComputations,
   getComputationsById,
   createComputation,
   bulkCreateComputations,
   deleteComputations,
-  calculatePoints,
 } from '../controllers/computation.controller.js';
 
 const router = Router();
 
 router.get('', getComputations);
 router.delete('', deleteComputations);
-router.get('/:id', getComputationsById);
+router.get('/:id', validateUUID('id'), getComputationsById);
 router.post('', createComputation);
 router.post('/bulk', bulkCreateComputations);
-router.get('/:id/points', calculatePoints);
 
 export default router;
 
@@ -211,65 +209,15 @@ export default router;
  */
 
 
-
 /**
  * @swagger
- * /computation/{id}/points:
- *   get:
- *     summary: Calculates and retrieves points for a computation by ID
- *     tags: [Computations]
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: The computation ID
- *       - in: query
- *         name: from
- *         schema:
- *           type: string
- *           format: date-time
- *         required: false
- *         description: The start date for the points calculation
- *       - in: query
- *         name: to
- *         schema:
- *           type: string
- *           format: date-time
- *         required: false
- *         description: The end date for the points calculation
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: A list of calculated points
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Point'
- *       500:
- *         description: Failed to get points
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- */
-
-/**
- * @swagger
- * /controls/{control_id}/computations:
+ * /controls/{controlId}/computations:
  *   get:
  *     summary: Retrieves computations by control ID
  *     tags: [Controls]
  *     parameters:
  *       - in: path
- *         name: control_id
+ *         name: controlId
  *         schema:
  *           type: integer
  *           format: id
@@ -299,13 +247,13 @@ export default router;
 
 /**
  * @swagger
- * /controls/{control_id}/computations/{createdAt}:
+ * /controls/{controlId}/computations/{createdAt}:
  *   get:
  *     summary: Retrieves computations by control ID and creation date
  *     tags: [Controls]
  *     parameters:
  *       - in: path
- *         name: control_id
+ *         name: controlId
  *         schema:
  *           type: integer
  *           format: id
@@ -342,13 +290,13 @@ export default router;
 
 /**
  * @swagger
- * /controls/{control_id}/computations:
+ * /controls/{controlId}/computations:
  *   put:
  *     summary: Sets compute interval for a computation by control ID and creation date
  *     tags: [Controls]
  *     parameters:
  *       - in: path
- *         name: control_id
+ *         name: controlId
  *         schema:
  *           type: integer
  *           format: id
@@ -387,7 +335,7 @@ export default router;
  *     tags: [Controls]
  *     parameters:
  *       - in: path
- *         name: control_id
+ *         name: controlId
  *         schema:
  *           type: integer
  *           format: id

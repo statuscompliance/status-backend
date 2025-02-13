@@ -1,5 +1,5 @@
 import { Router } from 'express';
-
+import { validateUUID, checkIdParam } from '../middleware/validation.js';
 import {
   createFolder,
   getFolderByUID,
@@ -34,23 +34,25 @@ router.post('/serviceaccount/:id/token', createServiceAccountToken);
 //FOLDER
 router.get('/folder', getFolders);
 router.post('/folder', createFolder);
-router.get('/folder/:uid', getFolderByUID);
+router.get('/folder/:uid', validateUUID('uid'), getFolderByUID);
 router.get('/folder/:uid/dashboard', getFolderDashboardsByUID);
 
 //DASHBOARD
 router.post('/dashboard', createDashboard);
 router.post('/dashboard/import', importDashboard);
-router.get('/dashboard/:uid', getDashboardByUID);
-router.delete('/dashboard/:uid', deleteDashboardByUID);
-router.get('/dashboard/:uid/panel', getPanelsByDashboardUID);
-router.post('/dashboard/:uid/panel', addDashboardPanel);
-router.patch('/dashboard/:uid/panel/:id', updatePanelByID);
-router.delete('/dashboard/:uid/panel/:id', deletePanelByID);
+router.get('/dashboard/:uid', validateUUID('uid'), getDashboardByUID);
+router.delete('/dashboard/:uid', validateUUID('uid'), deleteDashboardByUID);
+router.get('/dashboard/:uid/panel', validateUUID('uid'), getPanelsByDashboardUID);
+router.post('/dashboard/:uid/panel', validateUUID('uid'), addDashboardPanel);
+router.patch('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, updatePanelByID);
+router.delete('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, deletePanelByID);
 router.get(
   '/dashboard/:uid/panel/query',
+  validateUUID('uid'), 
+  checkIdParam, 
   getDashboardPanelQueriesByUID
 );
-router.get('/dashboard/:uid/panel/:id/query', getPanelQueryByID);
+router.get('/dashboard/:uid/panel/:id/query', validateUUID('uid'), checkIdParam, getPanelQueryByID);
 
 //DATASOURCE
 router.get('/datasource', getDatasources);

@@ -7,14 +7,21 @@ const Catalog = sequelize.define('Catalog', {
     allowNull: false
   },
   startDate: {
-    type: DataTypes.DATE
+    type: DataTypes.DATE,
+    allowNull: false
   },
   endDate: {
-    type: DataTypes.DATE
+    type: DataTypes.DATE,
+    allowNull: true
   },
   dashboard_id: {
-    type: DataTypes.STRING(32)
+    type: DataTypes.STRING(32),
+    allowNull: true
   },
+  tpaId: {
+    type: DataTypes.STRING(40),
+    allowNull: true
+  }
 }, {
   tableName: 'catalog',
   timestamps: false
@@ -43,6 +50,9 @@ export default Catalog;
  *         dashboard_id:
  *           type: string
  *           description: The ID of the dashboard associated with the catalog
+ *         tpaId:
+ *           type: string
+ *           description: The ID of the agreement associated with the catalog
  *       required:
  *         - name
  *       example:
@@ -50,4 +60,5 @@ export default Catalog;
  *         startDate: 2024-06-01T00:00:00.000Z
  *         endDate: 2024-08-31T23:59:59.000Z
  *         dashboard_id: ae08pn1m04lxcd
+ *         tpaId: tpa-aefe3b50-22cb-4a5b-88c5-66f236bfdeca
  */
