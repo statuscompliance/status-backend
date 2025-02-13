@@ -136,7 +136,7 @@ export async function createComputation(req, res) {
     res.status(201).json({
       code: 201,
       message: 'OK',
-      computation: '/api/v1/computation/' + computationId
+      computation: '/api/v1/computations/' + computationId
     });
   } catch (error) {
     res.status(500).json({

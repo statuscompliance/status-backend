@@ -26,7 +26,7 @@ export default router;
  */
 /**
  * @swagger
- * /computation:
+ * /computations:
  *   get:
  *     summary: Retrieves all computations
  *     tags: [Computations]
@@ -54,7 +54,7 @@ export default router;
 
 /**
  * @swagger
- * /computation/{id}:
+ * /computations/{id}:
  *   get:
  *     summary: Retrieves a computation by computationGroup
  *     tags: [Computations]
@@ -108,7 +108,7 @@ export default router;
 
 /**
  * @swagger
- * /computation:
+ * /computations:
  *   post:
  *     summary: Start a new Node-RED computation
  *     tags: [Computations]
@@ -126,7 +126,7 @@ export default router;
  *               params:
  *                 example: "value1"
  *             config:
- *               backendUrl: "http://status-backend:3001/api/v1/computation/bulk"
+ *               backendUrl: "http://status-backend:3001/api/v1/computations/bulk"
  *     responses:
  *       201:
  *         description: The created computation
@@ -147,7 +147,7 @@ export default router;
 
 /**
  * @swagger
- * /computation/bulk:
+ * /computations/bulk:
  *   post:
  *     summary: Creates multiple computations
  *     tags: [Computations]
@@ -188,7 +188,7 @@ export default router;
 
 /**
  * @swagger
- * /computation:
+ * /computations:
  *   delete:
  *     summary: Deletes all computations
  *     tags: [Computations]

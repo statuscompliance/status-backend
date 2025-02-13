@@ -67,7 +67,7 @@ function createMetrics(controls, overrides = {}) {
         endpoint: '/api/v1/computation',
         type: 'POST-GET-V1-STATUS',
         config: {
-          backendUrl: 'http://status-backend:3001/api/v1/computation/bulk'
+          backendUrl: 'http://status-backend:3001/api/v1/computations/bulk'
         }
       },
       measure: {
