@@ -1,39 +1,48 @@
 import models from '../models/models.js';
 import { storeGuaranteePoints } from '../utils/storeGuaranteePoints.js';
 import registry from '../config/registry.js';
-import { createAgreement } from '../utils/agreementTranslator.js';
+import { agreementBuilder } from '../utils/agreementBuilder.js';
+import { v4 as uuidv4 } from 'uuid';
+import _ from 'lodash';
 
 export const getCatalogs = async (req, res) => {
-  const catalogs = await models.Catalog.findAll();
-  res.json(catalogs);
+  try {
+    const catalogs = await models.Catalog.findAll();
+    res.status(200).json(catalogs);
+  } catch (error) {
+    res.status(500).json({ message: `Failed to retrieve catalogs, error: ${error.message}` });
+  }
 };
 
 export const getCatalog = async (req, res) => {
-  const row = await models.Catalog.findByPk(req.params.id);
+  try {
+    const row = await models.Catalog.findByPk(req.params.id);
 
-  if (!row)
-    return res.status(404).json({
-      message: 'Catalog not found',
-    });
+    if (!row) {
+      return res.status(404).json({ message: 'Catalog not found' });
+    }
 
-  res.json(row);
+    res.status(200).json(row);
+  } catch (error) {
+    res.status(500).json({ message: `Failed to retrieve catalog, error: ${error.message}` });
+  }
 };
 
 export const createCatalog = async (req, res) => {
-  const { name, startDate, endDate, dashboard_id } = req.body;
-  const rows = await models.Catalog.create({
-    name,
-    startDate,
-    endDate,
-    dashboard_id,
-  });
-  res.send({
-    id: rows.id,
-    name,
-    startDate,
-    endDate,
-    dashboard_id,
-  });
+  try {
+    const { name, startDate, endDate, dashboard_id } = req.body;
+    const tpaId = `tpa-${uuidv4()}`;
+    const rows = await models.Catalog.create({
+      name,
+      startDate,
+      endDate,
+      dashboard_id,
+      tpaId,
+    });
+    res.status(201).json(rows);
+  } catch (error) {
+    res.status(500).json({ message: `Failed to create catalog, error: ${error.message}` });
+  }
 };
 
 export const updateCatalog = async (req, res) => {
@@ -87,15 +96,12 @@ export async function calculatePoints(req, res) {
   try {
     const agreementId = req.params.tpaId;
     const { from, to } = req.query;
-    //In this point, the catalog should be translated to agreement
 
     const catalog = await models.Catalog.findOne({ where: {tpaId: agreementId}});
-    //Get controls by catalogId
     const controls = await models.Control.findAll({where: {catalogId: catalog.id}});
 
-    const agreement = createAgreement(catalog, controls,{}, {}); // Update the Agreement or Create it ?
+    await updateOrCreateAgreement(catalog, controls, agreementId);
     
-    console.log('Agreement \n', JSON.stringify(agreement, null, 2));
     const guaranteesStates = await registry.get(`api/v6/states/${agreementId}/guarantees`, {
       params: { from, to, newPeriodsFromGuarantees: false },
       headers: { 'x-access-token': req.cookies.accessToken }
@@ -115,5 +121,25 @@ export async function calculatePoints(req, res) {
     res.status(500).json({
       message: `Failed to get points, error: ${error.message}`,
     });
+  }
+}
+
+async function updateOrCreateAgreement(catalog, controls, agreementId) {
+  const agreement = await agreementBuilder(catalog, controls, { id: agreementId });
+  try {
+    const response = await registry.get(`api/v6/agreements/${agreementId}`);
+    const oldAgreement = response.data;
+
+    if (!_.isEqual(agreement, oldAgreement)) {
+      console.log(`Updating agreement ${agreementId}`);
+      await registry.put(`api/v6/agreements/${agreementId}`, agreement);
+    }
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.log(`Creating agreement ${agreementId}`);
+      await registry.post('api/v6/agreements', agreement);
+    } else {
+      throw error; // Rethrow other errors
+    }
   }
 }
