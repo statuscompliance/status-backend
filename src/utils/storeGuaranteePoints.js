@@ -1,16 +1,13 @@
 import models from '../models/models.js';
 import moment from 'moment';
 import { getDates } from './dates.js';
-import registry from '../config/registry.js';
 
-export async function storeGuaranteePoints(guaranteeStates, agreementId) {
+export async function storeGuaranteePoints(guaranteeStates, agreement) {
   const result = { storedPoints: [], error: [] };
 
   const points = [];
 
   for (const guaranteeResult of guaranteeStates) {
-    const agreementResponse = await registry.get(`api/v6/agreements/${agreementId}`);
-    const agreement = agreementResponse.data;
     const guaranteeTerm = agreement.terms.guarantees.find(x => x.id === guaranteeResult.id);
     if (!guaranteeTerm) continue;
 

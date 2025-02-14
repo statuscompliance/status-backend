@@ -476,7 +476,6 @@ export async function getDatasources(req, res) {
 }
 
 export async function addDatasource(req, res) {
-  console.log(req.body);
   try {
     const response = await methods.datasource.addDataSource({
       access: req.body.access,

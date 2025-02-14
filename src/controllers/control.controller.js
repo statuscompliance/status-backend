@@ -138,8 +138,6 @@ export const deleteControl = async (req, res) => {
 
 export async function addPanelToControl(req, res) {
   const { id, panelId } = req.params;
-  console.log(req.body);
-  console.log(req.params);
 
   const { dashboardUid } = req.body;
 

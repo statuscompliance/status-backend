@@ -9,7 +9,14 @@ const Scope = sequelize.define('Scope', {
   },
   name: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: false,
+    validate: {
+      isLowercaseUnderscore(value) {
+        if (value !== value.toLowerCase().replace(/\s+/g, '_')) {
+          throw new Error('Name must be in lowercase and spaces replaced with underscores');
+        }
+      }
+    }
   },
   description: {
     type: DataTypes.STRING,
@@ -20,16 +27,9 @@ const Scope = sequelize.define('Scope', {
     defaultValue: 'string',
     allowNull: false
   },
-  default : {
+  default: {
     type: DataTypes.STRING,
     allowNull: false
-  },
-  key: {
-    type: DataTypes.VIRTUAL,
-    get() {
-      return this.name.toLowerCase().replace(/\s+/g, '_');
-    },
-    allowNull: true
   }
 });
 
