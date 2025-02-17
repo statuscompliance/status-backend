@@ -1,7 +1,7 @@
-import models from '../models/models.js'
-import sequelize from '../../db/database.js'
-import OpenAI from 'openai'
-import jwt from 'jsonwebtoken'
+import models from '../models/models.js';
+import sequelize from '../db/database.js';
+import OpenAI from 'openai';
+import jwt from 'jsonwebtoken';
 
 const openai = new OpenAI({
   organization: process.env.AI_ORG_ID,

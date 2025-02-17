@@ -1,5 +1,5 @@
 import { DataTypes, UUIDV4 } from 'sequelize';
-import sequelize from '../../db/database.js';
+import sequelize from '../db/database.js';
 const Point = sequelize.define('Point', {
   id: {
     type: DataTypes.UUID,
