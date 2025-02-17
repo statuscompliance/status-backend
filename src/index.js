@@ -19,7 +19,7 @@ import { validateParams } from './middleware/validation.js';
 import { endpointAvailable } from './middleware/endpoint.js';
 import cookieParser from 'cookie-parser';
 import Configuration from './models/configuration.model.js';
-import db from '../db/database.js';
+import db from './db/database.js';
 import { verifyAdmin } from './middleware/verifyAdmin.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
