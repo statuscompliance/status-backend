@@ -62,6 +62,9 @@ app.use(
 app.use(cookieParser());
 app.use(indexRoutes);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
+app.get('/api-docs', (req, res) => {
+  res.json(specs);
+});
 app.use(endpointAvailable);
 app.use(`${API_PREFIX}`, ghAccess);
 app.use(`${API_PREFIX}`, refresh);
@@ -83,6 +86,7 @@ app.use(`${API_PREFIX}/config`, configRoutes);
 app.listen(3001, () => {
   console.log('[server] Running on http://localhost:3001');
   console.log('[server] Doc on http://localhost:3001/docs');
+  console.log('[server] API Raw Spec on http://localhost:3001/api-docs');
 });
 
 export default app;
@@ -104,6 +108,7 @@ async function insertEndpointsToConfig() {
     `${API_PREFIX}/points`,
     `${API_PREFIX}/scopes`,
     'docs',
+    'api-docs',
   ];
   try {
     await db.sync({ alter: true });
