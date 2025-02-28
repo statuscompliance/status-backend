@@ -100,6 +100,10 @@ export default router;
  *               properties:
  *                 username:
  *                   type: string
+ *                 authority:
+ *                   type: string
+ *                 email:
+ *                   type: string
  *                 accessToken:
  *                   type: string
  *                 refreshToken:

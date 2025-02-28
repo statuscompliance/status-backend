@@ -103,6 +103,8 @@ export async function signIn(req, res) {
 
       res.status(200).json({
         username: username,
+        email: user.email,
+        authority: user.authority,
         accessToken: accessToken,
         refreshToken: refreshToken,
         nodeRedToken: nodeRedToken,
@@ -115,42 +117,48 @@ export async function signIn(req, res) {
 }
 
 export async function signOut(req, res) {
-  const cookies = req.cookies;
-  if (!cookies?.refreshToken) {
-    return res.sendStatus(204);
-  }
-  const refreshToken = cookies.refreshToken;
-  const user = await models.User.findAll({
-    where: {
-      refresh_token: refreshToken,
-    },
-  });
-  if (user.length === 0) {
+  try {
+    const cookies = req.cookies;
+    if (!cookies?.refreshToken) {
+      return res.status(204).json({ message: 'No refresh token provided' });
+    }
+
+    const refreshToken = cookies.refreshToken;
+    const user = await models.User.findAll({
+      where: { refresh_token: refreshToken },
+    });
+
+    if (user.length === 0) {
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none'
+      });
+      return res
+        .status(204)
+        .json({ message: 'No user found for provided refresh token' });
+    }
+
+    await models.User.update(
+      { refresh_token: '' },
+      {
+        where: { refresh_token: refreshToken },
+      }
+    );
+
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: true,
-      sameSite: 'none',
-      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: 'none'
     });
-    return res.sendStatus(204);
+
+    return res.status(204).json({ message: 'Signed out successfully' });
+  } catch (error) {
+    console.error('Error during sign-out:', error);
+    return res
+      .status(500)
+      .json({ message: 'Internal server error', error: error.message });
   }
-  await models.User.update(
-    {
-      refresh_token: '',
-    },
-    {
-      where: {
-        refresh_token: refreshToken,
-      },
-    }
-  );
-  res.clearCookie('refreshToken', {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    maxAge: 24 * 60 * 60 * 1000,
-  });
-  res.sendStatus(204);
 }
 
 export async function getUsers(req, res) {
