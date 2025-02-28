@@ -30,10 +30,14 @@ export const getCatalog = async (req, res) => {
 
 export const createCatalog = async (req, res) => {
   try {
-    const { name, startDate, endDate, dashboard_id } = req.body;
+    const { name, description, startDate, endDate, dashboard_id } = req.body;
+    if (!name || !startDate || !endDate) {
+      return res.status(400).json({ message: 'Missing required fields: name, startDate, and/or endDate' });
+    }
     const tpaId = `tpa-${uuidv4()}`;
     const rows = await models.Catalog.create({
       name,
+      description,
       startDate,
       endDate,
       dashboard_id,
@@ -48,7 +52,7 @@ export const createCatalog = async (req, res) => {
 export const updateCatalog = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, startDate, endDate, dashboard_id, tpaId } = req.body;
+    const { name, description, startDate, endDate, dashboard_id, tpaId } = req.body;
 
     const currentCatalog = await models.Catalog.findByPk(id);
     if (!currentCatalog) {
@@ -58,6 +62,7 @@ export const updateCatalog = async (req, res) => {
     const updatedCatalog = await models.Catalog.update(
       {
         name,
+        description,
         startDate,
         endDate,
         dashboard_id,
