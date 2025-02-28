@@ -44,32 +44,32 @@ export const createControl = async (req, res) => {
 
   if(!validation){
     res.status(400).json({error: textError});
+  } else {
+    const formattedStartDate = startDate ? new Date(startDate) : null;
+    const formattedEndDate = endDate ? new Date(endDate) : null;
+
+    const rows = await models.Control.create({
+      name,
+      description,
+      period,
+      startDate: formattedStartDate,
+      endDate: formattedEndDate,
+      mashupId,
+      catalogId,
+      params,
+    });
+
+    res.status(201).json({
+      id: rows.id,
+      name,
+      description,
+      period,
+      formattedStartDate,
+      formattedEndDate,
+      mashupId,
+      catalogId,
+    });
   }
-
-  const formattedStartDate = startDate ? new Date(startDate) : null;
-  const formattedEndDate = endDate ? new Date(endDate) : null;
-
-  const rows = await models.Control.create({
-    name,
-    description,
-    period,
-    startDate: formattedStartDate,
-    endDate: formattedEndDate,
-    mashupId,
-    catalogId,
-    params,
-  });
-
-  res.status(201).json({
-    id: rows.id,
-    name,
-    description,
-    period,
-    formattedStartDate,
-    formattedEndDate,
-    mashupId,
-    catalogId,
-  });
 };
 
 export const updateControl = async (req, res) => {
@@ -122,18 +122,24 @@ export const updateControl = async (req, res) => {
 };
 
 export const deleteControl = async (req, res) => {
-  const result = await models.Control.destroy({
-    where: {
-      id: req.params.id,
-    },
-  });
-
-  if (result <= 0)
-    return res.status(404).json({
-      message: 'Control not found',
+  try {
+    const { id } = req.params;
+    const deletedCount = await models.Control.destroy({
+      where: { id },
     });
 
-  res.status(204);
+    if (deletedCount === 0) {
+      return res.status(404).json({ message: 'Control not found' });
+    }
+
+    return res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting control:', error);
+    return res.status(500).json({
+      message: 'Error deleting control',
+      error: error.message,
+    });
+  }
 };
 
 export async function addPanelToControl(req, res) {
