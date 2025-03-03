@@ -4,7 +4,6 @@ import controlRoutes from './routes/control.routes.js';
 import indexRoutes from './routes/index.routes.js';
 import ghAccess from './routes/ghaccess.routes.js';
 import userRoutes from './routes/user.routes.js';
-import refresh from './routes/refresh.routes.js';
 import assistantRoutes from './routes/assistant.routes.js';
 import threadRoutes from './routes/thread.routes.js';
 import configRoutes from './routes/configuration.routes.js';
@@ -69,7 +68,6 @@ app.get('/api-docs', (req, res) => {
 });
 app.use(endpointAvailable);
 app.use(`${API_PREFIX}`, ghAccess);
-app.use(`${API_PREFIX}`, refresh);
 app.use(`${API_PREFIX}/users`, userRoutes);
 app.use(validateParams);
 app.use(`${API_PREFIX}/scripts`, scriptRoutes);
@@ -96,7 +94,6 @@ export default app;
 async function insertEndpointsToConfig() {
   const endpoints = [
     `${API_PREFIX}/config`,
-    `${API_PREFIX}/refresh`,
     `${API_PREFIX}/users`,
     `${API_PREFIX}/scripts`,
     `${API_PREFIX}/controls`,
