@@ -129,21 +129,39 @@ export async function getFolderDashboardsByUID(req, res) {
 export async function createFolder(req, res) {
   try {
     const newUID = crypto.randomUUID();
+    const {title, parentUid , description } = req.body;
     const response = await methods.folder.createFolder({
-      uid: newUID,
-      title: req.body.title,
-      parentUid: req.body.parentUid || null,
-      description: req.body.description || null,
+      newUID,
+      title,
+      parentUid,
+      description
     });
     return res.status(201).json(response.data);
   } catch (error) {
     if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
+      const { status, data } = error.response;
+      return res.status(status).json(data);
     } else {
       return res.status(500).json({
         message:
                     'Failed to create folder in Grafana due to server error',
+        error: error.message,
+      });
+    }
+  }
+}
+
+export async function deleteFolder(req, res) {
+  try {
+    const response = await methods.folder.deleteFolder(req.params.uid);
+    return res.status(200).json(response.data);
+  } catch (error) {
+    if (error.response) {
+      const { status, data } = error.response;
+      return res.status(status).json(data);
+    } else {
+      return res.status(500).json({
+        message: 'Failed to delete folder in Grafana due to server error',
         error: error.message,
       });
     }

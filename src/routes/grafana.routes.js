@@ -23,6 +23,7 @@ import {
   getFolders,
   getFolderDashboardsByUID,
   searchItems,
+  deleteFolder
 } from '../controllers/grafana.controller.js';
 
 const router = Router();
@@ -39,6 +40,7 @@ router.post('/serviceaccount/:id/token', createServiceAccountToken);
 router.get('/folder', getFolders);
 router.post('/folder', createFolder);
 router.get('/folder/:uid', validateUUID('uid'), getFolderByUID);
+router.delete('/folder/:uid', validateUUID('uid'),deleteFolder);
 router.get('/folder/:uid/dashboard', getFolderDashboardsByUID);
 
 //DASHBOARD
@@ -785,6 +787,81 @@ export default router;
  *                 error:
  *                   type: string
  *                   description: Detailed error message
+ *                   example: "Internal Server Error"
+ *   delete:
+ *     summary: Deletes a folder by UID from Grafana
+ *     tags: [Grafana Folders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: uid
+ *         in: path
+ *         required: true
+ *         description: UID of the folder to delete
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Folder deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Folder deleted successfully"
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to delete this folder."
+ *       404:
+ *         description: Not Found - Folder with the specified UID does not exist
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Folder not found"
+ *                 error:
+ *                   type: string
+ *                   example: "No folder found with UID: 5678."
+ *       500:
+ *         description: Failed to delete folder in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to delete folder in Grafana due to server error"
+ *                 error:
+ *                   type: string
  *                   example: "Internal Server Error"
  */
 
