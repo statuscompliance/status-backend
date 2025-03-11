@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../../db/database.js';
+import sequelize from '../db/database.js';
 
 const Thread = sequelize.define('Thread', {
   gpt_id: {

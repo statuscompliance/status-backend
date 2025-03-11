@@ -1,20 +1,20 @@
 import { Router } from 'express';
-
+import { validateUUID} from '../middleware/validation.js';
 import {
   getComputations,
   getComputationsById,
   createComputation,
   bulkCreateComputations,
-  deleteComputations
+  deleteComputations,
 } from '../controllers/computation.controller.js';
 
 const router = Router();
 
 router.get('', getComputations);
 router.delete('', deleteComputations);
-router.get('/:id', getComputationsById);
+router.get('/:id', validateUUID('id'), getComputationsById);
 router.post('', createComputation);
-router.post('s', bulkCreateComputations);
+router.post('/bulk', bulkCreateComputations);
 
 export default router;
 
@@ -26,7 +26,7 @@ export default router;
  */
 /**
  * @swagger
- * /computation:
+ * /computations:
  *   get:
  *     summary: Retrieves all computations
  *     tags: [Computations]
@@ -54,9 +54,9 @@ export default router;
 
 /**
  * @swagger
- * /computation/{id}:
+ * /computations/{id}:
  *   get:
- *     summary: Retrieves a single computation
+ *     summary: Retrieves a computation by computationGroup
  *     tags: [Computations]
  *     parameters:
  *       - in: path
@@ -65,7 +65,7 @@ export default router;
  *           type: string
  *           format: uuid
  *         required: true
- *         description: The computation ID
+ *         description:  The computationGroup
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -75,6 +75,15 @@ export default router;
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Computation'
+ *       202:
+ *         description: Computation not ready yet
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
  *       404:
  *         description: Computation not found
  *         content:
@@ -95,11 +104,13 @@ export default router;
  *                   type: string
  */
 
+
+
 /**
  * @swagger
- * /computation:
+ * /computations:
  *   post:
- *     summary: Creates a new computation
+ *     summary: Start a new Node-RED computation
  *     tags: [Computations]
  *     security:
  *       - bearerAuth: []
@@ -109,6 +120,13 @@ export default router;
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/Computation'
+ *           example:
+ *             metric:
+ *               endpoint: "/test"
+ *               params:
+ *                 example: "value1"
+ *             config:
+ *               backendUrl: "http://status-backend:3001/api/v1/computations/bulk"
  *     responses:
  *       201:
  *         description: The created computation
@@ -129,7 +147,7 @@ export default router;
 
 /**
  * @swagger
- * /computations:
+ * /computations/bulk:
  *   post:
  *     summary: Creates multiple computations
  *     tags: [Computations]
@@ -140,9 +158,14 @@ export default router;
  *       content:
  *         application/json:
  *           schema:
- *             type: array
- *             items:
- *               $ref: '#/components/schemas/Computation'
+ *             type: object
+ *             properties:
+ *               computations:
+ *                 type: array
+ *                 items:
+ *                   $ref: '#/components/schemas/Computation'
+ *               done:
+ *                 type: boolean
  *     responses:
  *       201:
  *         description: The created computations
@@ -165,7 +188,7 @@ export default router;
 
 /**
  * @swagger
- * /computation:
+ * /computations:
  *   delete:
  *     summary: Deletes all computations
  *     tags: [Computations]
@@ -185,15 +208,16 @@ export default router;
  *                   type: string
  */
 
+
 /**
  * @swagger
- * /controls/{control_id}/computations:
+ * /controls/{controlId}/computations:
  *   get:
  *     summary: Retrieves computations by control ID
  *     tags: [Controls]
  *     parameters:
  *       - in: path
- *         name: control_id
+ *         name: controlId
  *         schema:
  *           type: integer
  *           format: id
@@ -223,13 +247,13 @@ export default router;
 
 /**
  * @swagger
- * /controls/{control_id}/computations/{createdAt}:
+ * /controls/{controlId}/computations/{createdAt}:
  *   get:
  *     summary: Retrieves computations by control ID and creation date
  *     tags: [Controls]
  *     parameters:
  *       - in: path
- *         name: control_id
+ *         name: controlId
  *         schema:
  *           type: integer
  *           format: id
@@ -266,13 +290,13 @@ export default router;
 
 /**
  * @swagger
- * /controls/{control_id}/computations:
+ * /controls/{controlId}/computations:
  *   put:
  *     summary: Sets compute interval for a computation by control ID and creation date
  *     tags: [Controls]
  *     parameters:
  *       - in: path
- *         name: control_id
+ *         name: controlId
  *         schema:
  *           type: integer
  *           format: id
@@ -292,14 +316,6 @@ export default router;
  *           schema:
  *             type: object
  *             properties:
- *               start_compute:
- *                 type: string
- *                 format: date-time
- *                 description: The start time of the computation interval
- *               end_compute:
- *                 type: string
- *                 format: date-time
- *                 description: The end time of the computation interval
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -319,7 +335,7 @@ export default router;
  *     tags: [Controls]
  *     parameters:
  *       - in: path
- *         name: control_id
+ *         name: controlId
  *         schema:
  *           type: integer
  *           format: id

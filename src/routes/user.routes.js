@@ -8,23 +8,22 @@ import {
   deleteUserById,
 } from '../controllers/user.controller.js';
 const router = Router();
-
-router.post('/signIn', signIn);
-
-router.post('/signUp', signUp);
-
-router.get('/signOut', signOut);
+import { verifyAdmin } from '../middleware/verifyAdmin.js';
 
 router.get('', getUsers);
 
-router.get('/auth/', getAuthority);
+router.post('/signIn', signIn);
+router.post('/signUp', verifyAdmin, signUp);
+router.get('/signOut', signOut);
 
+router.get('/auth/', getAuthority);
 router.delete('/:id', deleteUserById);
+
 
 export default router;
 /**
  * @swagger
- * /user/signUp:
+ * /users/signUp:
  *   post:
  *     summary: Creates a new user account
  *     tags:
@@ -74,7 +73,7 @@ export default router;
 
 /**
  * @swagger
- * /user/signIn:
+ * /users/signIn:
  *   post:
  *     summary: Authenticates a user and generates access and refresh tokens
  *     tags:
@@ -99,6 +98,10 @@ export default router;
  *               type: object
  *               properties:
  *                 username:
+ *                   type: string
+ *                 authority:
+ *                   type: string
+ *                 email:
  *                   type: string
  *                 accessToken:
  *                   type: string
@@ -126,7 +129,7 @@ export default router;
 
 /**
  * @swagger
- * /user/signOut:
+ * /users/signOut:
  *   post:
  *     summary: Logs out a user by clearing the refresh token
  *     tags: [Auth]
@@ -146,7 +149,7 @@ export default router;
 
 /**
  * @swagger
- * /user/auth/:
+ * /users/auth/:
  *   get:
  *     summary: Retrieves the authority of the authenticated user
  *     tags: [Auth]

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-
+import { validateUUID, checkIdParam } from '../middleware/validation.js';
 import {
   createFolder,
   getFolderByUID,
@@ -22,9 +22,14 @@ import {
   getPanelsByDashboardUID,
   getFolders,
   getFolderDashboardsByUID,
+  searchItems,
+  deleteFolder
 } from '../controllers/grafana.controller.js';
 
 const router = Router();
+
+//SEARCH
+router.get('/search', searchItems);
 
 //SERVICE ACCOUNT
 router.post('/serviceaccount', createServiceAccount);
@@ -34,23 +39,26 @@ router.post('/serviceaccount/:id/token', createServiceAccountToken);
 //FOLDER
 router.get('/folder', getFolders);
 router.post('/folder', createFolder);
-router.get('/folder/:uid', getFolderByUID);
+router.get('/folder/:uid', validateUUID('uid'), getFolderByUID);
+router.delete('/folder/:uid', validateUUID('uid'),deleteFolder);
 router.get('/folder/:uid/dashboard', getFolderDashboardsByUID);
 
 //DASHBOARD
 router.post('/dashboard', createDashboard);
 router.post('/dashboard/import', importDashboard);
-router.get('/dashboard/:uid', getDashboardByUID);
-router.delete('/dashboard/:uid', deleteDashboardByUID);
-router.get('/dashboard/:uid/panel', getPanelsByDashboardUID);
-router.post('/dashboard/:uid/panel', addDashboardPanel);
-router.patch('/dashboard/:uid/panel/:id', updatePanelByID);
-router.delete('/dashboard/:uid/panel/:id', deletePanelByID);
+router.get('/dashboard/:uid', validateUUID('uid'), getDashboardByUID);
+router.delete('/dashboard/:uid', validateUUID('uid'), deleteDashboardByUID);
+router.get('/dashboard/:uid/panel', validateUUID('uid'), getPanelsByDashboardUID);
+router.post('/dashboard/:uid/panel', validateUUID('uid'), addDashboardPanel);
+router.patch('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, updatePanelByID);
+router.delete('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, deletePanelByID);
 router.get(
   '/dashboard/:uid/panel/query',
+  validateUUID('uid'), 
+  checkIdParam, 
   getDashboardPanelQueriesByUID
 );
-router.get('/dashboard/:uid/panel/:id/query', getPanelQueryByID);
+router.get('/dashboard/:uid/panel/:id/query', validateUUID('uid'), checkIdParam, getPanelQueryByID);
 
 //DATASOURCE
 router.get('/datasource', getDatasources);
@@ -96,6 +104,96 @@ export default router;
  *   name: Grafana Queries
  *   description: Grafana SQL Query builder and parser
  */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Grafana Search
+ *   description: Grafana Search for dashboards and folders
+ */
+
+/**
+ * @swagger
+ * /grafana/search:
+ *   get:
+ *     summary: Search for dashboards and folders in Grafana
+ *     description: >
+ *       When using Role-based access control, search results will contain only dashboards and folders which you have access to.
+ *     tags: [Grafana Search]
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         schema:
+ *           type: string
+ *         description: Search Query.
+ *       - in: query
+ *         name: tag
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         description: List of tags to search for.
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *         description: Type to search for, dash-folder or dash-db.
+ *       - in: query
+ *         name: dashboardUIDs
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         description: List of dashboard uid’s to search for.
+ *       - in: query
+ *         name: folderUIDs
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         description: List of folder UIDs to search in.
+ *       - in: query
+ *         name: starred
+ *         schema:
+ *           type: boolean
+ *         description: Flag indicating if only starred dashboards should be returned.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 1000
+ *           maximum: 5000
+ *         description: Limit the number of returned results (max is 5000; default is 1000).
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Use this parameter to access hits beyond limit. Numbering starts at 1. The limit parameter acts as the page size.
+ *     responses:
+ *       200:
+ *         description: Search results retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 dashboards:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 folders:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       400:
+ *         description: Bad Request - Invalid search parameters
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *       500:
+ *         description: Internal Server Error - Failed to retrieve search results
+ */
+
 
 /**
  * @swagger
@@ -689,6 +787,81 @@ export default router;
  *                 error:
  *                   type: string
  *                   description: Detailed error message
+ *                   example: "Internal Server Error"
+ *   delete:
+ *     summary: Deletes a folder by UID from Grafana
+ *     tags: [Grafana Folders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: uid
+ *         in: path
+ *         required: true
+ *         description: UID of the folder to delete
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Folder deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Folder deleted successfully"
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid authentication token."
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden"
+ *                 error:
+ *                   type: string
+ *                   example: "You do not have permission to delete this folder."
+ *       404:
+ *         description: Not Found - Folder with the specified UID does not exist
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Folder not found"
+ *                 error:
+ *                   type: string
+ *                   example: "No folder found with UID: 5678."
+ *       500:
+ *         description: Failed to delete folder in Grafana due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to delete folder in Grafana due to server error"
+ *                 error:
+ *                   type: string
  *                   example: "Internal Server Error"
  */
 
