@@ -1,23 +1,23 @@
 import jwt from 'jsonwebtoken';
 
 export function verifyAdmin(req, res, next) {
-  if (req.cookies === undefined) {
+  const accessToken = req.headers['x-access-token'] ?? req.cookies?.accessToken;
+  if (!accessToken) {
     return res.status(401).json({ message: 'No token provided' });
-  } else {
-    const accessToken = req.cookies['accessToken'];
-    if (!accessToken) {
-      return res.status(401).json({ message: 'No token provided' });
+  }
+
+  try {
+    // Verify token
+    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+
+    // Authorize only ADMIN users
+    if (decoded.authority !== 'ADMIN') {
+      return res.status(403).json({ message: 'Forbidden' });
     }
-    try {
-      const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
-      const authority = decoded.authority;
-      if (authority === 'ADMIN') {
-        next();
-      } else {
-        return res.status(403).json({ message: 'Forbidden' });
-      }
-    } catch (error) {
-      return res.status(401).json({ message: `Unauthorized, ${error}` });
-    }
+    
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: `Unauthorized: ${error.message}` });
   }
 }

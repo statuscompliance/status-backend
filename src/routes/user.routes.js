@@ -8,18 +8,17 @@ import {
   deleteUserById,
 } from '../controllers/user.controller.js';
 const router = Router();
-
-router.post('/signIn', signIn);
-
-router.post('/signUp', signUp);
-
-router.get('/signOut', signOut);
+import { verifyAdmin } from '../middleware/verifyAdmin.js';
 
 router.get('', getUsers);
 
-router.get('/auth/', getAuthority);
+router.post('/signIn', signIn);
+router.post('/signUp', verifyAdmin, signUp);
+router.get('/signOut', signOut);
 
+router.get('/auth/', getAuthority);
 router.delete('/:id', deleteUserById);
+
 
 export default router;
 /**
