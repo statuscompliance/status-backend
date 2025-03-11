@@ -7,7 +7,7 @@ const token_expiration = parseInt(process.env.JWT_EXPIRATION) || 3600;
 const refreshToken_expiration = parseInt(process.env.JWT_REFRESH_EXPIRATION) || 3600 * 24 * 7;
 
 export async function signUp(req, res) {
-  const { username, password, email } = req.body;
+  const { username, authority='USER' , password, email } = req.body;
   const rows = await models.User.findAll({
     where: {
       username,
@@ -17,7 +17,7 @@ export async function signUp(req, res) {
   if (rows.length > 0) {
     return res.status(400).json({ message: 'Username already exists' });
   }
-  const authority = 'ADMIN';
+  
   const hashedPassword = await bcrypt.hash(password, 10);
   try {
     await models.User.create({
@@ -94,12 +94,14 @@ export async function signIn(req, res) {
         { refresh_token: refreshToken },
         { where: { username } }
       );
-
-      const nodeRedToken = await getNodeRedToken(username, password);
-
-      res.cookie('accessToken', accessToken, { httpOnly: true, path:'/', maxAge: token_expiration * 1000, sameSite: 'none', secure: false });
-      res.cookie('refreshToken', refreshToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000, sameSite: 'none', secure: false });
-      res.cookie('nodeRedToken', nodeRedToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000, sameSite: 'none', secure: false });
+      let nodeRedToken = '';
+      if(user.authority === 'ADMIN' || user.authority === 'DEVELOPER') {
+        nodeRedToken = await getNodeRedToken(username, password);
+      }
+      
+      res.cookie('accessToken', accessToken, { httpOnly: true, path:'/', maxAge: token_expiration * 1000 });
+      res.cookie('refreshToken', refreshToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000 });
+      res.cookie('nodeRedToken', nodeRedToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000 });
 
       res.status(200).json({
         username: username,
