@@ -9,7 +9,8 @@
         "start": "tsx src/index.js",
         "lint": "eslint . --max-warnings=0 --cache --cache-location node_modules/.cache/eslint",
         "lint-fix": "eslint . --fix --max-warnings=0 --cache --cache-location node_modules/.cache/eslint",
-        "populate": "tsx --env-file=.env src/config/populate.js"
+        "populate": "tsx --env-file=.env src/config/populate.js",
+        "test": "vitest"
     },
     "keywords": [],
     "author": "",
@@ -40,6 +41,7 @@
         "@stylistic/eslint-plugin-js": "2.13.0",
         "eslint": "9.18.0",
         "globals": "15.14.0",
-        "nodemon": "3.1.9"
+        "nodemon": "3.1.9",
+        "vitest": "3.0.9"
     }
 }
