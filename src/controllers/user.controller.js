@@ -95,13 +95,15 @@ export async function signIn(req, res) {
         { where: { username } }
       );
       let nodeRedToken = '';
-      if(user.authority === 'ADMIN' || user.authority === 'DEVELOPER') {
+      if(user.authority === 'DEVELOPER') {
         nodeRedToken = await getNodeRedToken(username, password);
       }
       
       res.cookie('accessToken', accessToken, { httpOnly: true, path:'/', maxAge: token_expiration * 1000 });
       res.cookie('refreshToken', refreshToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000 });
-      res.cookie('nodeRedToken', nodeRedToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000 });
+      if(nodeRedToken !== ''){
+        res.cookie('nodeRedToken', nodeRedToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000 });
+      }
 
       res.status(200).json({
         username: username,

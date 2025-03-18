@@ -20,7 +20,7 @@ sequelize.authenticate().then(() => {
 });
 
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI || 'mongodb://root:root@localhost:27017/statusdb?authSource=admin')
   .then(() => console.log('[database] MongoDB connected'))
   .catch((err) => console.log('[database] MongoDB connection error:', err.message));
 
