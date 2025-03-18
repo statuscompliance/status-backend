@@ -19,10 +19,9 @@ sequelize.authenticate().then(() => {
   console.info('[database] Postgres successully connected.');
 });
 
-
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log('[database] MongoDB connected'))
-  .catch((err) => console.log(err));
+  .catch((err) => console.log('[database] MongoDB connection error:', err.message));
 
 export default sequelize;
