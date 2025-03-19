@@ -30,24 +30,24 @@ describe("Database Connections", () => {
   describe('MongoDB Connection and Operations', () => {
     it('inserts, updates, and deletes a document', async () => {
       // Create a new user in MongoDB
-      const createdUser = await UserMongo.create({ username: 'testuser', password: 'test123' });
+      const createdUser = await UserMongo.create({ username: 'testuser', password: '$2a$12$/C3Rl8zpVElZxroDRQZjEe.PWGKUeMdZCWZo8LaJUS6HlKKDkikge' });
       
       // Verify that the user was created correctly
       expect(createdUser.username).toBe('testuser');
-      expect(createdUser.password).toBe('test123');
+      expect(createdUser.password).toBe('$2a$12$/C3Rl8zpVElZxroDRQZjEe.PWGKUeMdZCWZo8LaJUS6HlKKDkikge');
 
       // Find the created user in the database
       const foundUser = await UserMongo.findOne({ username: 'testuser' });
       expect(foundUser).not.toBeNull();
       expect(foundUser.username).toBe('testuser');
-      expect(foundUser.password).toBe('test123');
+      expect(foundUser.password).toBe('$2a$12$/C3Rl8zpVElZxroDRQZjEe.PWGKUeMdZCWZo8LaJUS6HlKKDkikge');
 
       // Update the user's password
-      await UserMongo.updateOne({ username: 'testuser' }, { $set: { password: 'newpassword' } });
+      await UserMongo.updateOne({ username: 'testuser' }, { $set: { password: '$2a$12$WmML06uj4BEmDzexfa0zRuIFtNpe6gkgjl3ozRFwbhcY6FzfVNrC.' } });
 
       // Verify that the password has been updated
       const updatedUser = await UserMongo.findOne({ username: 'testuser' });
-      expect(updatedUser.password).toBe('newpassword');
+      expect(updatedUser.password).toBe('$2a$12$WmML06uj4BEmDzexfa0zRuIFtNpe6gkgjl3ozRFwbhcY6FzfVNrC.');
 
       // Delete the user from the database
       await UserMongo.deleteMany({ username: 'testuser' });
