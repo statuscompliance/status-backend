@@ -16,8 +16,12 @@ export const isConnectedMongo = () => {
 
 // Function to disconnect from MongoDB
 export const disconnectMongoDB = async () => {
-  // Drop the database (clear all collections and documents)
-  await mongoose.connection.dropDatabase();
+  if (mongoose.connection.readyState === 1) {
+    // Drop the database (clear all collections and documents)
+    await mongoose.connection.dropDatabase();
+  };
   // Disconnect from the MongoDB server
   await mongoose.disconnect();
 };
+  
+
