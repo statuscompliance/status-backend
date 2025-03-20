@@ -4,8 +4,8 @@ import OpenAI from 'openai';
 import jwt from 'jsonwebtoken';
 
 const openai = new OpenAI({
-  organization: process.env.AI_ORG_ID,
-  apiKey: process.env.AI_API_KEY
+  organization: process.env.AI_ORG_ID || 'org-id',
+  apiKey: process.env.AI_API_KEY || 'api-key',
 });
 
 export async function getThreads(req, res) {
