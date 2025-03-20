@@ -23,6 +23,8 @@ import { verifyAdmin } from './middleware/verifyAdmin.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
+// Check if we are in a test environment
+const isTestEnvironment = process.env.NODE_ENV === 'test';
 
 const API_PREFIX = process.env.API_PREFIX || '';
 const swaggerOptions = {
@@ -47,49 +49,46 @@ const swaggerOptions = {
 };
 const specs = swaggerJSDoc(swaggerOptions);
 
-const app = express();
+// Function to configure the app
+const configureApp = () => {
+  const app = express();
 
-app.use(express.json());
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      callback(null, origin);
-    },
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie'],
-  })
-);
+  app.use(express.json());
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        callback(null, origin);
+      },
+      credentials: true,
+      allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie'],
+    })
+  );
 
-app.use(cookieParser());
-app.use(indexRoutes);
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
-app.get('/api-docs', (req, res) => {
-  res.json(specs);
-});
-app.use(endpointAvailable);
-app.use(`${API_PREFIX}`, ghAccess);
-app.use(`${API_PREFIX}/users`, userRoutes);
-app.use(validateParams);
-app.use(`${API_PREFIX}/scripts`, scriptRoutes);
-app.use(verifyAuthority);
-app.use(`${API_PREFIX}/scopes`, scopeRoutes);
-app.use(`${API_PREFIX}/points`, pointRoutes);
-app.use(`${API_PREFIX}/grafana`, grafanaRoutes);
-app.use(`${API_PREFIX}/controls`, controlRoutes);
-app.use(`${API_PREFIX}/catalogs`, catalogRoutes);
-app.use(`${API_PREFIX}/computations`, computationRoutes);
-app.use(`${API_PREFIX}/assistant`, assistantRoutes);
-app.use(`${API_PREFIX}/thread`, threadRoutes);
-app.use(verifyAdmin);
-app.use(`${API_PREFIX}/config`, configRoutes);
+  app.use(cookieParser());
+  app.use(indexRoutes);
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
+  app.get('/api-docs', (req, res) => {
+    res.json(specs);
+  });
+  app.use(endpointAvailable);
+  app.use(`${API_PREFIX}`, ghAccess);
+  app.use(`${API_PREFIX}/users`, userRoutes);
+  app.use(validateParams);
+  app.use(`${API_PREFIX}/scripts`, scriptRoutes);
+  app.use(verifyAuthority);
+  app.use(`${API_PREFIX}/scopes`, scopeRoutes);
+  app.use(`${API_PREFIX}/points`, pointRoutes);
+  app.use(`${API_PREFIX}/grafana`, grafanaRoutes);
+  app.use(`${API_PREFIX}/controls`, controlRoutes);
+  app.use(`${API_PREFIX}/catalogs`, catalogRoutes);
+  app.use(`${API_PREFIX}/computations`, computationRoutes);
+  app.use(`${API_PREFIX}/assistant`, assistantRoutes);
+  app.use(`${API_PREFIX}/thread`, threadRoutes);
+  app.use(verifyAdmin);
+  app.use(`${API_PREFIX}/config`, configRoutes);
 
-app.listen(3001, () => {
-  console.log('[server] Running on http://localhost:3001');
-  console.log('[server] Doc on http://localhost:3001/docs');
-  console.log('[server] API Raw Spec on http://localhost:3001/api-docs');
-});
-
-export default app;
+  return app;
+};
 
 async function insertEndpointsToConfig() {
   const endpoints = [
@@ -128,4 +127,18 @@ async function insertEndpointsToConfig() {
     console.error('[server] Error al insertar endpoints:', error);
   }
 }
-insertEndpointsToConfig();
+
+// Only start the server if we are not in a test environment
+if (!isTestEnvironment) {
+  const app = configureApp();
+  app.listen(3001, () => {
+    console.log('[server] Running on http://localhost:3001');
+    console.log('[server] Doc on http://localhost:3001/docs');
+    console.log('[server] API Raw Spec on http://localhost:3001/api-docs');
+  });
+  
+  // Insert endpoints to configuration table
+  insertEndpointsToConfig();
+}
+
+export default configureApp;

@@ -7,6 +7,9 @@
     "scripts": {
         "dev": "nodemon --exec 'tsx --env-file=.env' src/index.js",
         "start": "tsx src/index.js",
+        "test": "vitest",
+        "test:unit": "vitest run tests/unit",
+        "test:integration": "vitest run tests/integration",
         "lint": "eslint . --max-warnings=0 --cache --cache-location node_modules/.cache/eslint",
         "lint-fix": "eslint . --fix --max-warnings=0 --cache --cache-location node_modules/.cache/eslint",
         "populate": "tsx src/config/populate.js"
@@ -40,6 +43,11 @@
         "@stylistic/eslint-plugin-js": "2.13.0",
         "eslint": "9.18.0",
         "globals": "15.14.0",
-        "nodemon": "3.1.9"
+        "ioredis-mock": "8.9.0",
+        "mongodb-memory-server": "10.1.4",
+        "nodemon": "3.1.9",
+        "pg-mem": "3.0.5",
+        "supertest": "7.0.0",
+        "vitest": "3.0.9"
     }
 }
