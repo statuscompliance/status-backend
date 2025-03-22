@@ -167,8 +167,13 @@ export async function signOut(req, res) {
 
 export async function getUsers(req, res) {
   // THIS IS A TEST FUNCTION
-  const rows = await models.User.findAll();
-  res.status(200).json(rows);
+  try {
+    const users = await models.User.findAll();
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error in getUsers:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 }
 
 export async function getAuthority(req, res) {
