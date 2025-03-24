@@ -100,11 +100,11 @@ describe('Testing getDates using custom rules, geneerating the custom dates usin
       Wto: parseISO('2020-01-31T22:00:00'),
     };
     const expectedDates = [
-      parseISO('2020-01-01T09:00:00Z'),
-      parseISO('2020-01-09T09:00:00Z'),
-      parseISO('2020-01-16T09:00:00Z'),
-      parseISO('2020-01-23T09:00:00Z'),
-      parseISO('2020-01-30T09:00:00Z')
+      parseISO('2020-01-01T10:00:00Z'),
+      parseISO('2020-01-09T10:00:00Z'),
+      parseISO('2020-01-16T10:00:00Z'),
+      parseISO('2020-01-23T10:00:00Z'),
+      parseISO('2020-01-30T10:00:00Z')
     ];
 
     const generatedDates = getDates(from, to, 'customRules', customConfig);
