@@ -104,6 +104,29 @@ describe("User Controller Tests", () => {
         message: "User existingUser created successfully with authority USER",
       });
     });
+    it("should return 400 if username exists (case insensitive)", async () => {
+      const req = {
+        body: {
+          username: "ExistingUser", // Variación en el caso
+          password: "password123",
+          email: "test@example.com",
+          authority: "USER",
+        },
+      };
+      const res = createRes();
+    
+      // Set the mock for findAll with case-insensitive search
+      vi.spyOn(User, "findAll").mockResolvedValue([
+        { username: "existinguser" }, // Nombre en minúsculas
+      ]);
+    
+      await userController.signUp(req, res);
+    
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Username already exists",
+      });
+    });
   });
 
   // Test singIn
