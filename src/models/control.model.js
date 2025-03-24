@@ -10,7 +10,7 @@ const Control = sequelize.define(
     },
     description: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true,
     },
     period: {
       type: DataTypes.ENUM('HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'ANNUALLY'),
@@ -21,14 +21,19 @@ const Control = sequelize.define(
     },
     endDate: {
       type: DataTypes.DATE,
+      allowNull: true,
     },
     mashupId: {
       type: DataTypes.STRING(32),
-      allowNull: false,
+      allowNull: true,
     },
     params: {
       type: DataTypes.JSONB,
       allowNull: true
+    },
+    status: {
+      type: DataTypes.ENUM('draft', 'finalized'),
+      defaultValue: 'finalized'
     },
   },
   {
@@ -70,17 +75,22 @@ export default Control;
  *         params:
  *           type: object
  *           description: Input parameters for the control
+ *         status:
+ *           type: string
+ *           enum: [draft, finalized]
+ *           description: The status of the control
  *       required:
  *         - name
  *         - description
  *         - period
  *         - mashupId
  *       example:
- *         name: number of sections is greater than 10
- *         description: The document has more than 10 sections
- *         period: MONTHLY
+ *         name: Audit Trail Completeness
+ *         description: Verifies that all financial transactions are documented for audit compliance.
+ *         period: WEEKLY
  *         startDate: 2023-01-01T00:00:00.000Z
  *         endDate: 2023-12-31T23:59:59.000Z
  *         mashupId: abc123
- *         params: { "threshold": 10 }
+ *         params: { "threshold": 10, "endpoint": "/bpi" }
+ *         status: finalized
  */

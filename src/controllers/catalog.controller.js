@@ -4,6 +4,7 @@ import registry from '../config/registry.js';
 import { agreementBuilder } from '../utils/agreementBuilder.js';
 import { v4 as uuidv4 } from 'uuid';
 import _ from 'lodash';
+import { finalizeControlsByCatalogId } from './control.controller.js';
 
 export const getCatalogs = async (req, res) => {
   try {
@@ -174,14 +175,14 @@ export const getDraftCatalogs = async (req, res) => {
 export const createDraftCatalog = async (req, res) => {
   try {
     const { name, description, startDate, endDate, dashboard_id } = req.body;
-    if (!name) {
-      return res.status(400).json({ message: 'Missing required field: name' });
+    if (!name || !startDate) {
+      return res.status(400).json({ message: 'Missing required fields: name and/or startDate' });
     }
     
     const rows = await models.Catalog.create({
       name,
       description,
-      startDate: startDate || new Date(),
+      startDate: startDate,
       endDate,
       dashboard_id,
       tpaId: null,
@@ -212,6 +213,7 @@ export const finalizeCatalog = async (req, res) => {
     
     const tpaId = `tpa-${uuidv4()}`;
     
+    // First we update the catalog status and TPA ID
     const updatedCatalog = await models.Catalog.update(
       {
         status: 'finalized',
@@ -226,8 +228,17 @@ export const finalizeCatalog = async (req, res) => {
       }
     );
     
-    res.status(200).json(updatedCatalog[1]);
+    // Then we finalize the controls
+    const controlsResult = await finalizeControlsByCatalogId(id);
+    
+    // Return the updated catalog and the number of finalized controls
+    res.status(200).json({
+      catalog: updatedCatalog[1],
+      controls: {
+        finalized: controlsResult.updated.length,
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: `Failed to finalize catalog, error: ${error.message}` });
   }
-}
+};
