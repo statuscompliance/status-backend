@@ -54,6 +54,10 @@ async function getNodeRedToken(username, password) {
 
 export async function signIn(req, res) {
   const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: "Username and password are required" });
+  }
   try {
     const user = await models.User.findOne({
       where: {
@@ -71,6 +75,7 @@ export async function signIn(req, res) {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid password' });
     } else {
+
       const accessToken = jwt.sign(
         {
           user_id: user.id,
@@ -124,7 +129,7 @@ export async function signOut(req, res) {
   try {
     const cookies = req.cookies;
     if (!cookies?.refreshToken) {
-      return res.status(204).json({ message: 'No refresh token provided' });
+      return res.status(400).json({ message: 'No refresh token provided' });
     }
 
     const refreshToken = cookies.refreshToken;
@@ -139,7 +144,7 @@ export async function signOut(req, res) {
         sameSite: 'none'
       });
       return res
-        .status(204)
+        .status(404)
         .json({ message: 'No user found for provided refresh token' });
     }
 
@@ -175,7 +180,7 @@ export async function getUsers(req, res) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
-
+/*
 export async function getAuthority(req, res) {
   const accessToken = req.cookies?.accessToken;
 
@@ -192,6 +197,25 @@ export async function getAuthority(req, res) {
       .json({ message: "No token provided or it's malformed" });
   } catch {
     return res.status(403).json({ message: 'Invalid token' });
+  }
+}
+  */
+export async function getAuthority(req, res) {
+  const accessToken = req.cookies?.accessToken;
+
+  try {
+    // Check if the token is missing or an empty string
+    if (!accessToken || accessToken.trim() === '') {
+      return res.status(400).json({ message: "Token is required" });
+    }
+
+    const { authority } = jwt.verify(accessToken, process.env.JWT_SECRET);
+    return res.status(200).json({ authority });
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ message: "Token expired" });
+    }
+    return res.status(403).json({ message: "Invalid token" });
   }
 }
 

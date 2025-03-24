@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as userController from "../../../../src/controllers/user.controller.js";
 import User from "../../../../src/models/user.model.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 // Helper to create simple mock req/res objects
 function createRes() {
@@ -9,7 +10,7 @@ function createRes() {
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
     cookie: vi.fn(),
-    clearCookie: vi.fn(),
+    clearCookie: vi.fn()
   };
 }
 
@@ -34,8 +35,10 @@ describe("User Controller Tests", () => {
       expect(res.json).toHaveBeenCalledWith(mockUsers);
     });
 
-    it("should return 500 if an error occurs in getUsers", async () => {
-      // Mocking database failure
+    it("should handle errors gracefully in getUsers", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
       vi.spyOn(User, "findAll").mockRejectedValueOnce(
         new Error("Database error")
       );
@@ -45,10 +48,13 @@ describe("User Controller Tests", () => {
 
       await userController.getUsers(req, res);
 
+      expect(consoleSpy).toHaveBeenCalled(); // Verify that the error has been registered
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         message: "Internal server error",
       });
+
+      consoleSpy.mockRestore(); // Clear the console.error mock
     });
   });
   // Test singUp
@@ -131,17 +137,144 @@ describe("User Controller Tests", () => {
       const mockUser = { username: "existingUser", password: "hashedPassword" };
 
       vi.spyOn(User, "findOne").mockResolvedValue(mockUser);
+      vi.spyOn(bcrypt, "compare").mockResolvedValue(false);
 
       await userController.signIn(req, res);
 
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        "wrongPassword",
+        "hashedPassword"
+      );
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({ message: "Invalid password" });
+    });
+
+    it("should return 200 and a token if signIn is successful", async () => {
+      const req = {
+        body: {
+          username: "existingUser",
+          password: "correctPassword",
+        },
+      };
+      const res = createRes();
+      const mockUser = {
+        username: "existingUser",
+        password: "hashedPassword",
+      };
+
+      vi.spyOn(User, "findOne").mockResolvedValue(mockUser);
+      vi.spyOn(bcrypt, "compare").mockResolvedValue(true);
+      vi.spyOn(jwt, "sign").mockReturnValue("mockToken");
+      vi.spyOn(User, "update").mockResolvedValue([1]);
+
+      await userController.signIn(req, res);
+
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        "correctPassword",
+        "hashedPassword"
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accessToken: "mockToken",
+          refreshToken: "mockToken",
+          username: "existingUser",
+        })
+      );
+      expect(User.update).toHaveBeenCalledWith(
+        { refresh_token: "mockToken" },
+        { where: { username: "existingUser" } }
+      );
+    });
+
+    it("should return 400 if username is missing", async () => {
+      const req = { body: { password: "somePassword" } };
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Username and password are required",
+      });
+    });
+
+    it("should return 400 if password is missing", async () => {
+      const req = { body: { username: "existingUser" } };
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Username and password are required",
+      });
+    });
+    it("should return 400 if username is missing", async () => {
+      const req = { body: { password: "somePassword" } };
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Username and password are required",
+      });
+    });
+
+    it("should return 400 if password is missing", async () => {
+      const req = { body: { username: "existingUser" } };
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Username and password are required",
+      });
+    });
+
+    it("should handle special characters in username", async () => {
+      const req = {
+        body: { username: "user!@#", password: "correctPassword" },
+      };
+      const res = createRes();
+
+      // Mock de usuario
+      const mockUser = {
+        username: "user!@#",
+        password: "hashedPassword",
+        email: "user@example.com",
+        authority: "userAuthority",
+      };
+
+      vi.spyOn(User, "findOne").mockResolvedValue(mockUser);
+      vi.spyOn(bcrypt, "compare").mockResolvedValue(true);
+      vi.spyOn(jwt, "sign").mockImplementation(() => "mockToken");
+
+      await userController.signIn(req, res);
+
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        "correctPassword",
+        "hashedPassword"
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accessToken: "mockToken",
+          refreshToken: "mockToken",
+          username: "user!@#",
+          email: "user@example.com",
+          authority: "userAuthority",
+          nodeRedToken: "",
+        })
+      );
     });
   });
 
   // Test signOut
   describe("signOut", () => {
-    it("should return 204 if no refreshToken in signOut", async () => {
+    it("should return 400 if no refreshToken in signOut", async () => {
       const req = {
         refreshToken: null,
       };
@@ -149,16 +282,17 @@ describe("User Controller Tests", () => {
 
       await userController.signOut(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(204);
+      expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         message: "No refresh token provided",
       });
     });
 
-    it("should successfully sign out in signOut", async () => {
+    it("should sign out successfully", async () => {
       const res = createRes();
+      // FIX: Token must be in req.cookies
       const req = {
-        cookies: { refreshToken: "validToken" }, // FIX: Token must be in req.cookies
+        cookies: { refreshToken: "validToken" }, 
       };
       const user = [
         { id: 1, username: "existingUser", refresh_token: "validToken" },
@@ -173,19 +307,43 @@ describe("User Controller Tests", () => {
       expect(res.json).toHaveBeenCalledWith({
         message: "Signed out successfully",
       });
+       // FIX: Verify that the cookie is cleared
       expect(res.clearCookie).toHaveBeenCalledWith(
         "refreshToken",
         expect.any(Object)
-      ); // FIX: Verify that the cookie is cleared
+      );
     });
+
+    it("should return 404 if user not found for refreshToken", async () => {
+      // Mock invalid token
+      const req = {
+        cookies: { refreshToken: "invalidToken" } 
+      };
+      const res = createRes();
+      
+      // Mocking the user not found scenario
+      vi.spyOn(User, "findAll").mockResolvedValue([]); // No user with that refresh token
+  
+      await userController.signOut(req, res);
+  
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "No user found for provided refresh token",
+      });
+      expect(res.clearCookie).toHaveBeenCalledWith("refreshToken", expect.any(Object));
+    });
+    
   });
 
   // Test para deleteUserById
   describe("deleteUserById", () => {
     it("should return 404 if user not found in deleteUserById", async () => {
-      vi.spyOn(User, "findByPk").mockResolvedValue(null);
+      
       const res = createRes();
       const req = { params: { id: 1 } };
+
+      vi.spyOn(User, "findByPk").mockResolvedValue(null);
+
       await userController.deleteUserById(req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
@@ -199,6 +357,7 @@ describe("User Controller Tests", () => {
         username: "existingUser",
         destroy: vi.fn().mockResolvedValue({}), // destroy() is a real function that returns a resolved promise.
       };
+
       vi.spyOn(User, "findByPk").mockResolvedValue(user);
       vi.spyOn(user, "destroy").mockResolvedValue({});
 
@@ -216,13 +375,14 @@ describe("User Controller Tests", () => {
   // Test getAuthority
   describe("getAuthority", () => {
     it("should return authority if valid token is provided", async () => {
+
       const mockAuthority = "admin";
       const mockToken = "validToken";
 
-      vi.spyOn(jwt, "verify").mockReturnValue({ authority: mockAuthority });
-
       const req = { cookies: { accessToken: mockToken } };
       const res = createRes();
+
+      vi.spyOn(jwt, "verify").mockReturnValue({ authority: mockAuthority });
 
       await userController.getAuthority(req, res);
 
@@ -230,19 +390,34 @@ describe("User Controller Tests", () => {
       expect(res.json).toHaveBeenCalledWith({ authority: mockAuthority });
     });
 
-    it("should return 401 if no token is provided", async () => {
+    it("should return 400 if no token is provided", async () => {
       const req = { cookies: {} };
       const res = createRes();
 
       await userController.getAuthority(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "No token provided or it's malformed",
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Token is required'  });
+    });
+
+    it("should return 401 if the token has expired", async () => {
+      const expiredToken = "expiredToken";
+      const req = { cookies: { accessToken: expiredToken } };
+      const res = createRes();
+    
+      // Mocking jwt.verify to simulate expired token error
+      vi.spyOn(jwt, 'verify').mockImplementationOnce(() => {
+        throw new jwt.TokenExpiredError('jwt expired', new Date());
       });
+    
+      await userController.getAuthority(req, res);
+    
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Token expired' });
     });
 
     it("should return 403 if the token is invalid", async () => {
+//check
       const req = { cookies: { accessToken: "invalidToken" } };
       const res = createRes();
 
@@ -255,5 +430,18 @@ describe("User Controller Tests", () => {
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({ message: "Invalid token" });
     });
+
+    it('should return 400 if token is missing or empty', async () => {
+      const req = { cookies: { accessToken: "" } };
+      const res = createRes();
+      const next = vi.fn();
+  
+      await userController.getAuthority(req, res, next);
+  
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: "Token is required" });
+      expect(next).not.toHaveBeenCalled();
+    });
   });
+
 });
