@@ -417,7 +417,7 @@ describe("User Controller Tests", () => {
     });
 
     it("should return 403 if the token is invalid", async () => {
-//check
+
       const req = { cookies: { accessToken: "invalidToken" } };
       const res = createRes();
 

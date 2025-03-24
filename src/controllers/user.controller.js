@@ -180,26 +180,7 @@ export async function getUsers(req, res) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
-/*
-export async function getAuthority(req, res) {
-  const accessToken = req.cookies?.accessToken;
 
-  try {
-    if (accessToken) {
-      const { authority } = jwt.verify(
-        accessToken,
-        process.env.JWT_SECRET
-      );
-      return res.status(200).json({ authority });
-    }
-    return res
-      .status(401)
-      .json({ message: "No token provided or it's malformed" });
-  } catch {
-    return res.status(403).json({ message: 'Invalid token' });
-  }
-}
-  */
 export async function getAuthority(req, res) {
   const accessToken = req.cookies?.accessToken;
 
