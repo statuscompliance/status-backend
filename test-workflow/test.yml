@@ -1,0 +1,23 @@
+name: Ejecutar pruebas npm
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v2
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '22.12' # o la versión de Node.js que uses
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar pruebas
+        run: npm test
