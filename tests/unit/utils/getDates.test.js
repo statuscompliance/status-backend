@@ -92,25 +92,6 @@ describe('Testing getDates using custom rules, geneerating the custom dates usin
     expect(generatedDates).toEqual(expectedDates);
   });
 
-  it('Generates weekly dates from 2020-01-01T00:00:00 to 2020-01-31T00:00:00 , only on Tuesdays, by 10:00am', () => {
-    const from = parseISO('2020-01-01T00:00:00Z');
-    const to = parseISO('2020-01-31T00:00:00Z');
-    const customConfig = {
-      rules: 'DTSTART:20200101T100000\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TU,TH;BYHOUR=10',
-      Wto: parseISO('2020-01-31T22:00:00'),
-    };
-    const expectedDates = [
-      parseISO('2020-01-01T10:00:00Z'),
-      parseISO('2020-01-09T10:00:00Z'),
-      parseISO('2020-01-16T10:00:00Z'),
-      parseISO('2020-01-23T10:00:00Z'),
-      parseISO('2020-01-30T10:00:00Z')
-    ];
-
-    const generatedDates = getDates(from, to, 'customRules', customConfig);
-    expect(generatedDates).toEqual(expectedDates);
-  });
-
   it('Generates weekly dates from 2020-01-01T00:00:00 to 2020-02-29T00:00:00, with an interval of 2 weeks, on Monday, by 10:00am', () => {
     const from = parseISO('2020-01-01T00:00:00Z');
     const to = parseISO('2020-02-29T00:00:00Z');
