@@ -8,6 +8,16 @@ const refreshToken_expiration = parseInt(process.env.JWT_REFRESH_EXPIRATION) || 
 
 export async function signUp(req, res) {
   const { username, authority='USER' , password, email } = req.body;
+
+  const userEmail = await models.User.findOne({
+    where: {
+      email,
+    },
+  });
+
+  if (userEmail) {
+    return res.status(400).json({ message: 'Email already exists' });
+  }
   const rows = await models.User.findAll({
     where: {
       username,
@@ -17,7 +27,7 @@ export async function signUp(req, res) {
   if (rows.length > 0) {
     return res.status(400).json({ message: 'Username already exists' });
   }
-  
+  console.log('Password before hashing:', password);
   const hashedPassword = await bcrypt.hash(password, 10);
   try {
     await models.User.create({
@@ -111,7 +121,7 @@ export async function signIn(req, res) {
       }
 
       res.status(200).json({
-        username: username,
+        username: user.username,
         email: user.email,
         authority: user.authority,
         accessToken: accessToken,

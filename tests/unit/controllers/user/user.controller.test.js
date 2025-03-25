@@ -20,9 +20,11 @@ describe("User Controller Tests", () => {
   });
   // Test getUsers
   describe("getUsers", () => {
+    
     it("should return a list of users with status 200", async () => {
       // Mocking database response
       const mockUsers = [{ id: 1, name: "John Doe" }];
+
       vi.spyOn(User, "findAll").mockResolvedValue(mockUsers);
 
       // Mocking request and response objects
@@ -71,6 +73,7 @@ describe("User Controller Tests", () => {
       const res = createRes();
 
       // Set the mock for findAll
+      vi.spyOn(User, "findOne").mockResolvedValue(null);
       vi.spyOn(User, "findAll").mockResolvedValue([
         { username: "existingUser" },
       ]);
@@ -83,7 +86,7 @@ describe("User Controller Tests", () => {
       });
     });
 
-    it("should create user successfully in signUp", async () => {
+    it("should return 201 create user successfully in signUp", async () => {
       const req = {
         body: {
           username: "existingUser",
@@ -107,7 +110,7 @@ describe("User Controller Tests", () => {
     it("should return 400 if username exists (case insensitive)", async () => {
       const req = {
         body: {
-          username: "ExistingUser", // Variación en el caso
+          username: "ExistingUser", // uppercase
           password: "password123",
           email: "test@example.com",
           authority: "USER",
@@ -117,7 +120,7 @@ describe("User Controller Tests", () => {
     
       // Set the mock for findAll with case-insensitive search
       vi.spyOn(User, "findAll").mockResolvedValue([
-        { username: "existinguser" }, // Nombre en minúsculas
+        { username: "existinguser" }, // lowercase
       ]);
     
       await userController.signUp(req, res);
@@ -127,6 +130,52 @@ describe("User Controller Tests", () => {
         message: "Username already exists",
       });
     });
+    it("should return 400 if email already exists", async () => {
+      const req = {
+        body: {
+          username: "newUser",
+          password: "password123",
+          email: "existing@example.com",
+          authority: "USER",
+        },
+      };
+      const res = createRes();
+    
+      vi.spyOn(User, "findOne").mockResolvedValue([{ email: "existing@example.com" }]);
+    
+      await userController.signUp(req, res);
+    
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Email already exists' });
+    });
+
+    it("should hash password before saving user", async () => {
+      const req = {
+        body: {
+          username: "newUser",
+          password: "plainPassword",
+          email: "test@example.com",
+          authority: "USER",
+        },
+      };
+      const res = createRes();
+    
+      vi.spyOn(User, "findOne").mockResolvedValue(null); 
+      vi.spyOn(User, "findAll").mockResolvedValue([]);
+      const hashSpy = vi.spyOn(bcrypt, "hash").mockResolvedValue("hashedPassword");
+      vi.spyOn(User, "create").mockResolvedValue({});
+      await userController.signUp(req, res);
+    
+      
+      expect(hashSpy).toHaveBeenCalledWith("plainPassword", 10); 
+      expect(User.create).toHaveBeenCalledWith({
+        username: "newUser",
+        password: "hashedPassword",  // should match the mocked hash
+        authority: "USER",
+        email: "test@example.com",
+      });
+    });
+    
   });
 
   // Test singIn
@@ -183,6 +232,8 @@ describe("User Controller Tests", () => {
       const mockUser = {
         username: "existingUser",
         password: "hashedPassword",
+        email: "user@example.com",
+        authority: "USER",
       };
 
       vi.spyOn(User, "findOne").mockResolvedValue(mockUser);
@@ -202,6 +253,8 @@ describe("User Controller Tests", () => {
           accessToken: "mockToken",
           refreshToken: "mockToken",
           username: "existingUser",
+          email: "user@example.com",
+          authority: "USER",
         })
       );
       expect(User.update).toHaveBeenCalledWith(
@@ -210,29 +263,6 @@ describe("User Controller Tests", () => {
       );
     });
 
-    it("should return 400 if username is missing", async () => {
-      const req = { body: { password: "somePassword" } };
-      const res = createRes();
-
-      await userController.signIn(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Username and password are required",
-      });
-    });
-
-    it("should return 400 if password is missing", async () => {
-      const req = { body: { username: "existingUser" } };
-      const res = createRes();
-
-      await userController.signIn(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Username and password are required",
-      });
-    });
     it("should return 400 if username is missing", async () => {
       const req = { body: { password: "somePassword" } };
       const res = createRes();
@@ -293,6 +323,51 @@ describe("User Controller Tests", () => {
         })
       );
     });
+    it("should be case insensitive for username in signIn", async () => {
+      const req = {
+        body: { username: "ExistingUser", password: "correctPassword" },
+      };
+      const res = createRes();
+      
+      const mockUser = {
+        username: "existinguser", // lowercase,
+        password: "hashedPassword",
+        email: "user@example.com",
+        authority: "userAuthority",
+      };
+    
+      vi.spyOn(User, "findOne").mockResolvedValue(mockUser);
+      vi.spyOn(bcrypt, "compare").mockResolvedValue(true);
+      vi.spyOn(jwt, "sign").mockReturnValue("mockToken");
+    
+      await userController.signIn(req, res);
+    
+      expect(bcrypt.compare).toHaveBeenCalledWith("correctPassword", "hashedPassword");
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accessToken: "mockToken",
+          refreshToken: "mockToken",
+          username: mockUser.username,
+          email: mockUser.email,
+          authority: mockUser.authority,
+          nodeRedToken: "",
+        })
+      );
+    });
+    it("should generate valid accessToken and refreshToken", async () => {
+      const req = { body: { username: "existingUser", password: "correctPassword" } };
+      const res = createRes();
+    
+      const mockUser = { username: "existingUser", password: "hashedPassword" };
+      vi.spyOn(User, "findOne").mockResolvedValue(mockUser);
+      vi.spyOn(bcrypt, "compare").mockResolvedValue(true);
+      const signSpy = vi.spyOn(jwt, "sign").mockReturnValue("mockToken");
+    
+      await userController.signIn(req, res);
+    
+      expect(signSpy).toHaveBeenCalledTimes(2); // accessToken y refreshToken
+    });
   });
 
   // Test signOut
@@ -311,7 +386,7 @@ describe("User Controller Tests", () => {
       });
     });
 
-    it("should sign out successfully", async () => {
+    it("should return 204 sign out successfully", async () => {
       const res = createRes();
       // FIX: Token must be in req.cookies
       const req = {
