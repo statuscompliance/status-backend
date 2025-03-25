@@ -1,73 +1,72 @@
 // checkRequiredProperties.test.js
-import { expect, test, describe, it } from 'vitest';
-import { checkRequiredProperties } from '../../../src/utils/checkRequiredProperties'; // Ajusta la ruta si es necesario
+import { expect, describe, it } from 'vitest'; // Importa 'describe' e 'it'
+import { checkRequiredProperties } from '../../../src/utils/checkRequiredProperties'; // Ajusta la ruta
 
 describe('checkRequiredProperties', () => {
-  
-    it('debería fallar si el objeto es nulo o no es un objeto', () => {
-      expect(checkRequiredProperties(null, ['prop1'])).toEqual({
-        validation: false,
-        textError: 'Invalid object or missing required properties',
-      });
-  
-      expect(checkRequiredProperties(undefined, ['prop1'])).toEqual({
-        validation: false,
-        textError: 'Invalid object or missing required properties',
-      });
-  
-      expect(checkRequiredProperties(123, ['prop1'])).toEqual({
-        validation: false,
-        textError: 'Invalid object or missing required properties',
-      });
-  
-      expect(checkRequiredProperties('string', ['prop1'])).toEqual({
-        validation: false,
-        textError: 'Invalid object or missing required properties',
-      });
-  
-      expect(checkRequiredProperties(true, ['prop1'])).toEqual({
-        validation: false,
-        textError: 'Invalid object or missing required properties',
-      });
+  it('should fail if the object is null or not an object', () => {
+    expect(checkRequiredProperties(null, ['prop1'])).toEqual({
+      validation: false,
+      textError: 'Invalid object or missing required properties',
     });
-  
-    it('debería pasar si el objeto tiene todas las propiedades requeridas', () => {
-      const obj = { prop1: 'value1', prop2: 'value2' };
-      const requiredProps = ['prop1', 'prop2'];
-  
-      expect(checkRequiredProperties(obj, requiredProps)).toEqual({
-        validation: true,
-        textError: '',
-      });
+
+    expect(checkRequiredProperties(undefined, ['prop1'])).toEqual({
+      validation: false,
+      textError: 'Invalid object or missing required properties',
     });
-  
-    it('debería fallar si faltan propiedades requeridas', () => {
-      const obj = { prop1: 'value1' };
-      const requiredProps = ['prop1', 'prop2', 'prop3'];
-  
-      expect(checkRequiredProperties(obj, requiredProps)).toEqual({
-        validation: false,
-        textError: 'Missing required properties: prop2, prop3',
-      });
+
+    expect(checkRequiredProperties(123, ['prop1'])).toEqual({
+      validation: false,
+      textError: 'Invalid object or missing required properties',
     });
-  
-      it('debería fallar si el objeto esta vacio y se requieren propiedades', () => {
-          const obj = {};
-          const requiredProps = ['prop1', 'prop2'];
-  
-          expect(checkRequiredProperties(obj, requiredProps)).toEqual({
-              validation: false,
-              textError: 'Missing required properties: prop1, prop2',
-          });
-      });
-  
-      it('debería pasar si el array de propiedades requeridas esta vacio', () => {
-          const obj = { prop1: 'value1', prop2: 'value2' };
-          const requiredProps = [];
-  
-          expect(checkRequiredProperties(obj, requiredProps)).toEqual({
-              validation: true,
-              textError: '',
-          });
-      });
+
+    expect(checkRequiredProperties('string', ['prop1'])).toEqual({
+      validation: false,
+      textError: 'Invalid object or missing required properties',
+    });
+
+    expect(checkRequiredProperties(true, ['prop1'])).toEqual({
+      validation: false,
+      textError: 'Invalid object or missing required properties',
+    });
   });
+
+  it('should pass if the object has all required properties', () => {
+    const obj = { prop1: 'value1', prop2: 'value2' };
+    const requiredProps = ['prop1', 'prop2'];
+
+    expect(checkRequiredProperties(obj, requiredProps)).toEqual({
+      validation: true,
+      textError: '',
+    });
+  });
+
+  it('should fail if required properties are missing', () => {
+    const obj = { prop1: 'value1' };
+    const requiredProps = ['prop1', 'prop2', 'prop3'];
+
+    expect(checkRequiredProperties(obj, requiredProps)).toEqual({
+      validation: false,
+      textError: 'Missing required properties: prop2, prop3',
+    });
+  });
+
+  it('should fail if the object is empty and required properties exist', () => {
+    const obj = {};
+    const requiredProps = ['prop1', 'prop2'];
+
+    expect(checkRequiredProperties(obj, requiredProps)).toEqual({
+      validation: false,
+      textError: 'Missing required properties: prop1, prop2',
+    });
+  });
+
+  it('should pass if the array of required properties is empty', () => {
+    const obj = { prop1: 'value1', prop2: 'value2' };
+    const requiredProps = [];
+
+    expect(checkRequiredProperties(obj, requiredProps)).toEqual({
+      validation: true,
+      textError: '',
+    });
+  });
+});
