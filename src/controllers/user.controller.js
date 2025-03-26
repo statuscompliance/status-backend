@@ -27,7 +27,6 @@ export async function signUp(req, res) {
   if (rows.length > 0) {
     return res.status(400).json({ message: 'Username already exists' });
   }
-  console.log('Password before hashing:', password);
   const hashedPassword = await bcrypt.hash(password, 10);
   try {
     await models.User.create({
@@ -57,7 +56,6 @@ async function getNodeRedToken(username, password) {
     });
     return response.data.access_token;
   } catch (error) {
-    console.error('Error during get Node-RED token:', error);
     throw new Error('Failed to get Node-RED token');
   }
 }
@@ -130,7 +128,6 @@ export async function signIn(req, res) {
       });
     }
   } catch (error) {
-    console.error('Error during sign-in:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 }
@@ -173,7 +170,6 @@ export async function signOut(req, res) {
 
     return res.status(204).json({ message: 'Signed out successfully' });
   } catch (error) {
-    console.error('Error during sign-out:', error);
     return res
       .status(500)
       .json({ message: 'Internal server error', error: error.message });
@@ -186,28 +182,12 @@ export async function getUsers(req, res) {
     const users = await models.User.findAll();
     res.status(200).json(users);
   } catch (error) {
-    console.error("Error in getUsers:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
 
 export async function getAuthority(req, res) {
-  const accessToken = req.cookies?.accessToken;
-
-  try {
-    // Check if the token is missing or an empty string
-    if (!accessToken || accessToken.trim() === '') {
-      return res.status(400).json({ message: "Token is required" });
-    }
-
-    const { authority } = jwt.verify(accessToken, process.env.JWT_SECRET);
-    return res.status(200).json({ authority });
-  } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({ message: "Token expired" });
-    }
-    return res.status(403).json({ message: "Invalid token" });
-  }
+  return res.status(200).json({ authority: req.user.authority });
 }
 
 export async function deleteUserById(req, res) {
@@ -220,7 +200,6 @@ export async function deleteUserById(req, res) {
     await user.destroy();
     return res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error during delete user:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }

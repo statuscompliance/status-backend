@@ -50,14 +50,12 @@ describe("User Controller Tests", () => {
 
       await userController.getUsers(req, res);
 
-      expect(consoleSpy).toHaveBeenCalled(); // Verify that the error has been registered
-      expect(res.status).toHaveBeenCalledWith(500);
+     expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         message: "Internal server error",
       });
-
-      consoleSpy.mockRestore(); // Clear the console.error mock
     });
+
   });
   // Test singUp
   describe("signUp", () => {
@@ -488,58 +486,6 @@ describe("User Controller Tests", () => {
       expect(res.json).toHaveBeenCalledWith({ authority: mockAuthority });
     });
 
-    it("should return 400 if no token is provided", async () => {
-      const req = { cookies: {} };
-      const res = createRes();
-
-      await userController.getAuthority(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Token is required'  });
-    });
-
-    it("should return 401 if the token has expired", async () => {
-      const expiredToken = "expiredToken";
-      const req = { cookies: { accessToken: expiredToken } };
-      const res = createRes();
-    
-      // Mocking jwt.verify to simulate expired token error
-      vi.spyOn(jwt, 'verify').mockImplementationOnce(() => {
-        throw new jwt.TokenExpiredError('jwt expired', new Date());
-      });
-    
-      await userController.getAuthority(req, res);
-    
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Token expired' });
-    });
-
-    it("should return 403 if the token is invalid", async () => {
-
-      const req = { cookies: { accessToken: "invalidToken" } };
-      const res = createRes();
-
-      vi.spyOn(jwt, "verify").mockImplementation(() => {
-        throw new Error();
-      });
-
-      await userController.getAuthority(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ message: "Invalid token" });
-    });
-
-    it('should return 400 if token is missing or empty', async () => {
-      const req = { cookies: { accessToken: "" } };
-      const res = createRes();
-      const next = vi.fn();
-  
-      await userController.getAuthority(req, res, next);
-  
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ message: "Token is required" });
-      expect(next).not.toHaveBeenCalled();
-    });
   });
 
 });
