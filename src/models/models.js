@@ -14,7 +14,7 @@ import Panel from './panel.model.js';
 import Point from './point.model.js';
 import Scope from './scope.model.js';
 
-const models = {
+export const models = {
   User,
   Assistant,
   Thread,

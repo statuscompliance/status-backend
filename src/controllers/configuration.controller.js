@@ -21,7 +21,7 @@ export async function getConfigurationByEndpoint(req, res) {
         endpoint: endpoint,
       },
     });
-    if (configuration.length === 0) {
+    if (!configuration || configuration.length == 0) {
       return res
         .status(404)
         .json({ message: `Configuration ${endpoint} not found` });
@@ -43,13 +43,15 @@ export async function updateConfiguration(req, res) {
         endpoint: endpoint,
       },
     });
-    const configId = configuration.dataValues.id;
 
-    if (configuration.length === 0) {
+    if (!configuration) {
       return res
         .status(404)
-        .json({ message: `Configuration ${configId} not found` });
+        .json({ message: `Configuration with endpoint ${endpoint} not found` }); // Mejoramos el mensaje
     }
+
+    const configId = configuration.dataValues.id;
+
     await models.Configuration.update(
       {
         endpoint: endpoint,
@@ -82,7 +84,7 @@ export async function getAssistantLimit(req, res) {
         endpoint: '/api/assistant',
       },
     });
-    if (configuration.length === 0) {
+    if (!configuration || configuration.length == 0) {
       return res
         .status(404)
         .json({ message: 'Configuration /api/assistant not found' });
@@ -96,30 +98,28 @@ export async function getAssistantLimit(req, res) {
 }
 
 export async function updateAssistantLimit(req, res) {
+  
   try {
     const { limit } = req.params;
     const assistants = await models.Assistant.findAll();
-    if (assistants.length > limit) {
-      return res.status(400).json({
-        message: 'Limit cannot be less than the number of assistants',
-      });
-    } else if (limit < 1) {
-      return res
-        .status(400)
-        .json({ message: 'Limit cannot be less than 1' });
-    }
     const configuration = await models.Configuration.findOne({
-      where: {
-        endpoint: '/api/assistant',
-      },
+      where: { endpoint: '/api/assistant' },
     });
+
+    if (!configuration) {
+      return res.status(404).json({ message: `Configuration undefined not found` }); // No necesitamos configId aquí si no existe la configuración
+    }
+
     const configId = configuration.dataValues.id;
 
-    if (configuration.length === 0) {
-      return res
-        .status(404)
-        .json({ message: `Configuration ${configId} not found` });
+    if (assistants.length > limit) {
+      return res.status(400).json({ message: 'Limit cannot be less than the number of assistants' });
     }
+
+    if (limit < 1) {
+      return res.status(400).json({ message: 'Limit cannot be less than 1' });
+    }
+
     await models.Configuration.update(
       {
         endpoint: '/api/assistant',
@@ -133,6 +133,7 @@ export async function updateAssistantLimit(req, res) {
     );
 
     res.status(200).json({ message: 'Limit updated successfully' });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({
