@@ -2,6 +2,8 @@ import models from '../models/models.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import nodered from '../config/nodered.js';
+import { verifyAccessToken } from '../utils/tokenUtils.js';
+
 
 const token_expiration = parseInt(process.env.JWT_EXPIRATION) || 3600;
 const refreshToken_expiration = parseInt(process.env.JWT_REFRESH_EXPIRATION) || 3600 * 24 * 7;
@@ -39,8 +41,9 @@ export async function signUp(req, res) {
       message: `User ${username} created successfully with authority ${authority}`,
     });
   } catch (error) {
+    console.error('Error in signUp:', error);
     res.status(500).json({
-      message: `Failed to create user, error: ${error.message}`,
+      message: 'Failed to create user, error',
     });
   }
 }
@@ -56,6 +59,7 @@ async function getNodeRedToken(username, password) {
     });
     return response.data.access_token;
   } catch (error) {
+    console.error('Error in refreshAccessToken:', error);
     throw new Error('Failed to get Node-RED token');
   }
 }
@@ -64,7 +68,7 @@ export async function signIn(req, res) {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).json({ message: "Username and password are required" });
+    return res.status(400).json({ message: 'Username and password are required' });
   }
   try {
     const user = await models.User.findOne({
@@ -128,6 +132,7 @@ export async function signIn(req, res) {
       });
     }
   } catch (error) {
+    console.error('Error in signIn:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 }
@@ -170,6 +175,7 @@ export async function signOut(req, res) {
 
     return res.status(204).json({ message: 'Signed out successfully' });
   } catch (error) {
+    console.error('Error in signOut:', error);
     return res
       .status(500)
       .json({ message: 'Internal server error', error: error.message });
@@ -182,23 +188,24 @@ export async function getUsers(req, res) {
     const users = await models.User.findAll();
     res.status(200).json(users);
   } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+    console.error('Error in getUsers:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 }
 
 export async function getAuthority(req, res) {
   const accessToken = req.cookies?.accessToken;
 
-  try {
-    // Check if the token is missing or an empty string
-    if (!accessToken) {
-      return res.status(400).json({ message: "Token is required" });
-    }
-    const { authority } = jwt.verify(accessToken, process.env.JWT_SECRET);
-    return res.status(200).json({ authority });
-  } catch (error) {
-    return res.status(403).json({ message: "Invalid token" });
+  if (!accessToken) {
+    return res.status(400).json({ message: 'Token is required' });
   }
+
+  const { decoded, error } = await verifyAccessToken(accessToken);
+  if (error) {
+    return res.status(403).json({ message: 'Invalid token' });
+  }
+
+  return res.status(200).json({ authority: decoded.authority });
 }
 
 export async function deleteUserById(req, res) {
@@ -211,6 +218,7 @@ export async function deleteUserById(req, res) {
     await user.destroy();
     return res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
+    console.error('Error in deleteUserById:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
