@@ -187,7 +187,18 @@ export async function getUsers(req, res) {
 }
 
 export async function getAuthority(req, res) {
-  return res.status(200).json({ authority: req.user.authority });
+  const accessToken = req.cookies?.accessToken;
+
+  try {
+    // Check if the token is missing or an empty string
+    if (!accessToken) {
+      return res.status(400).json({ message: "Token is required" });
+    }
+    const { authority } = jwt.verify(accessToken, process.env.JWT_SECRET);
+    return res.status(200).json({ authority });
+  } catch (error) {
+    return res.status(403).json({ message: "Invalid token" });
+  }
 }
 
 export async function deleteUserById(req, res) {
