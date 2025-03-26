@@ -5,13 +5,23 @@ const User = sequelize.define('User', {
   username: {
     type: DataTypes.STRING(60),
     allowNull: false,
+    unique: true, // To ensure that the username is unique
     validate: {
-      isAlphanumeric: true,
+      isAlphanumeric: {
+        msg: "Username must be alphanumeric",
+      },
     },
   },
   password: {
     type: DataTypes.STRING(255),
     allowNull: false,
+    validate: {
+      len: {
+        args: [8, 255],
+        msg: "Password must be between 8 and 255 characters long",
+      },
+
+    },
   },
   authority: {
     type: DataTypes.ENUM('ADMIN', 'DEVELOPER', 'USER'),
@@ -20,14 +30,27 @@ const User = sequelize.define('User', {
   email: {
     type: DataTypes.STRING(100),
     allowNull: false,
+    unique: true, // To ensure that the email is unique
     validate: {
-      isEmail: true,
+      isEmail: {
+        msg: "Must be a valid email address",
+      },
     },
   },
   refresh_token: {
     type: DataTypes.STRING(255),
   },
 });
+
+// Customised method for comparing passwords
+User.prototype.comparePassword = async function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Customised method to generate an access token (can be a JWT)
+User.prototype.generateAccessToken = function () {
+  return jwt.sign({ id: this.id, username: this.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
 
 export default User;
 /**
