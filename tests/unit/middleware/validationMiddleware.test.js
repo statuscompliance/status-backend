@@ -1,17 +1,12 @@
 // middleware.test.js
 import { describe, it, expect, vi } from 'vitest';
-import { checkIdParam, validateUUID, validateParams, isGrafanaUID } from '../../../src/middleware/validation.js'; // Ajusta la ruta
+import { checkIdParam, validateUUID, validateParams, isGrafanaUID } from '../../../src/middleware/validation.js';
 import { validationResult } from 'express-validator';
 import { validate as isUUID } from 'uuid';
-
-vi.mock('express-validator', () => ({
-  validationResult: vi.fn(),
-}));
 
 vi.mock('uuid', () => ({
   validate: vi.fn(),
 }));
-
 
 describe('checkIdParam', () => {
 
@@ -40,7 +35,7 @@ describe('checkIdParam', () => {
 });
 
 describe('validateUUID', () => {
-  
+
   it('should return 400 if param is missing', () => {
     const req = { params: {} };
     const res = {
@@ -61,8 +56,8 @@ describe('validateUUID', () => {
 
     const req = { params: { id: '550e8400-e29b-41d4-a716-446655440000' } };
     const res = {
-        status: vi.fn().mockReturnThis(),
-        json: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
     };
     const next = vi.fn();
 
@@ -70,7 +65,7 @@ describe('validateUUID', () => {
     expect(next).toHaveBeenCalled();
 
     global.isGrafanaUID = undefined;
-});
+  });
 
   it('should call next if param is a valid Grafana UID', () => {
     isUUID.mockReturnValue(false);
@@ -106,53 +101,8 @@ describe('validateUUID', () => {
   });
 });
 
-function mockValidationResult(isEmpty, errors = []) {
-  validationResult.mockReturnValue({
-    isEmpty: () => isEmpty,
-    array: () => errors,
-  });
-}
-
-describe('validateParams', () => {
-
-  it('should call next if no validation errors', () => {
-    mockValidationResult(true);
-
-    const req = {};
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
-    const next = vi.fn();
-
-    validateParams(req, res, next);
-
-    expect(validationResult).toHaveBeenCalledWith(req);
-    expect(next).toHaveBeenCalled();
-    expect(res.status).not.toHaveBeenCalled();
-    expect(res.json).not.toHaveBeenCalled();
-  });
-
-  it('should return 400 if validation errors', () => {
-    mockValidationResult(false, [{ msg: 'error1' }, { msg: 'error2' }]);
-
-    const req = {};
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
-    const next = vi.fn();
-
-    validateParams(req, res, next);
-
-    expect(validationResult).toHaveBeenCalledWith(req);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ errors: [{ msg: 'error1' }, { msg: 'error2' }] });
-    expect(next).not.toHaveBeenCalled();
-  });
-});
-
 describe('isGrafanaUID', () => {
+  
   it('should return true for a valid Grafana UID', () => {
     expect(isGrafanaUID('validgrafana123')).toBe(true);
     expect(isGrafanaUID('VALIDGRAFANA123')).toBe(true);

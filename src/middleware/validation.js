@@ -9,7 +9,6 @@ export const checkIdParam = (req, res, next) => {
 
 };
 
-
 export const validateUUID = (paramName) => {
 
   return (req, res, next) => {
@@ -30,14 +29,19 @@ export const validateUUID = (paramName) => {
   };
 };
 
-
 export function validateParams(req, res, next) {
 
   const errors = validationResult(req);
+  console.log('Valor de errors dentro de validateParams:', errors);
+  
+  if (!errors.isEmpty()) {
 
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    return res.status(400).json({ errors: errors.array() });
+  }
+  else {
+    next();
+  }
 
-  next();
 };
 
 export function isGrafanaUID(uid) {
