@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../db/database.js';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+
 
 const User = sequelize.define('User', {
   username: {
@@ -17,13 +16,6 @@ const User = sequelize.define('User', {
   password: {
     type: DataTypes.STRING(255),
     allowNull: false,
-    validate: {
-      len: {
-        args: [8, 255],
-        msg: 'Password must be between 8 and 255 characters long',
-      },
-
-    },
   },
   authority: {
     type: DataTypes.ENUM('ADMIN', 'DEVELOPER', 'USER'),
@@ -43,19 +35,6 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING(255),
   },
 });
-
-// Customised method for comparing passwords
-User.prototype.comparePassword = async function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-// Customised method to generate an access token (can be a JWT)
-User.prototype.generateAccessToken = function () {
-  return jwt.sign(
-    { id: this.id, username: this.username },
-    'mocked-jwt-token', // DELETE: process.env.JWT_SECRET is undefined 
-    { expiresIn: '1h' });
-};
 
 export default User;
 /**
