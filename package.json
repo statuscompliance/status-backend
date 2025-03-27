@@ -41,18 +41,18 @@
     "devDependencies": {
         "@commitlint/cli": "19.8.0",
         "@commitlint/config-conventional": "19.8.0",
-        "@eslint/js": "9.18.0",
-        "@evilmartians/lefthook": "1.11.4",
+        "@eslint/js": "9.23.0",
+        "@evilmartians/lefthook": "1.11.5",
         "@stylistic/eslint-plugin-js": "2.13.0",
         "commitlint": "19.8.0",
-        "eslint": "9.18.0",
-        "globals": "15.14.0",
+        "eslint": "9.23.0",
+        "globals": "15.15.0",
         "ioredis-mock": "8.9.0",
         "mongodb-memory-server": "10.1.4",
         "nodemon": "3.1.9",
         "pg-mem": "3.0.5",
         "pre-commit": "1.2.2",
-        "supertest": "7.0.0",
+        "supertest": "7.1.0",
         "vitest": "3.0.9"
     }
 }
