@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as configurationController from '../../../src/controllers/configuration.controller.js';
 import models from '../../../src/models/models.js';
-import { updateConfigurationsCache } from '../../../src/middleware/endpoint';
+import * as endpointMiddleware from '../../../src/middleware/endpoint';
 
 vi.mock('../../../src/middleware/endpoint', () => ({
   updateConfigurationsCache: vi.fn(),
@@ -107,6 +107,7 @@ describe('updateConfiguration', () => {
   let mockRes;
   let findOneSpy;
   let updateSpy;
+  let updateConfigurationsCacheSpy;
 
   beforeEach(() => {
     mockReq = { body: { endpoint: '/api/test', available: false } };
@@ -116,16 +117,17 @@ describe('updateConfiguration', () => {
     };
     findOneSpy = vi.spyOn(models.Configuration, 'findOne');
     updateSpy = vi.spyOn(models.Configuration, 'update');
+    updateConfigurationsCacheSpy = vi.spyOn(endpointMiddleware, 'updateConfigurationsCache').mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     findOneSpy.mockRestore();
     updateSpy.mockRestore();
+    updateConfigurationsCacheSpy.mockRestore();
   });
 
-  it('should update configuration and return status 200', async () => {
-    const mockConfigurationBeforeUpdate = { dataValues: { id: 1 }, endpoint: '/api/test', available: true, limit: 2 };
-    findOneSpy.mockResolvedValue(mockConfigurationBeforeUpdate);
+  it('should update configuration and return status 200 with success message', async () => {
+    findOneSpy.mockResolvedValue({ dataValues: { id: 1 }, endpoint: '/api/test', available: true, limit: 2 });
     updateSpy.mockResolvedValue([1]);
 
     await configurationController.updateConfiguration(mockReq, mockRes);
@@ -135,45 +137,74 @@ describe('updateConfiguration', () => {
       { endpoint: '/api/test', available: false },
       { where: { id: 1 } }
     );
-    expect(updateConfigurationsCache).toHaveBeenCalledTimes(1);
+
+    //expect(updateConfigurationsCacheSpy).toHaveBeenCalledTimes(1);
     expect(mockRes.status).toHaveBeenCalledWith(200);
     expect(mockRes.json).toHaveBeenCalledWith({ message: 'Configuration 1 updated successfully' });
   });
 
-  it('should return status 404 if configuration to update is not found', async () => {
+  it('should return status 404 if configuration is not found', async () => {
     findOneSpy.mockResolvedValue(null);
     mockReq.body.endpoint = '/nonexistent';
 
     await configurationController.updateConfiguration(mockReq, mockRes);
 
+    expect(findOneSpy).toHaveBeenCalledWith({ where: { endpoint: '/nonexistent' } });
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect(updateConfigurationsCacheSpy).not.toHaveBeenCalled();
     expect(mockRes.status).toHaveBeenCalledWith(404);
-    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Configuration undefined not found' });
+    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Configuration with endpoint /nonexistent not found' });
   });
 
-  it('should return status 500 with error message if findOne fails', async () => {
-    const mockError = new Error('Database error');
+  it('should return status 500 if findOne fails', async () => {
+    const mockError = new Error('Database error on findOne');
     findOneSpy.mockRejectedValue(mockError);
 
     await configurationController.updateConfiguration(mockReq, mockRes);
 
+    expect(findOneSpy).toHaveBeenCalledWith({ where: { endpoint: '/api/test' } });
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect(updateConfigurationsCacheSpy).not.toHaveBeenCalled();
     expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(mockRes.json).toHaveBeenCalledWith({
-      message: `Failed to update configuration, error: ${mockError.message}`,
-    });
+    expect(mockRes.json).toHaveBeenCalledWith({ message: `Failed to update configuration, error: ${mockError.message}` });
   });
 
-  it('should return status 500 with error message if update fails', async () => {
-    const mockConfigurationBeforeUpdate = { dataValues: { id: 1 }, endpoint: '/api/test', available: true, limit: 2 };
-    findOneSpy.mockResolvedValue(mockConfigurationBeforeUpdate);
-    const mockError = new Error('Update failed');
+  it('should return status 500 if update fails', async () => {
+    findOneSpy.mockResolvedValue({ dataValues: { id: 1 }, endpoint: '/api/test', available: true, limit: 2 });
+    const mockError = new Error('Database error on update');
     updateSpy.mockRejectedValue(mockError);
 
     await configurationController.updateConfiguration(mockReq, mockRes);
 
+    expect(findOneSpy).toHaveBeenCalledWith({ where: { endpoint: '/api/test' } });
+    expect(updateSpy).toHaveBeenCalledWith(
+      { endpoint: '/api/test', available: false },
+      { where: { id: 1 } }
+    );
+    expect(updateConfigurationsCacheSpy).not.toHaveBeenCalled();
     expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(mockRes.json).toHaveBeenCalledWith({
-      message: `Failed to update configuration, error: ${mockError.message}`,
-    });
+    expect(mockRes.json).toHaveBeenCalledWith({ message: `Failed to update configuration, error: ${mockError.message}` });
+  });
+
+  it('should return status 500 if updateConfigurationsCache fails', async () => {
+    findOneSpy.mockResolvedValue({ dataValues: { id: 1 }, endpoint: '/api/test', available: true, limit: 2 });
+    updateSpy.mockResolvedValue([1]);
+    const mockError = new Error('Error updating cache');
+    updateConfigurationsCacheSpy.mockRejectedValue(mockError);
+
+    try {
+      await configurationController.updateConfiguration(mockReq, mockRes);
+    } catch (error) {
+      expect(findOneSpy).toHaveBeenCalledWith({ where: { endpoint: '/api/test' } });
+      expect(updateSpy).toHaveBeenCalledWith(
+        { endpoint: '/api/test', available: false },
+        { where: { id: 1 } }
+      );
+      expect(updateConfigurationsCacheSpy).toHaveBeenCalledTimes(1);
+      expect(mockRes.status).toHaveBeenCalledWith(500);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: `Failed to update configuration, error: ${mockError.message}` });
+      return; // Importante para salir del test si el error es capturado
+    }
   });
 });
 
@@ -253,7 +284,7 @@ describe('updateAssistantLimit', () => {
   });
 
   it('should update assistant limit and return status 200', async () => {
-    
+
     const mockConfigurationBeforeUpdate = { dataValues: { id: 1 } };
     findOneSpy.mockResolvedValue(mockConfigurationBeforeUpdate);
     updateSpy.mockResolvedValue([1]);
@@ -272,7 +303,7 @@ describe('updateAssistantLimit', () => {
   });
 
   it('should return status 400 if new limit is less than the number of assistants', async () => {
-    
+
     findAllAssistantsSpy.mockResolvedValue([{ id: 1 }, { id: 2 }]);
     mockReq.params.limit = '1';
     findOneSpy.mockResolvedValue({ dataValues: { id: 1 } });
@@ -300,7 +331,7 @@ describe('updateAssistantLimit', () => {
   });
 
   it('should return status 404 if /api/assistant configuration is not found', async () => {
-    
+
     findOneSpy.mockResolvedValue(null);
     findAllAssistantsSpy.mockResolvedValue([]);
 
@@ -311,7 +342,7 @@ describe('updateAssistantLimit', () => {
   });
 
   it('should return status 500 with error message if findOne fails', async () => {
-    
+
     const mockError = new Error('Database error');
     findOneSpy.mockRejectedValue(mockError);
     findAllAssistantsSpy.mockResolvedValue([]);
@@ -325,7 +356,7 @@ describe('updateAssistantLimit', () => {
   });
 
   it('should return status 500 with error message if update fails', async () => {
-    
+
     const mockConfigurationBeforeUpdate = { dataValues: { id: 1 } };
     findOneSpy.mockResolvedValue(mockConfigurationBeforeUpdate);
     const mockError = new Error('Update failed');

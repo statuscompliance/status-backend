@@ -63,7 +63,7 @@ export async function updateConfiguration(req, res) {
         },
       }
     );
-
+    console.log('About to call updateConfigurationsCache');
     await updateConfigurationsCache;
 
     res.status(200).json({
