@@ -47,7 +47,7 @@ export async function updateConfiguration(req, res) {
     if (!configuration) {
       return res
         .status(404)
-        .json({ message: `Configuration with endpoint ${endpoint} not found` }); // Mejoramos el mensaje
+        .json({ message: `Configuration with endpoint ${endpoint} not found` });
     }
 
     const configId = configuration.dataValues.id;
@@ -63,7 +63,7 @@ export async function updateConfiguration(req, res) {
         },
       }
     );
-    console.log('About to call updateConfigurationsCache');
+    
     await updateConfigurationsCache;
 
     res.status(200).json({
@@ -107,7 +107,7 @@ export async function updateAssistantLimit(req, res) {
     });
 
     if (!configuration) {
-      return res.status(404).json({ message: `Configuration undefined not found` }); // No necesitamos configId aquí si no existe la configuración
+      return res.status(404).json({ message: `Configuration undefined not found` });
     }
 
     const configId = configuration.dataValues.id;

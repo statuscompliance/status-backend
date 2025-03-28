@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import * as configurationController from '../../../src/controllers/configuration.controller.js';
-import models from '../../../src/models/models.js';
-import * as endpointMiddleware from '../../../src/middleware/endpoint';
+import * as configurationController from '../../../../src/controllers/configuration.controller.js';
+import models from '../../../../src/models/models.js';
+import * as endpointMiddleware from '../../../../src/middleware/endpoint.js';
 
 vi.mock('../../../src/middleware/endpoint', () => ({
   updateConfigurationsCache: vi.fn(),
@@ -137,8 +137,6 @@ describe('updateConfiguration', () => {
       { endpoint: '/api/test', available: false },
       { where: { id: 1 } }
     );
-
-    //expect(updateConfigurationsCacheSpy).toHaveBeenCalledTimes(1);
     expect(mockRes.status).toHaveBeenCalledWith(200);
     expect(mockRes.json).toHaveBeenCalledWith({ message: 'Configuration 1 updated successfully' });
   });
@@ -203,7 +201,7 @@ describe('updateConfiguration', () => {
       expect(updateConfigurationsCacheSpy).toHaveBeenCalledTimes(1);
       expect(mockRes.status).toHaveBeenCalledWith(500);
       expect(mockRes.json).toHaveBeenCalledWith({ message: `Failed to update configuration, error: ${mockError.message}` });
-      return; // Importante para salir del test si el error es capturado
+      return;
     }
   });
 });
