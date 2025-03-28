@@ -1,5 +1,5 @@
 import nodered from '../config/nodered.js';
-import { verifyAccessToken, refreshAccessToken } from '../utils/tokenUtils';
+import * as tokenUtils from '../utils/tokenUtils.js';
 
 // Import the getNodeRedToken function from the user controller
 async function getNodeRedToken() {
@@ -27,7 +27,7 @@ export async function verifyAuthority(req, res, next) {
     if (!accessToken) {
       return res.status(401).json({ message: 'No token provided' });
     }
-    const { decoded, error } = await verifyAccessToken(accessToken);
+    const { decoded, error } = await tokenUtils.verifyAccessToken(accessToken);
     if (error) {
       if (error.name === 'TokenExpiredError') {
         const refreshToken =
@@ -42,7 +42,7 @@ export async function verifyAuthority(req, res, next) {
           newAccessToken,
           user,
           error: refreshError,
-        } = await refreshAccessToken(refreshToken);
+        } = await tokenUtils.refreshAccessToken(refreshToken);
         if (refreshError) {
           return res.status(401).json({ message: refreshError });
         }
