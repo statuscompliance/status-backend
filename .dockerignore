@@ -1,7 +1,14 @@
 node_modules
 npm-debug.log
 Dockerfile
+mysql
 .dockerignore
 .git
 .gitignore
-mysql
+.github
+.devcontainer
+.env*
+*.config.js
+lefthook.yml
+tsconfig.json
+openapitools.json
