@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import catalogRoutes from './routes/catalog.routes.js';
 import controlRoutes from './routes/control.routes.js';
