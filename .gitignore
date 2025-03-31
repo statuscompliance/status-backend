@@ -15,3 +15,6 @@ seeders
 
 ## DB volume
 mysql
+
+## Coverage reports
+coverage

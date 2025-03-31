@@ -22,6 +22,9 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-type: [unit, integration]
     
     steps:
       - name: Checkout ⬇️
@@ -38,8 +41,8 @@ jobs:
       - name: Install dependencies 📦
         run: npm ci
         
-      - name: Run tests 🧪
-        run: npm test
+      - name: Run ${{ matrix.test-type }} tests 🧪
+        run: npm run test:${{ matrix.test-type }}
 
   build:
     needs: test
