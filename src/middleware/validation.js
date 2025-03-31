@@ -31,9 +31,7 @@ export const validateUUID = (paramName) => {
 
 export function validateParams(req, res, next) {
 
-  const errors = validationResult(req);
-  console.log('Valor de errors dentro de validateParams:', errors);
-  
+  const errors = validationResult(req);  
   if (!errors.isEmpty()) {
 
     return res.status(400).json({ errors: errors.array() });
