@@ -9,15 +9,19 @@ import {
 } from '../controllers/user.controller.js';
 const router = Router();
 import { verifyAdmin } from '../middleware/verifyAdmin.js';
+import { verifyAuthority } from '../middleware/verifyAuth.js';
 
 router.get('', getUsers);
 
 router.post('/signIn', signIn);
-router.post('/signUp', verifyAdmin, signUp);
 router.get('/signOut', signOut);
 
-router.get('/auth/', getAuthority);
-router.delete('/:id', deleteUserById);
+router.post('/signUp', verifyAdmin, signUp);
+router.get('/auth', verifyAuthority, getAuthority);
+
+router.delete('/:id', deleteUserById); //TODO: add auth middleware
+
+
 
 
 export default router;
