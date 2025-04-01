@@ -10,6 +10,7 @@ let server;
 let request;
 
 beforeAll(async () => {
+  await db.connect();
   await mockRedis();
   server = app.listen(0);
   request = supertest.agent(server);
@@ -17,7 +18,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await db.closeDatabase();
-  server.close();
+  if (server) {
+    server.close();
+  }
 });
 
 async function mockRedis() {
@@ -27,6 +30,5 @@ async function mockRedis() {
   });
   console.log('[redis] Redis mocked');
 };
-
 
 export { request };
