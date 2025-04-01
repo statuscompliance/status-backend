@@ -23,6 +23,7 @@ router.delete('/:id', deleteUserById); //TODO: add auth middleware
 
 
 
+
 export default router;
 /**
  * @swagger
