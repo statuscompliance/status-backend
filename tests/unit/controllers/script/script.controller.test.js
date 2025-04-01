@@ -1,125 +1,117 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createScript, getAllScripts, getScriptById, updateScript, deleteScript, deleteAllScripts, parseScript } from '../../../../src/controllers/script.controller';
-import redis from '../../../../src/config/redis'
+import {
+  createScript,
+  getAllScripts,
+  getScriptById,
+  updateScript,
+  deleteScript,
+  deleteAllScripts,
+  parseScript,
+} from '../../../../src/controllers/script.controller';
+import redis from '../../../../src/config/redis';
+import { v4 as uuidv4 } from 'uuid';
 
-// Mock del módulo uuid ANTES de la importación del controlador
-const mockUuidv4 = vi.fn().mockReturnValue('test-uuid');
-vi.mock('uuid', () => ({ v4: mockUuidv4 }));
-import * as uuid from 'uuid';
+vi.mock('uuid', () => ({
+  v4: vi.fn().mockReturnValue('mock-uuid'),
+}));
 
-// Limpiar los mocks ANTES de cada test
-beforeEach(() => {
-  vi.clearAllMocks();
+afterEach(() => {
+  vi.resetAllMocks();
 });
 
-describe('createScript', () => {
+describe('Script Controller - createScript', () => {
+  
+  let mockRedisSet;
+  let mockUuidv4;
+  let mockRes;
 
-  it('should create a new script successfully with valid code and metadata', async () => {
-    const mockRedisSet = vi.fn().mockResolvedValue('OK');
-    vi.spyOn(redis, 'set').mockImplementation(mockRedisSet);
-
-    const req = {
-      body: { code: 'module.exports.main = () => {};', metadata: { name: 'test' } },
-    };
-    const res = {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRedisSet = vi.spyOn(redis, 'set').mockResolvedValue('OK');
+    mockUuidv4 = uuidv4;
+    mockRes = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
     };
+  });
 
-    await createScript(req, res);
+  it('should create a new script successfully with valid code and metadata', async () => {
+    const req = {
+      body: { code: 'module.exports.main = () => {};', metadata: { name: 'test' } },
+    };
+
+    await createScript(req, mockRes);
 
     expect(mockUuidv4).toHaveBeenCalledTimes(1);
     expect(mockRedisSet).toHaveBeenCalledWith(
-      'script:test-uuid',
+      'script:mock-uuid',
       JSON.stringify({
         code: 'module.exports.main = () => {};',
         metadata: { name: 'test' },
         createdAt: expect.any(String),
       })
     );
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Script created successfully', id: 'test-uuid' });
+    expect(mockRes.status).toHaveBeenCalledWith(201);
+    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Script created successfully', id: 'mock-uuid' });
   });
 
   it('should create a new script successfully with valid code and no metadata', async () => {
-    const mockRedisSet = vi.fn().mockResolvedValue('OK');
-    vi.spyOn(redis, 'set').mockImplementation(mockRedisSet);
-    vi.mock('uuid', () => ({ v4: vi.fn().mockReturnValue('another-test-uuid') })); // Mock específico para este test
-
     const req = {
       body: { code: 'module.exports.main = () => { return "hello"; };' },
     };
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
 
-    await createScript(req, res);
+    await createScript(req, mockRes);
 
-    expect(uuid.v4).toHaveBeenCalledTimes(1);
+    expect(mockUuidv4).toHaveBeenCalledTimes(1);
     expect(mockRedisSet).toHaveBeenCalledWith(
-      'script:another-test-uuid',
+      'script:mock-uuid',
       JSON.stringify({
         code: 'module.exports.main = () => { return "hello"; };',
         metadata: {},
         createdAt: expect.any(String),
       })
     );
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Script created successfully', id: 'another-test-uuid' });
+    expect(mockRes.status).toHaveBeenCalledWith(201);
+    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Script created successfully', id: 'mock-uuid' });
   });
 
   it('should return 400 if code is missing in the request body', async () => {
     const req = {
       body: {},
     };
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
 
-    await createScript(req, res);
+    await createScript(req, mockRes);
 
-    expect(uuid.v4).not.toHaveBeenCalled();
-    expect(redis.set).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Code is required.' });
+    expect(mockUuidv4).not.toHaveBeenCalled();
+    expect(mockRedisSet).not.toHaveBeenCalled();
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: 'Code is required.' });
   });
 
   it('should return 400 if code does not include module.exports.main', async () => {
     const req = {
       body: { code: 'const x = 1;' },
     };
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
 
-    await createScript(req, res);
+    await createScript(req, mockRes);
 
-    expect(uuid.v4).not.toHaveBeenCalled();
-    expect(redis.set).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'The code must include a module.exports.main function.' });
+    expect(mockUuidv4).not.toHaveBeenCalled();
+    expect(mockRedisSet).not.toHaveBeenCalled();
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: 'The code must include a module.exports.main function.' });
   });
 
   it('should return 500 if Redis `set` operation fails', async () => {
-    const mockRedisSet = vi.fn().mockRejectedValue(new Error('Redis error'));
-    vi.spyOn(redis, 'set').mockImplementation(mockRedisSet);
-
+    mockRedisSet.mockRejectedValue(new Error('Redis error'));
     const req = {
       body: { code: 'module.exports.main = () => {};' },
     };
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
 
-    await createScript(req, res);
+    await createScript(req, mockRes);
 
-    expect(uuid.v4).toHaveBeenCalledTimes(1);
+    expect(mockUuidv4).toHaveBeenCalledTimes(1);
     expect(mockRedisSet).toHaveBeenCalledWith(
-      'script:test-uuid',
+      'script:mock-uuid',
       JSON.stringify({
         code: 'module.exports.main = () => {};',
         metadata: {},
@@ -127,7 +119,7 @@ describe('createScript', () => {
       })
     );
     expect(console.error).toHaveBeenCalledWith('Error creating script:', new Error('Redis error'));
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+    expect(mockRes.status).toHaveBeenCalledWith(500);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: 'Internal server error' });
   });
 });
