@@ -1,4 +1,4 @@
-import { validationResult } from 'express-validator';
+//import { validationResult } from 'express-validator';
 import { validate as isUUID } from 'uuid';
 
 export const checkIdParam = (req, res, next) => {
@@ -29,17 +29,15 @@ export const validateUUID = (paramName) => {
   };
 };
 
-export function validateParams(req, res, next) {
+export function validateParams(req, res, next, validation) {
+  
+  const errors = validation(req);
 
-  const errors = validationResult(req);  
   if (!errors.isEmpty()) {
 
-    return res.status(400).json({ errors: errors.array() });
+    return res.status(400).json({ "errors": errors.array() });
   }
-  else {
-    next();
-  }
-
+  next();
 };
 
 export function isGrafanaUID(uid) {
