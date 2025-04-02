@@ -1,11 +1,10 @@
-import Scope from '../src/models/scope.model.js';
-import { sequelize } from '../src/db/database.js';
+import { models } from '../../src/models/models.js';
 
 async function populateScopes() {
   try {
+    console.log('__________________________________');
     console.log('Starting scope population...');
-    // Synchronize the model with the database
-    await sequelize.sync({ force: false });
+    console.log('__________________________________');
 
     // Data for scopes
     const scopes = [
@@ -40,7 +39,7 @@ async function populateScopes() {
     ];
 
     for (const scopeData of scopes) {
-      const [, created] = await Scope.findOrCreate({
+      const [, created] = await models.Scope.findOrCreate({
         where: { id: scopeData.id },
         defaults: scopeData
       });
@@ -55,21 +54,7 @@ async function populateScopes() {
     console.log('Scope population completed.');
   } catch (error) {
     console.error('Error during scope population:', error);
-  } finally {
-    // Close the database connection
-    console.log('Closing database connection...');
-    await sequelize.close();
-    console.log('Connection closed successfully.');
   }
 }
 
-// Execute the population function and ensure it terminates
-populateScopes()
-  .then(() => {
-    console.log('Scope populator finished successfully.');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('Fatal error in scope population:', error);
-    process.exit(1);
-  });
+await populateScopes();

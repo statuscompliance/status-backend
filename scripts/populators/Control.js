@@ -1,11 +1,10 @@
-import Control from '../src/models/control.model.js';
-import { sequelize } from '../src/db/database.js';
+import { models } from '../../src/models/models.js';
 
 async function populateControls() {
   try {
+    console.log('__________________________________');
     console.log('Starting control population...');
-    // Synchronize the model with the database
-    await sequelize.sync({ force: false });
+    console.log('__________________________________');
 
     // Create controls
     const controls = [
@@ -82,7 +81,7 @@ async function populateControls() {
     ];
 
     for (const controlData of controls) {
-      const [, created] = await Control.findOrCreate({
+      const [, created] = await models.Control.findOrCreate({
         where: { id: controlData.id },
         defaults: controlData
       });
@@ -97,21 +96,7 @@ async function populateControls() {
     console.log('Control population completed.');
   } catch (error) {
     console.error('Error during control population:', error);
-  } finally {
-    // Close the database connection
-    console.log('Closing database connection...');
-    await sequelize.close();
-    console.log('Connection closed successfully.');
   }
 }
 
-// Execute the population function and ensure it terminates
-populateControls()
-  .then(() => {
-    console.log('Control populator finished successfully.');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('Fatal error in control population:', error);
-    process.exit(1);
-  });
+await populateControls();

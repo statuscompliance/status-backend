@@ -1,13 +1,10 @@
-import mongoose from 'mongoose';
-import ScopeSet from '../src/models/scopeSet.model.js';
+import ScopeSet from '../../src/models/scopeSet.model.js';
 
 async function populateScopeSets() {
   try {
+    console.log('__________________________________');
     console.log('Starting scope set population...');
-    
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to MongoDB');
+    console.log('__________________________________');
 
     // Create scope sets
     const scopeSets = [
@@ -181,21 +178,7 @@ async function populateScopeSets() {
     console.log('Scope set population completed.');
   } catch (error) {
     console.error('Error during scope set population:', error);
-  } finally {
-    // Close the MongoDB connection
-    console.log('Closing MongoDB connection...');
-    await mongoose.connection.close();
-    console.log('Connection closed successfully.');
   }
 }
 
-// Execute the population function and ensure it terminates
-populateScopeSets()
-  .then(() => {
-    console.log('ScopeSet populator finished successfully.');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('Fatal error in scope set population:', error);
-    process.exit(1);
-  });
+await populateScopeSets();

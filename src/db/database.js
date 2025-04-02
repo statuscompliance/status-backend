@@ -1,7 +1,7 @@
 import { Sequelize } from 'sequelize';
 import mongoose from 'mongoose';
 export let sequelize;
-import { initModels } from '../models/models';
+import { initModels } from '../models/models.js';
 
 const getPostgresConfig = async  () => {
   const sequelize = new Sequelize({
@@ -37,7 +37,6 @@ const initDB = async () => {
 };
 
 export const registerDB = async (instance) => {
-  console.log('[database] Registering DB instance');
   if(!sequelize) {
     sequelize = instance;
     await initModels(sequelize);

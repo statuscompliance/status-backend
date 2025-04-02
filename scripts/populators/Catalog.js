@@ -1,12 +1,11 @@
-import Catalog from '../src/models/catalog.model.js';
-import { sequelize } from '../src/db/database.js';
+import { models } from '../../src/models/models.js';
 
 async function populateCatalogs() {
   try {
+    console.log('__________________________________');
     console.log('Starting catalog population...');
-    // Synchronize the model with the database
-    await sequelize.sync({ force: false });
-
+    console.log('__________________________________');
+    
     // Create catalogs
     const catalogs = [
       {
@@ -66,7 +65,7 @@ async function populateCatalogs() {
     ];
 
     for (const catalogData of catalogs) {
-      const [, created] = await Catalog.findOrCreate({
+      const [, created] = await models.Catalog.findOrCreate({
         where: { id: catalogData.id },
         defaults: catalogData
       });
@@ -81,21 +80,7 @@ async function populateCatalogs() {
     console.log('Catalog population completed.');
   } catch (error) {
     console.error('Error during catalog population:', error);
-  } finally {
-    // Close the database connection
-    console.log('Closing database connection...');
-    await sequelize.close();
-    console.log('Connection closed successfully.');
   }
 }
 
-// Execute the population function and ensure it terminates
-populateCatalogs()
-  .then(() => {
-    console.log('Catalog populator finished successfully.');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('Fatal error in catalog population:', error);
-    process.exit(1);
-  });
+await populateCatalogs();

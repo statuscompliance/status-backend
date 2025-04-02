@@ -1,12 +1,11 @@
 import bcrypt from 'bcrypt';
-import User from '../src/models/user.model.js';
-import { sequelize } from '../src/db/database.js';
+import { models } from '../../src/models/models.js';
 
 async function populateUsers() {
   try {
+    console.log('__________________________________');
     console.log('Starting user population...');
-    // Synchronize the model with the database
-    await sequelize.sync({ force: false });
+    console.log('__________________________________');
 
     // Hash passwords before saving them
     const saltRounds = 10;
@@ -40,36 +39,21 @@ async function populateUsers() {
     ];
 
     for (const userData of users) {
-      const [, created] = await User.findOrCreate({
+      const [, created] = await models.User.findOrCreate({
         where: { username: userData.username },
         defaults: userData
       });
-
       if (created) {
         console.log(`User ${userData.username} with role ${userData.authority} successfully created.`);
       } else {
         console.log(`User ${userData.username} already exists.`);
       }
     }
-
     console.log('User population completed.');
+    console.log('__________________________________');
   } catch (error) {
     console.error('Error during user population:', error);
-  } finally {
-    // Close the database connection
-    console.log('Closing database connection...');
-    await sequelize.close();
-    console.log('Connection closed successfully.');
   }
 }
 
-// Execute the population function and ensure it terminates
-populateUsers()
-  .then(() => {
-    console.log('User populator finished successfully.');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('Fatal error in user population:', error);
-    process.exit(1);
-  });
+await populateUsers();
