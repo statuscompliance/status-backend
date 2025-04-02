@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Computation = sequelize.define(
+export default (sequelize) => sequelize.define(
   'Computation',
   {
     id: {
@@ -36,7 +35,6 @@ const Computation = sequelize.define(
   }
 );
 
-export default Computation;
 /**
  * @swagger
  * components:

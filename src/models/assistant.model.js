@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Assistant = sequelize.define('Assistant', {
+export default (sequelize) => sequelize.define('Assistant', {
   assistantId: {
     type: DataTypes.STRING(50),
     allowNull: false,
@@ -27,8 +26,6 @@ const Assistant = sequelize.define('Assistant', {
     defaultValue: 'INACTIVE',
   },
 });
-
-export default Assistant;
 
 /**
  * @swagger

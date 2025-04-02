@@ -18,8 +18,8 @@ import { verifyAuthority } from './middleware/verifyAuth.js';
 import { validateParams } from './middleware/validation.js';
 import { endpointAvailable } from './middleware/endpoint.js';
 import cookieParser from 'cookie-parser';
-import Configuration from './models/configuration.model.js';
-import db from './db/database.js';
+import { models } from './models/models.js';
+import { sequelize } from './db/database.js';
 import { verifyAdmin } from './middleware/verifyAdmin.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
@@ -110,15 +110,15 @@ async function insertEndpointsToConfig() {
     'api-docs',
   ];
   try {
-    await db.sync({ alter: true });
+    await sequelize.sync({ alter: true });
     for (const endpoint of endpoints) {
       if (endpoint === `${API_PREFIX}/assistant`) {
-        await Configuration.findOrCreate({
+        await models.Configuration.findOrCreate({
           where: { endpoint },
           defaults: { endpoint, available: true, limit: 5 },
         });
       } else {
-        await Configuration.findOrCreate({
+        await models.Configuration.findOrCreate({
           where: { endpoint },
           defaults: { endpoint, available: true },
         });

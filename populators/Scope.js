@@ -1,5 +1,5 @@
 import Scope from '../src/models/scope.model.js';
-import sequelize from '../src/db/database.js';
+import { sequelize } from '../src/db/database.js';
 
 async function populateScopes() {
   try {

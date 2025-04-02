@@ -9,6 +9,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    globalSetup: './tests/setup/setup-global.js',
+    globalTeardown: './tests/setup/teardown-global.js',
     setupFiles: './tests/setup/setup.js',
     testMatch: ['**/*.test.js'],
     isolate: true,

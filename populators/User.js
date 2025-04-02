@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import User from '../src/models/user.model.js';
-import sequelize from '../src/db/database.js';
+import { sequelize } from '../src/db/database.js';
 
 async function populateUsers() {
   try {

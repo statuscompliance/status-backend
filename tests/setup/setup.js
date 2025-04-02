@@ -10,14 +10,15 @@ let server;
 let request;
 
 beforeAll(async () => {
-  await db.connect();
+  console.log('[setup] Starting test setup...');
   await mockRedis();
   server = app.listen(0);
   request = supertest.agent(server);
+  console.log('[setup] Test setup completed.');
 });
 
 afterAll(async () => {
-  await db.closeDatabase();
+  await db.clearDatabase();
   if (server) {
     server.close();
   }
@@ -29,6 +30,6 @@ async function mockRedis() {
     return import('ioredis-mock'); // Dynamically import 'redis-mock' for mocking
   });
   console.log('[redis] Redis mocked');
-};
+}
 
 export { request };

@@ -1,5 +1,5 @@
 import Catalog from '../src/models/catalog.model.js';
-import sequelize from '../src/db/database.js';
+import { sequelize } from '../src/db/database.js';
 
 async function populateCatalogs() {
   try {

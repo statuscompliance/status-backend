@@ -1,4 +1,4 @@
-import models from '../models/models.js';
+import { models } from '../models/models.js';
 import { updateConfigurationsCache } from '../middleware/endpoint.js';
 
 export async function getConfiguration(req, res) {

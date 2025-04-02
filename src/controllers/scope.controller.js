@@ -1,4 +1,4 @@
-import models from '../models/models.js';
+import { models } from '../models/models.js';
 import ScopeSet from '../models/scopeSet.model.js';
 
 export async function getAllScopes(req, res) {

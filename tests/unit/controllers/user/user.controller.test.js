@@ -17,6 +17,7 @@ function createRes() {
 describe('User Controller Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
   // Test getUsers
   describe('getUsers', () => {
@@ -497,9 +498,9 @@ describe('User Controller Tests', () => {
     
       const req = { cookies: { accessToken: mockToken } };
       const res = createRes();
-    
+
       vi.spyOn(jwt, 'verify').mockImplementation(() => {
-        throw new Error('Invalid token');
+        throw new Error('Invalid token'); 
       });
     
       await userController.getAuthority(req, res);

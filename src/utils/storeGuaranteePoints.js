@@ -1,4 +1,4 @@
-import models from '../models/models.js';
+import { models } from '../models/models.js';
 import moment from 'moment';
 import { getDates } from './dates.js';
 

@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Configuration = sequelize.define('Configuration', {
+export default (sequelize) => sequelize.define('Configuration', {
   endpoint: {
     type: DataTypes.STRING(50),
     allowNull: false,
@@ -17,7 +16,6 @@ const Configuration = sequelize.define('Configuration', {
   },
 });
 
-export default Configuration;
 
 /**
  * Configuration model.

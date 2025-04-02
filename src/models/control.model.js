@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Control = sequelize.define(
+export default (sequelize) => sequelize.define(
   'Control',
   {
     name: {
@@ -36,8 +35,6 @@ const Control = sequelize.define(
     timestamps: false,
   }
 );
-
-export default Control;
 
 /**
  * @swagger

@@ -1,5 +1,5 @@
 import Control from '../src/models/control.model.js';
-import sequelize from '../src/db/database.js';
+import { sequelize } from '../src/db/database.js';
 
 async function populateControls() {
   try {

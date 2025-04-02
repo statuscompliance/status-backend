@@ -1,5 +1,5 @@
 import ScopeSet from '../models/scopeSet.model.js';
-import models from '../models/models.js';
+import { models } from '../models/models.js';
 import { Op } from 'sequelize';
 
 export async function getScopeSpecs(scopeKeys){

@@ -1,40 +1,29 @@
-import { Sequelize } from 'sequelize';
-import sequelize from '../db/database.js';
+
 import applyExtraSetup from '../db/extra-setup.js';
 import { associateModels } from '../db/model-utils.js';
-import User from './user.model.js';
-import Assistant from './assistant.model.js';
-import Thread from './thread.model.js';
-import Message from './message.model.js';
-import Catalog from './catalog.model.js';
-import Control from './control.model.js';
-import Configuration from './configuration.model.js';
-import Computation from './computation.model.js';
-import Panel from './panel.model.js';
-import Point from './point.model.js';
-import Scope from './scope.model.js';
+import { readdir } from 'node:fs/promises';
 
-const models = {
-  User,
-  Assistant,
-  Thread,
-  Message,
-  Catalog,
-  Control,
-  Configuration,
-  Computation,
-  Panel,
-  Point,
-  Scope,
-};
-
-try {
-  associateModels(models);
-} catch (error) {
-  console.error('Error associating models:', error);
+function filterModules(module){
+  return ['scopeSet.model.js', 'models.js'].some(f => module.includes(f));
 }
 
-applyExtraSetup(sequelize);
+export const models = {};
+export async function initModels(sequelize){
+  const modules = process.env.NODE_ENV==='test' ? 
+    import.meta.glob('./*.js') : await readdir(import.meta.dirname);
+  for (const model in modules) {
+    const modelName = process.env.NODE_ENV==='test' ? model : modules[model];
+    if(!filterModules(modelName)) {
+      const { default: newModel } = await (process.env.NODE_ENV==='test' ? modules[modelName]() : import(`./${modelName}`));
+      const instance = await newModel(sequelize);
+      models[instance.name] = instance;
+    }
+  }
+  try {
+    associateModels(models);
+  } catch (error) {
+    console.error('Error associating models:', error);
+  }
+  applyExtraSetup(sequelize);
+}
 
-export { sequelize, Sequelize, models };
-export default models;

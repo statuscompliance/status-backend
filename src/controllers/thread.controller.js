@@ -1,5 +1,5 @@
-import models from '../models/models.js';
-import sequelize from '../db/database.js';
+import { models } from '../models/models.js';
+import { sequelize } from '../db/database.js';
 import OpenAI from 'openai';
 import jwt from 'jsonwebtoken';
 
