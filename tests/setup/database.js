@@ -12,6 +12,7 @@ export const connect = async () => {
   await initMongoDB();
 };
 
+
 export const closeDatabase = async () => {
   // Close MongoDB connection and stop server
   if (mongoose.connection.readyState) {
@@ -40,7 +41,7 @@ export const clearDatabase = async () => {
 
   // Clear SQLite data by re-syncing the models
   if (sequelize) {
-    await sequelize.sync({ force: true });
+    await sequelize.drop({ cascade: true });
     console.log('[database] In-memory SQLite (PG mem) cleared');
   }
 };

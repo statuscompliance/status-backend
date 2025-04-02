@@ -1,16 +1,10 @@
 import { defineConfig } from 'vitest/config';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { resolve } from 'node:path';
 
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    globalSetup: './tests/setup/setup-global.js',
-    globalTeardown: './tests/setup/teardown-global.js',
     setupFiles: './tests/setup/setup.js',
     testMatch: ['**/*.test.js'],
     isolate: true,
@@ -26,10 +20,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@tests': path.resolve(__dirname, './tests'),
+      '@tests': resolve(import.meta.dirname, './tests'),
     },
-  },
-  env: {
-    NODE_ENV: 'test',
   },
 });

@@ -6,15 +6,16 @@ import { readdir } from 'node:fs/promises';
 function filterModules(module){
   return ['scopeSet.model.js', 'models.js'].some(f => module.includes(f));
 }
+const VITEST_ENV = import.meta.env?.VITEST;
 
 export const models = {};
 export async function initModels(sequelize){
-  const modules = process.env.NODE_ENV==='test' ? 
+  const modules = VITEST_ENV ? 
     import.meta.glob('./*.js') : await readdir(import.meta.dirname);
   for (const model in modules) {
-    const modelName = process.env.NODE_ENV==='test' ? model : modules[model];
+    const modelName = VITEST_ENV ? model : modules[model];
     if(!filterModules(modelName)) {
-      const { default: newModel } = await (process.env.NODE_ENV==='test' ? modules[modelName]() : import(`./${modelName}`));
+      const { default: newModel } = await (VITEST_ENV ? modules[modelName]() : import(`./${modelName}`));
       const instance = await newModel(sequelize);
       models[instance.name] = instance;
     }
@@ -26,4 +27,3 @@ export async function initModels(sequelize){
   }
   applyExtraSetup(sequelize);
 }
-

@@ -43,6 +43,6 @@ export const registerDB = async (instance) => {
   }
 }
 
-if (process.env.NODE_ENV !== 'test') {
+if (!import.meta.env?.VITEST) {
   await registerDB(await initDB());
 }

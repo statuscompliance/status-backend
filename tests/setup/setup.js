@@ -1,5 +1,6 @@
 import { beforeAll, afterAll, vi } from 'vitest';
 import supertest from 'supertest';
+import { connect } from './database';
 
 import * as db from './database';
 import configureApp from '../../src/index.js';
@@ -10,11 +11,10 @@ let server;
 let request;
 
 beforeAll(async () => {
-  console.log('[setup] Starting test setup...');
+  await connect();
   await mockRedis();
   server = app.listen(0);
   request = supertest.agent(server);
-  console.log('[setup] Test setup completed.');
 });
 
 afterAll(async () => {
