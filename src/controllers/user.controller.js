@@ -48,7 +48,7 @@ export async function signUp(req, res) {
   }
 }
 
-async function getNodeRedToken(username, password) {
+export async function getNodeRedToken(username, password) {
   try {
     const response = await nodered.post('/auth/token', {
       client_id: 'node-red-admin',

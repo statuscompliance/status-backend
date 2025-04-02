@@ -1,22 +1,5 @@
-import nodered from '../config/nodered.js';
 import * as tokenUtils from '../utils/tokenUtils.js';
-
-// Import the getNodeRedToken function from the user controller
-async function getNodeRedToken() {
-  try {
-    const response = await nodered.post('/auth/token', {
-      client_id: 'node-red-admin',
-      grant_type: 'password',
-      scope: '*',
-      username: process.env.USER_STATUS,
-      password: process.env.PASS_STATUS,
-    });
-    return response.data.access_token;
-  } catch (error) {
-    console.error('Error during get Node-RED token:', error);
-    throw new Error('Failed to get Node-RED token');
-  }
-}
+import { getNodeRedToken } from '../../src/controllers/user.controller.js';
 
 export async function verifyAuthority(req, res, next) {
   let accessToken = req.headers['x-access-token'] ?? '';
@@ -46,8 +29,14 @@ export async function verifyAuthority(req, res, next) {
         if (refreshError) {
           return res.status(401).json({ message: refreshError });
         }
-
-        const newNodeRedToken = await getNodeRedToken();
+        req.user = user;
+        if (!req.user || !req.user.username || !req.user.password) {
+          return res.status(400).json({ message: 'User credentials missing' });
+        }
+        const newNodeRedToken = await getNodeRedToken(
+          req.user.username,
+          req.user.password
+        );
 
         res.cookie('accessToken', newAccessToken, {
           httpOnly: true,
@@ -65,7 +54,6 @@ export async function verifyAuthority(req, res, next) {
           sameSite: 'none',
         });
 
-        req.user = user;
         return next();
       } else {
         return res.status(401).json({ message: 'Unauthorized' });
