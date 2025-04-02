@@ -9,7 +9,7 @@
     "start": "tsx src/index.js",
     "test": "NODE_NO_WARNINGS=1 vitest",
     "test:unit": "NODE_NO_WARNINGS=1 vitest run tests/unit",
-    "test:integration": "vitest run tests/integration",
+    "test:integration": "NODE_NO_WARNINGS=1 vitest run tests/integration",
     "coverage": "vitest run --coverage --coverage.reporter=text",
     "test:ui": "NODE_NO_WARNINGS=1 vitest --coverage.enabled=true --ui",
     "lint": "eslint . --max-warnings=0 --cache --cache-location node_modules/.cache/eslint",

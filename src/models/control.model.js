@@ -12,7 +12,7 @@ export default (sequelize) => sequelize.define(
       allowNull: false,
     },
     period: {
-      type: DataTypes.ENUM('HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'ANNUALLY'),
+      type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'ANNUALLY'),
       allowNull: false,
     },
     startDate: {

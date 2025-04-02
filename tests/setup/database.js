@@ -4,11 +4,17 @@ import { Sequelize } from 'sequelize';
 import { newDb } from 'pg-mem';
 import { registerDB } from '../../src/db/database';
 
+// moment is imported from pg-mem to avoid deprecation warnings
+import moment from 'moment';
+// Suppress deprecation warnings
+moment.suppressDeprecationWarnings = true;
+
 let mongoServer;
 export let sequelize;
 
 export const connect = async () => {
   await registerDB(await initPostgres());
+  await sequelize.sync({ force: true });
   await initMongoDB();
 };
 
@@ -67,7 +73,6 @@ async function initPostgres() {
     dialectModule: adapter,
   });
 
-  await sequelize.sync({ force: true });
   await sequelize.authenticate();
   console.log('[database] In-memory SQLite (PG mem) connected');
   return sequelize;

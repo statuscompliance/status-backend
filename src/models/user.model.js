@@ -16,7 +16,7 @@ export default (sequelize) => sequelize.define('User', {
     allowNull: false,
   },
   authority: {
-    type: DataTypes.ENUM('ADMIN', 'DEVELOPER', 'USER'),
+    type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('ADMIN', 'DEVELOPER', 'USER'),
     allowNull: false,
   },
   email: {

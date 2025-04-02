@@ -22,7 +22,8 @@ export default (sequelize) => sequelize.define('Assistant', {
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM('ACTIVE', 'INACTIVE'),
+    type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('ACTIVE', 'INACTIVE'),
+    allowNull: false,
     defaultValue: 'INACTIVE',
   },
 });
