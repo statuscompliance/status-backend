@@ -13,7 +13,7 @@ describe('checkIdParam Middleware', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockReq = { params: {}, query: {}, body: {} }; // Inicializamos todos los posibles req properties
+    mockReq = { params: {}, query: {}, body: {} };
     mockRes = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
@@ -22,9 +22,9 @@ describe('checkIdParam Middleware', () => {
   });
 
   it('should call next if id param is present', () => {
-    mockReq.params.id = '123'; // Directamente asignamos el valor
+    mockReq.params.id = '123';
     checkIdParam(mockReq, mockRes, mockNext);
-    expect(mockNext).toHaveBeenCalledTimes(1); // Usamos toHaveBeenCalledTimes para ser explícitos
+    expect(mockNext).toHaveBeenCalledTimes(1);
     expect(mockRes.status).not.toHaveBeenCalled();
     expect(mockRes.json).not.toHaveBeenCalled();
   });

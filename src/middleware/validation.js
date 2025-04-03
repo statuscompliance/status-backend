@@ -24,7 +24,7 @@ export function validateParams(req, res, next, validation) {
   const errors = validation(req);
 
   if (!errors.isEmpty()) {
-    return res.status(400).json({ "errors": errors.array() });
+    return res.status(400).json({ 'errors': errors.array() });
   }
 
   next();
