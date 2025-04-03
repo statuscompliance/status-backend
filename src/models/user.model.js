@@ -1,12 +1,16 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../db/database.js';
 
+
 const User = sequelize.define('User', {
   username: {
     type: DataTypes.STRING(60),
     allowNull: false,
+    unique: true, // To ensure that the username is unique
     validate: {
-      isAlphanumeric: true,
+      isAlphanumeric: {
+        msg: 'Username must be alphanumeric',
+      },
     },
   },
   password: {
@@ -20,8 +24,11 @@ const User = sequelize.define('User', {
   email: {
     type: DataTypes.STRING(100),
     allowNull: false,
+    unique: true, // To ensure that the email is unique
     validate: {
-      isEmail: true,
+      isEmail: {
+        msg: 'Must be a valid email address',
+      },
     },
   },
   refresh_token: {
