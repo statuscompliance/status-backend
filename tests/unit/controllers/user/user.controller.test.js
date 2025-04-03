@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as userController from '../../../../src/controllers/user.controller.js';
-import User from '../../../../src/models/user.model.js';
+// import User from '../../../../src/models/user.model.js';
+import { models } from '../../../../src/models/models.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
@@ -17,6 +18,7 @@ function createRes() {
 describe('User Controller Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
   // Test getUsers
   describe('getUsers', () => {
@@ -25,7 +27,7 @@ describe('User Controller Tests', () => {
       // Mocking database response
       const mockUsers = [{ id: 1, name: 'John Doe' }];
 
-      vi.spyOn(User, 'findAll').mockResolvedValue(mockUsers);
+      vi.spyOn(models.User, 'findAll').mockResolvedValue(mockUsers);
 
       // Mocking request and response objects
       const req = {};
@@ -38,7 +40,7 @@ describe('User Controller Tests', () => {
     });
 
     it('should handle errors gracefully in getUsers', async () => {
-      vi.spyOn(User, 'findAll').mockRejectedValueOnce(
+      vi.spyOn(models.User, 'findAll').mockRejectedValueOnce(
         new Error('Database error')
       );
 
@@ -54,6 +56,7 @@ describe('User Controller Tests', () => {
     });
 
   });
+
   // Test singUp
   describe('signUp', () => {
     it('should return 400 if username exists', async () => {
@@ -68,8 +71,8 @@ describe('User Controller Tests', () => {
       const res = createRes();
 
       // Set the mock for findAll
-      vi.spyOn(User, 'findOne').mockResolvedValue(null);
-      vi.spyOn(User, 'findAll').mockResolvedValue([
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(null);
+      vi.spyOn(models.User, 'findAll').mockResolvedValue([
         { username: 'existingUser' },
       ]);
 
@@ -92,8 +95,8 @@ describe('User Controller Tests', () => {
       };
       const res = createRes();
 
-      vi.spyOn(User, 'findAll').mockResolvedValue([]);
-      vi.spyOn(User, 'create').mockResolvedValue({});
+      vi.spyOn(models.User, 'findAll').mockResolvedValue([]);
+      vi.spyOn(models.User, 'create').mockResolvedValue({});
 
       await userController.signUp(req, res);
 
@@ -114,7 +117,7 @@ describe('User Controller Tests', () => {
       const res = createRes();
     
       // Set the mock for findAll with case-insensitive search
-      vi.spyOn(User, 'findAll').mockResolvedValue([
+      vi.spyOn(models.User, 'findAll').mockResolvedValue([
         { username: 'existinguser' }, // lowercase
       ]);
     
@@ -136,7 +139,7 @@ describe('User Controller Tests', () => {
       };
       const res = createRes();
     
-      vi.spyOn(User, 'findOne').mockResolvedValue([{ email: 'existing@example.com' }]);
+      vi.spyOn(models.User, 'findOne').mockResolvedValue([{ email: 'existing@example.com' }]);
     
       await userController.signUp(req, res);
     
@@ -155,15 +158,15 @@ describe('User Controller Tests', () => {
       };
       const res = createRes();
     
-      vi.spyOn(User, 'findOne').mockResolvedValue(null); 
-      vi.spyOn(User, 'findAll').mockResolvedValue([]);
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(null); 
+      vi.spyOn(models.User, 'findAll').mockResolvedValue([]);
       const hashSpy = vi.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
-      vi.spyOn(User, 'create').mockResolvedValue({});
+      vi.spyOn(models.User, 'create').mockResolvedValue({});
       await userController.signUp(req, res);
     
       
       expect(hashSpy).toHaveBeenCalledWith('plainPassword', 10); 
-      expect(User.create).toHaveBeenCalledWith({
+      expect(models.User.create).toHaveBeenCalledWith({
         username: 'newUser',
         password: 'hashedPassword',  // should match the mocked hash
         authority: 'USER',
@@ -185,7 +188,7 @@ describe('User Controller Tests', () => {
       const res = createRes();
 
       // simulate no user found
-      vi.spyOn(User, 'findOne').mockResolvedValue(null);
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(null);
 
       await userController.signIn(req, res);
 
@@ -203,7 +206,7 @@ describe('User Controller Tests', () => {
       const res = createRes();
       const mockUser = { username: 'existingUser', password: 'hashedPassword' };
 
-      vi.spyOn(User, 'findOne').mockResolvedValue(mockUser);
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(mockUser);
       vi.spyOn(bcrypt, 'compare').mockResolvedValue(false);
 
       await userController.signIn(req, res);
@@ -231,10 +234,10 @@ describe('User Controller Tests', () => {
         authority: 'USER',
       };
 
-      vi.spyOn(User, 'findOne').mockResolvedValue(mockUser);
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(mockUser);
       vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       vi.spyOn(jwt, 'sign').mockReturnValue('mockToken');
-      vi.spyOn(User, 'update').mockResolvedValue([1]);
+      vi.spyOn(models.User, 'update').mockResolvedValue([1]);
 
       await userController.signIn(req, res);
 
@@ -252,7 +255,7 @@ describe('User Controller Tests', () => {
           authority: 'USER',
         })
       );
-      expect(User.update).toHaveBeenCalledWith(
+      expect(models.User.update).toHaveBeenCalledWith(
         { refresh_token: 'mockToken' },
         { where: { username: 'existingUser' } }
       );
@@ -296,7 +299,7 @@ describe('User Controller Tests', () => {
         authority: 'userAuthority',
       };
 
-      vi.spyOn(User, 'findOne').mockResolvedValue(mockUser);
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(mockUser);
       vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       vi.spyOn(jwt, 'sign').mockImplementation(() => 'mockToken');
 
@@ -331,7 +334,7 @@ describe('User Controller Tests', () => {
         authority: 'userAuthority',
       };
     
-      vi.spyOn(User, 'findOne').mockResolvedValue(mockUser);
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(mockUser);
       vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       vi.spyOn(jwt, 'sign').mockReturnValue('mockToken');
     
@@ -355,7 +358,7 @@ describe('User Controller Tests', () => {
       const res = createRes();
     
       const mockUser = { username: 'existingUser', password: 'hashedPassword' };
-      vi.spyOn(User, 'findOne').mockResolvedValue(mockUser);
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(mockUser);
       vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       const signSpy = vi.spyOn(jwt, 'sign').mockReturnValue('mockToken');
     
@@ -391,8 +394,8 @@ describe('User Controller Tests', () => {
         { id: 1, username: 'existingUser', refresh_token: 'validToken' },
       ];
 
-      vi.spyOn(User, 'findAll').mockResolvedValue(user);
-      vi.spyOn(User, 'update').mockResolvedValue([1]);
+      vi.spyOn(models.User, 'findAll').mockResolvedValue(user);
+      vi.spyOn(models.User, 'update').mockResolvedValue([1]);
 
       await userController.signOut(req, res);
 
@@ -415,7 +418,7 @@ describe('User Controller Tests', () => {
       const res = createRes();
       
       // Mocking the user not found scenario
-      vi.spyOn(User, 'findAll').mockResolvedValue([]); // No user with that refresh token
+      vi.spyOn(models.User, 'findAll').mockResolvedValue([]); // No user with that refresh token
   
       await userController.signOut(req, res);
   
@@ -435,7 +438,7 @@ describe('User Controller Tests', () => {
       const res = createRes();
       const req = { params: { id: 1 } };
 
-      vi.spyOn(User, 'findByPk').mockResolvedValue(null);
+      vi.spyOn(models.User, 'findByPk').mockResolvedValue(null);
 
       await userController.deleteUserById(req, res);
 
@@ -451,8 +454,8 @@ describe('User Controller Tests', () => {
         destroy: vi.fn().mockResolvedValue({}), // destroy() is a real function that returns a resolved promise.
       };
 
-      vi.spyOn(User, 'findByPk').mockResolvedValue(user);
-      vi.spyOn(user, 'destroy').mockResolvedValue({});
+      vi.spyOn(models.User, 'findByPk').mockResolvedValue(user);
+      vi.spyOn(models.User, 'destroy').mockResolvedValue({});
 
       const req = { params: { id: 1 } };
 
@@ -497,9 +500,9 @@ describe('User Controller Tests', () => {
     
       const req = { cookies: { accessToken: mockToken } };
       const res = createRes();
-    
+
       vi.spyOn(jwt, 'verify').mockImplementation(() => {
-        throw new Error('Invalid token');
+        throw new Error('Invalid token'); 
       });
     
       await userController.getAuthority(req, res);
