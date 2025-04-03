@@ -1,15 +1,12 @@
-import redis from '../config/redis.js';
-import { v4 as uuidv4 } from 'uuid';
-
 const SCRIPT_KEY_PREFIX = 'script:';
 
 // Helper to build unique keys
 const buildKey = (id) => `${SCRIPT_KEY_PREFIX}${id}`;
 
-export const createScript = async (req, res) => {
+export const createScript = async (req, res, v4, redis) => {
   try {
     const {code, metadata } = req.body;
-    const id = uuidv4();
+    const id = v4();
 
     if (!code) {
       return res.status(400).json({ error: 'Code is required.' });
@@ -31,7 +28,7 @@ export const createScript = async (req, res) => {
   }
 };
 
-export const getAllScripts = async (req, res) => {
+export const getAllScripts = async (req, res, redis) => {
   try {
     const keys = await redis.keys(`${SCRIPT_KEY_PREFIX}*`);
     const scripts = [];
@@ -48,7 +45,7 @@ export const getAllScripts = async (req, res) => {
   }
 };
 
-export const getScriptById = async (req, res) => {
+export const getScriptById = async (req, res, redis) => {
   try {
     const { id } = req.params;
     const scriptData = await redis.get(buildKey(id));
@@ -66,7 +63,7 @@ export const getScriptById = async (req, res) => {
   }
 };
 
-export const updateScript = async (req, res) => {
+export const updateScript = async (req, res, redis) => {
   try {
     const { id } = req.params;
     const { code, metadata } = req.body;
@@ -92,7 +89,7 @@ export const updateScript = async (req, res) => {
   }
 };
 
-export const deleteScript = async (req, res) => {
+export const deleteScript = async (req, res, redis) => {
   try {
     const { id } = req.params;
 
@@ -111,7 +108,7 @@ export const deleteScript = async (req, res) => {
 };
 
 
-export const deleteAllScripts = async (req, res) => {
+export const deleteAllScripts = async (res, redis) => {
   try {
     const keys = await redis.keys(`${SCRIPT_KEY_PREFIX}*`);
 

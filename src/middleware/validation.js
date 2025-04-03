@@ -17,7 +17,7 @@ export const validateUUID = (paramName) => {
       return res.status(400).json({ error: `Invalid or missing UUID for parameter: ${paramName}` });
     }
     next();
-  };
+  }
 };
 
 
