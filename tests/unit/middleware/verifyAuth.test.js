@@ -270,4 +270,61 @@ describe('verifyAuthority middleware', () => {
     refreshAccessTokenSpy.mockRestore();
     getNodeRedTokenSpy.mockRestore();
   });
+  //--
+  it('should return 401 if token is not valid yet (NotBeforeError)', async () => {
+    verifyAccessTokenSpy.mockResolvedValueOnce({ decoded: null, error: { name: 'NotBeforeError' } });
+    
+    const req = mockRequest({ 'x-access-token': 'future_token' });
+    const res = mockResponse();
+    
+    await verifyAuthority(req, res, mockNext);
+    
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Unauthorized' });
+  });
+
+  it('should return 400 if user credentials are missing after refreshing token', async () => {
+    verifyAccessTokenSpy.mockResolvedValueOnce({ decoded: null, error: { name: 'TokenExpiredError' } });
+    refreshAccessTokenSpy.mockResolvedValueOnce({ newAccessToken: 'new_token', user: {} });
+    
+    const req = mockRequest({ 'x-access-token': 'expired_token' }, { refreshToken: 'valid_refresh_token' });
+    const res = mockResponse();
+    
+    await verifyAuthority(req, res, mockNext);
+    
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: 'User credentials missing' });
+  });
+
+  it('should set cookies correctly in development and production environments', async () => {
+    process.env.NODE_ENV = 'production';
+    verifyAccessTokenSpy.mockResolvedValueOnce({ decoded: null, error: { name: 'TokenExpiredError' } });
+    refreshAccessTokenSpy.mockResolvedValueOnce({ newAccessToken: 'newAccessToken123', user: { username: 'testUser', password: 'testPassword' } });
+    vi.spyOn(userController, 'getNodeRedToken').mockResolvedValue('mockNodeRedToken');
+    
+    const req = mockRequest({ 'x-access-token': 'expired_token' }, { refreshToken: 'valid_refresh_token' });
+    const res = mockResponse();
+    
+    await verifyAuthority(req, res, mockNext);
+    
+    expect(res.cookie).toHaveBeenCalledWith('accessToken', 'newAccessToken123', expect.objectContaining({
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    }));
+    
+    process.env.NODE_ENV = 'development';
+  });
+
+  it('should not set cookies if refresh token process fails', async () => {
+    verifyAccessTokenSpy.mockResolvedValueOnce({ decoded: null, error: { name: 'TokenExpiredError' } });
+    refreshAccessTokenSpy.mockResolvedValueOnce({ newAccessToken: null, user: null, error: 'Invalid refresh token' });
+    
+    const req = mockRequest({ 'x-access-token': 'expired_token' }, { refreshToken: 'invalid_refresh_token' });
+    const res = mockResponse();
+    
+    await verifyAuthority(req, res, mockNext);
+    
+    expect(res.cookie).not.toHaveBeenCalled();
+  });
 });
