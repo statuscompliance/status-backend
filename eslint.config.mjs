@@ -11,7 +11,9 @@ export default [
       'no-empty': ['error', { allowEmptyCatch: true }],
       '@stylistic/js/quotes': ['error', 'single', { avoidEscape: true }],
       '@stylistic/js/linebreak-style': ['error', 'unix'],
+      '@stylistic/js/eol-last': ['error', 'always'],
       '@stylistic/js/indent': ['error', 2],
+      'unicode-bom': ['error', 'never'],
     },
     languageOptions: {
       sourceType: 'module', // Change this to 'module'
