@@ -1,21 +1,28 @@
 import { verifyAccessToken } from '../utils/tokenUtils';
 
 export async function verifyAdmin(req, res, next) {
-  // Verify token
-  const { decoded, error } = await verifyAccessToken(req.headers['x-access-token']);
-  
-  // If the token is not found, reply with a 401 error.
-  if (!req.headers['x-access-token']) {
+  // Extract access token from headers or cookies
+  const accessToken = req.headers['x-access-token'] ?? req.cookies?.accessToken;
+
+  // If no access token is provided in headers or cookies, return an error
+  if (!accessToken) {
     return res.status(401).json({ message: 'No token provided' });
   }
-  // If error in the validation of the token.
+
+  // Verify the access token
+  const { decoded, error } = await verifyAccessToken(accessToken);
+
+  // If token verification fails, return an error
   if (error) {
     console.error('Token verification failed:', error);
     return res.status(401).json({ message: 'Unauthorized: Invalid token' });
   }
-  // If token not have a valid authority,
+
+  // Check if the user has admin authority
   if (!decoded || decoded.authority !== 'ADMIN') {
     return res.status(403).json({ message: 'Forbidden' });
   }
+
+  req.user = decoded;
   next();
 }
