@@ -1,7 +1,6 @@
 import { DataTypes, UUIDV4 } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Scope = sequelize.define('Scope', {
+export default (sequelize) => sequelize.define('Scope', {
   id: {
     type: DataTypes.UUID,
     defaultValue: UUIDV4,
@@ -32,8 +31,6 @@ const Scope = sequelize.define('Scope', {
     allowNull: false
   }
 });
-
-export default Scope;
 
 /**
  * @swagger

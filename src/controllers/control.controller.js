@@ -1,4 +1,4 @@
-import models from '../models/models.js';
+import { models } from '../models/models.js';
 import { methods } from '../config/grafana.js';
 import { checkRequiredProperties } from '../utils/checkRequiredProperties.js';
 
