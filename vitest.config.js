@@ -23,4 +23,13 @@ export default defineConfig({
       '@tests': resolve(import.meta.dirname, './tests'),
     },
   },
+  build: {
+    dynamicImportVarsOptions: {
+      /**
+       * This file already uses Vite's import.meta.glob as expected, but Vite report an error
+       * because it detects the dynamic import using static analysis.
+       */
+      exclude: ['src/models/models.js'],
+    }
+  },
 });
