@@ -12,6 +12,7 @@ export default (sequelize) => sequelize.define(
       allowNull: false,
     },
     period: {
+      // TODO: Track https://github.com/oguimbal/pg-mem/issues/443 to remove this workaround
       type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'ANNUALLY'),
       allowNull: false,
     },

@@ -16,6 +16,7 @@ export default (sequelize) => sequelize.define('User', {
     allowNull: false,
   },
   authority: {
+    // TODO: Track https://github.com/oguimbal/pg-mem/issues/443 to remove this workaround
     type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('ADMIN', 'DEVELOPER', 'USER'),
     allowNull: false,
   },
