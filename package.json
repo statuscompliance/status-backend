@@ -45,10 +45,10 @@
     "@commitlint/cli": "19.8.0",
     "@commitlint/config-conventional": "19.8.0",
     "@eslint/js": "9.23.0",
-    "@evilmartians/lefthook": "1.11.5",
+    "@evilmartians/lefthook": "1.11.6",
     "@stylistic/eslint-plugin-js": "4.2.0",
-    "@vitest/coverage-istanbul": "3.0.9",
-    "@vitest/ui": "3.0.9",
+    "@vitest/coverage-istanbul": "3.1.1",
+    "@vitest/ui": "3.1.1",
     "commitlint": "19.8.0",
     "eslint": "9.23.0",
     "globals": "16.0.0",
@@ -56,6 +56,6 @@
     "mongodb-memory-server": "10.1.4",
     "pre-commit": "1.2.2",
     "supertest": "7.1.0",
-    "vitest": "3.0.9"
+    "vitest": "3.1.1"
   }
 }
