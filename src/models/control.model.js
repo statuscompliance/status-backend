@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Control = sequelize.define(
+export default (sequelize) => sequelize.define(
   'Control',
   {
     name: {
@@ -13,7 +12,8 @@ const Control = sequelize.define(
       allowNull: false,
     },
     period: {
-      type: DataTypes.ENUM('HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'ANNUALLY'),
+      // TODO: Track https://github.com/oguimbal/pg-mem/issues/443 to remove this workaround
+      type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'ANNUALLY'),
       allowNull: false,
     },
     startDate: {
@@ -36,8 +36,6 @@ const Control = sequelize.define(
     timestamps: false,
   }
 );
-
-export default Control;
 
 /**
  * @swagger

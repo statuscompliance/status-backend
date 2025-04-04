@@ -1,23 +1,28 @@
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../utils/tokenUtils';
 
-export function verifyAdmin(req, res, next) {
+export async function verifyAdmin(req, res, next) {
+  // Extract access token from headers or cookies
   const accessToken = req.headers['x-access-token'] ?? req.cookies?.accessToken;
+
+  // If no access token is provided in headers or cookies, return an error
   if (!accessToken) {
     return res.status(401).json({ message: 'No token provided' });
   }
 
-  try {
-    // Verify token
-    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+  // Verify the access token
+  const { decoded, error } = await verifyAccessToken(accessToken);
 
-    // Authorize only ADMIN users
-    if (decoded.authority !== 'ADMIN') {
-      return res.status(403).json({ message: 'Forbidden' });
-    }
-    
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: `Unauthorized: ${error.message}` });
+  // If token verification fails, return an error
+  if (error) {
+    console.error('Token verification failed:', error);
+    return res.status(401).json({ message: 'Unauthorized: Invalid token' });
   }
+
+  // Check if the user has admin authority
+  if (!decoded || decoded.authority !== 'ADMIN') {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+
+  req.user = decoded;
+  next();
 }
