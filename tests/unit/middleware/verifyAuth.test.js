@@ -2,7 +2,7 @@ import { describe, it, vi, beforeEach, afterEach, expect } from 'vitest';
 import { verifyAuthority } from '../../../src/middleware/verifyAuth';
 import * as tokenUtils from '../../../src/utils/tokenUtils.js';
 import jwt from 'jsonwebtoken';
-import * as userController from '../../../src/controllers/user.controller.js';
+import * as nodeRedTokenModule from '../../../src/utils/nodeRedToken.js';
 
 const mockRequest = (headers = {}, cookies = {}, user = null) => ({
   headers,
@@ -129,17 +129,6 @@ describe('verifyAuthority middleware', () => {
     await verifyAuthority(req, res, mockNext);
     expect(mockNext).toHaveBeenCalled();
   });
-  it('should proceed to next middleware if token is valid and authority is allowed', async () => {
-    verifyAccessTokenSpy.mockResolvedValueOnce({
-      decoded: { authority: 'ADMIN' },
-      error: null,
-    });
-  
-    const req = mockRequest({ 'x-access-token': 'valid_token' });
-    const res = mockResponse();
-    await verifyAuthority(req, res, mockNext);
-    expect(mockNext).toHaveBeenCalled();
-  });
   it('should prioritize header token over cookie token', async () => {
     setupMocks({
       verifyReturnValue: { decoded: { authority: 'ADMIN' }, error: null },
@@ -253,8 +242,10 @@ describe('verifyAuthority middleware', () => {
     });
   
     // Mock getNodeRedToken
-    const getNodeRedTokenSpy = vi.spyOn(userController, 'getNodeRedToken').mockResolvedValue('mockNodeRedToken');
-  
+    const getNodeRedTokenSpy = vi.spyOn(nodeRedTokenModule, 'getNodeRedToken').mockResolvedValue({
+      accessToken: 'mockNodeRedToken',
+    });
+
     await verifyAuthority(req, res, mockNext);
   
     // Validate the cookie properties
@@ -300,7 +291,7 @@ describe('verifyAuthority middleware', () => {
     process.env.NODE_ENV = 'production';
     verifyAccessTokenSpy.mockResolvedValueOnce({ decoded: null, error: { name: 'TokenExpiredError' } });
     refreshAccessTokenSpy.mockResolvedValueOnce({ newAccessToken: 'newAccessToken123', user: { username: 'testUser', password: 'testPassword' } });
-    vi.spyOn(userController, 'getNodeRedToken').mockResolvedValue('mockNodeRedToken');
+    vi.spyOn(nodeRedTokenModule, 'getNodeRedToken').mockResolvedValue({accessToken: 'mockNodeRedToken'});
     
     const req = mockRequest({ 'x-access-token': 'expired_token' }, { refreshToken: 'valid_refresh_token' });
     const res = mockResponse();

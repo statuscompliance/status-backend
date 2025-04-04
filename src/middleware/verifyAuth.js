@@ -1,16 +1,13 @@
-import * as tokenUtils from '../utils/tokenUtils.js';
-import { getNodeRedToken } from '../../src/controllers/user.controller.js';
+import { verifyAccessToken, refreshAccessToken } from '../utils/tokenUtils.js';
+import { getNodeRedToken } from '../utils/nodeRedToken.js';
 
 export async function verifyAuthority(req, res, next) {
   let accessToken = req.headers['x-access-token'] ?? '';
-  if (req.cookies === undefined && accessToken === '') {
+  if (!req.cookies['accessToken'] && accessToken === '') {
     return res.status(401).json({ message: 'No token provided' });
   } else {
     accessToken = req.cookies['accessToken'] ?? accessToken;
-    if (!accessToken) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
-    const { decoded, error } = await tokenUtils.verifyAccessToken(accessToken);
+    const { decoded, error } = await verifyAccessToken(accessToken);
     if (error) {
       if (error.name === 'TokenExpiredError') {
         const refreshToken =
@@ -25,7 +22,7 @@ export async function verifyAuthority(req, res, next) {
           newAccessToken,
           user,
           error: refreshError,
-        } = await tokenUtils.refreshAccessToken(refreshToken);
+        } = await refreshAccessToken(refreshToken);
         if (refreshError) {
           return res.status(401).json({ message: refreshError });
         }
