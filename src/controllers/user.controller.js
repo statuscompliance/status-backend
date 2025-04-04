@@ -1,9 +1,8 @@
 import { models } from '../models/models.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import nodered from '../config/nodered.js';
 import { verifyAccessToken } from '../utils/tokenUtils.js';
-
+import { getNodeRedToken } from '../utils/nodeRedToken.js';
 
 const token_expiration = parseInt(process.env.JWT_EXPIRATION) || 3600;
 const refreshToken_expiration = parseInt(process.env.JWT_REFRESH_EXPIRATION) || 3600 * 24 * 7;
@@ -48,21 +47,6 @@ export async function signUp(req, res) {
   }
 }
 
-async function getNodeRedToken(username, password) {
-  try {
-    const response = await nodered.post('/auth/token', {
-      client_id: 'node-red-admin',
-      grant_type: 'password',
-      scope: '*',
-      username: username,
-      password: password,
-    });
-    return response.data.access_token;
-  } catch (error) {
-    console.error('Error in refreshAccessToken:', error);
-    throw new Error('Failed to get Node-RED token');
-  }
-}
 
 export async function signIn(req, res) {
   const { username, password } = req.body;
