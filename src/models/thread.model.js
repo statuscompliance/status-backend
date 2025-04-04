@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Thread = sequelize.define('Thread', {
+export default (sequelize) => sequelize.define('Thread', {
   gpt_id: {
     type: DataTypes.STRING(50),
     allowNull: false,
@@ -16,7 +15,6 @@ const Thread = sequelize.define('Thread', {
   },
 });
 
-export default Thread;
 
 /**
  * @swagger

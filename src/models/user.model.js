@@ -1,8 +1,6 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../db/database.js';
 
-
-const User = sequelize.define('User', {
+export default (sequelize) => sequelize.define('User', {
   username: {
     type: DataTypes.STRING(60),
     allowNull: false,
@@ -18,7 +16,8 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
   authority: {
-    type: DataTypes.ENUM('ADMIN', 'DEVELOPER', 'USER'),
+    // TODO: Track https://github.com/oguimbal/pg-mem/issues/443 to remove this workaround
+    type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('ADMIN', 'DEVELOPER', 'USER'),
     allowNull: false,
   },
   email: {
@@ -36,7 +35,6 @@ const User = sequelize.define('User', {
   },
 });
 
-export default User;
 /**
  * @swagger
  * components:

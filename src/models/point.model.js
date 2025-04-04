@@ -1,6 +1,6 @@
 import { DataTypes, UUIDV4 } from 'sequelize';
-import sequelize from '../db/database.js';
-const Point = sequelize.define('Point', {
+
+export default (sequelize) => sequelize.define('Point', {
   id: {
     type: DataTypes.UUID,
     defaultValue: UUIDV4,
@@ -39,8 +39,6 @@ const Point = sequelize.define('Point', {
     allowNull: true
   },
 });
-
-export default Point;
 
 /**
  * @swagger
