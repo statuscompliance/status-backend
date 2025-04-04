@@ -1,4 +1,4 @@
-import models from '../models/models.js';
+import { models } from '../models/models.js';
 import { updateConfigurationsCache } from '../middleware/endpoint.js';
 
 export async function getConfiguration(req, res) {
@@ -107,7 +107,7 @@ export async function updateAssistantLimit(req, res) {
     });
 
     if (!configuration) {
-      return res.status(404).json({ message: `Configuration undefined not found` });
+      return res.status(404).json({ message: 'Configuration undefined not found' });
     }
 
     const configId = configuration.dataValues.id;

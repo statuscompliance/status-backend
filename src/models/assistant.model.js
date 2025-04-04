@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Assistant = sequelize.define('Assistant', {
+export default (sequelize) => sequelize.define('Assistant', {
   assistantId: {
     type: DataTypes.STRING(50),
     allowNull: false,
@@ -23,12 +22,12 @@ const Assistant = sequelize.define('Assistant', {
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM('ACTIVE', 'INACTIVE'),
+    // TODO: Track https://github.com/oguimbal/pg-mem/issues/443 to remove this workaround
+    type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('ACTIVE', 'INACTIVE'),
+    allowNull: false,
     defaultValue: 'INACTIVE',
   },
 });
-
-export default Assistant;
 
 /**
  * @swagger
