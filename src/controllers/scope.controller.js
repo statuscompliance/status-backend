@@ -6,8 +6,7 @@ export async function getAllScopes(req, res) {
     const scopes = await models.Scope.findAll();
     res.status(200).json(scopes);
   } catch (error) {
-    console.error('Error retrieving scopes:', error);
-    res.status(500).json({ error: 'Error retrieving scopes' });
+    res.status(500).json({ error: error.message });
   }
 }
 
@@ -20,34 +19,28 @@ export async function getScopeById(req, res) {
       res.status(404).json({ error: 'Scope not found' });
     }
   } catch (error) {
-    console.error('Error retrieving scope:', error);
-    res.status(500).json({ error: 'Error retrieving scope' });
+    res.status(500).json({ error: error.message });
   }
 }
 
 export async function createScope(req, res) {
   try {
-    /*
     let { name, description, type, default: defaultValue } = req.body;
     
     if (typeof name !== 'string') {
       return res.status(400).json({ error: 'Name must be a string' });
     }
-    name = name.toLowerCase().replace(/\s+/g, '_'); //DELETE ¿?
+    name = name.toLowerCase().replace(/\s+/g, '_');
     
     const newScope = await models.Scope.create({ name, description, type, default: defaultValue });
-    */
-    const newScope = await models.Scope.create(req.body);
     res.status(201).json(newScope);
   } catch (error) {
-    console.error('Error creating scope:', error);
-    res.status(400).json({ error: 'Error creating scope' });
+    res.status(500).json({ error: error.message });
   }
 }
 
 export async function updateScope(req, res) {
   try {
-    /*
     let { name, description, type, default: defaultValue } = req.body;
     if (typeof name !== 'string') {
       return res.status(400).json({ error: 'Name must be a string' });
@@ -56,10 +49,7 @@ export async function updateScope(req, res) {
     const [updated] = await models.Scope.update(
       { name, description, type, default: defaultValue },
       { where: { id: req.params.id } }
-    );*/
-    const [updated] = await models.Scope.update(req.body, {
-      where: { id: req.params.id },
-    });
+    );
     if (updated) {
       const updatedScope = await models.Scope.findByPk(req.params.id);
       res.status(200).json(updatedScope);
@@ -67,8 +57,7 @@ export async function updateScope(req, res) {
       res.status(404).json({ error: 'Scope not found' });
     }
   } catch (error) {
-    console.error('Error updating scope:', error);
-    res.status(400).json({ error: 'Error updating scope' });
+    res.status(500).json({ error: error.message });
   }
 }
 
@@ -81,8 +70,7 @@ export async function deleteScope(req, res) {
       res.status(404).json({ error: 'Scope not found' });
     }
   } catch (error) {
-    console.error('Error deleting scope:', error);
-    res.status(500).json({ error: 'Error deleting scope' });
+    res.status(500).json({ error: error.message });
   }
 }
 
