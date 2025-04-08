@@ -75,13 +75,27 @@ export async function getAssistantLimit(req, res, models) {
         endpoint: '/api/assistant',
       },
     });
-    if (!configuration || configuration.length == 0) {
+    console.log('Configuration:', configuration);
+
+    if (!configuration) {
       return res
         .status(404)
         .json({ message: 'Configuration /api/assistant not found' });
     }
-    res.status(200).json({ limit: configuration.dataValues.limit });
+
+    const limit = configuration.dataValues.limit;
+    console.log('Limit:', limit);
+
+    if (limit === null || limit === undefined) {
+      return res
+        .status(400)
+        .json({ message: 'Assistant limit is not set' });
+    }
+
+    res.status(200).json({ limit });
+
   } catch (error) {
+    console.error('Error in getAssistantLimit:', error);
     res.status(500).json({
       message: `Failed to get configuration, error: ${error.message}`,
     });

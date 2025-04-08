@@ -206,6 +206,22 @@ describe('Configuration Controller', () => {
       expect(mockRes.status).toHaveBeenCalledWith(500);
       expect(mockRes.json).toHaveBeenCalledWith({ message: `Failed to get configuration, error: ${errorMessage}` });
     });
+
+    it('should return 400 with "Assistant limit is not set" if limit is null', async () => {
+      mockModels.Configuration.findOne.mockResolvedValue({ dataValues: { limit: null } });
+      await configurationController.getAssistantLimit(mockReq, mockRes, mockModels);
+      expect(mockModels.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/assistant' } });
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Assistant limit is not set' });
+    });
+  
+    it('should return 400 with "Assistant limit is not set" if limit is undefined', async () => {
+      mockModels.Configuration.findOne.mockResolvedValue({ dataValues: { limit: undefined } });
+      await configurationController.getAssistantLimit(mockReq, mockRes, mockModels);
+      expect(mockModels.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/assistant' } });
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Assistant limit is not set' });
+    });
   });
 
   describe('updateAssistantLimit', () => {
@@ -267,6 +283,23 @@ describe('Configuration Controller', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ message: expectedMessage });
       expect(mockModels.Assistant.findAll).not.toHaveBeenCalled();
       expect(mockModels.Configuration.update).not.toHaveBeenCalled();
+    });
+
+    it('should return 200 and the success message with the configuration ID when updated', async () => {
+      mockReq.body = { endpoint: '/api/existing', available: true };
+      const mockExistingConfiguration = { dataValues: { id: 10, endpoint: '/api/existing', available: false } };
+      mockModels.Configuration.findOne.mockResolvedValue(mockExistingConfiguration);
+      mockModels.Configuration.update.mockResolvedValue([1]);
+    
+      await configurationController.updateConfiguration(mockReq, mockRes, mockModels);
+    
+      expect(mockModels.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/existing' } });
+      expect(mockModels.Configuration.update).toHaveBeenCalledWith(
+        { available: true },
+        { where: { id: 10 } }
+      );
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Configuration 10 updated successfully' });
     });
 
     it('should return 200 even if update affects zero rows', async () => {
