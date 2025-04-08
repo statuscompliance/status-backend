@@ -1,14 +1,11 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Message = sequelize.define('Message', {
+export default (sequelize) => sequelize.define('Message', {
   content: {
     type: DataTypes.TEXT,
     allowNull: false,
   },
 });
-
-export default Message;
 
 /**
  * Message model.
