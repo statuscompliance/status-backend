@@ -10,7 +10,7 @@ export default defineConfig({
     isolate: true,
     coverage: {
       provider: 'istanbul',
-      reporter: ['html', 'text'],
+      reporter: ['html', 'text', 'lcov'],
       outputFile: {
         html: 'coverage/html',
         text: 'coverage/text',
