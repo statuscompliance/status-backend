@@ -1,7 +1,6 @@
-import { models } from '../models/models.js';
 import { updateConfigurationsCache } from '../middleware/endpoint.js';
 
-export async function getConfiguration(req, res) {
+export async function getConfiguration(req, res, models) {
   try {
     const configuration = await models.Configuration.findAll();
     res.status(200).json(configuration);
@@ -12,7 +11,7 @@ export async function getConfiguration(req, res) {
   }
 }
 
-export async function getConfigurationByEndpoint(req, res) {
+export async function getConfigurationByEndpoint(req, res,models) {
   try {
     const { endpoint } = req.body;
 
@@ -34,7 +33,7 @@ export async function getConfigurationByEndpoint(req, res) {
   }
 }
 
-export async function updateConfiguration(req, res) {
+export async function updateConfiguration(req, res,models) {
   try {
     const { endpoint, available } = req.body;
 
@@ -64,7 +63,7 @@ export async function updateConfiguration(req, res) {
       }
     );
     
-    await updateConfigurationsCache;
+    await updateConfigurationsCache();
 
     res.status(200).json({
       message: `Configuration ${configId} updated successfully`,
@@ -77,7 +76,7 @@ export async function updateConfiguration(req, res) {
   }
 }
 
-export async function getAssistantLimit(req, res) {
+export async function getAssistantLimit(req, res,models) {
   try {
     const configuration = await models.Configuration.findOne({
       where: {
@@ -97,11 +96,10 @@ export async function getAssistantLimit(req, res) {
   }
 }
 
-export async function updateAssistantLimit(req, res) {
-  
+export async function updateAssistantLimit(req, res,models) {
+
   try {
     const { limit } = req.params;
-    const assistants = await models.Assistant.findAll();
     const configuration = await models.Configuration.findOne({
       where: { endpoint: '/api/assistant' },
     });
@@ -110,6 +108,7 @@ export async function updateAssistantLimit(req, res) {
       return res.status(404).json({ message: 'Configuration undefined not found' });
     }
 
+    const assistants = await models.Assistant.findAll();
     const configId = configuration.dataValues.id;
 
     if (assistants.length > limit) {

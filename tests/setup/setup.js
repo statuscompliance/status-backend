@@ -1,8 +1,6 @@
 import { beforeAll, afterAll, vi } from 'vitest';
 import supertest from 'supertest';
-import { connect } from './database';
-
-import * as db from './database';
+import { connect, clearDatabase, closeDatabase } from './database';
 import configureApp from '../../src/index.js';
 
 const app = configureApp();
@@ -18,10 +16,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await db.clearDatabase();
+  await clearDatabase();
   if (server) {
     server.close();
   }
+  await closeDatabase();
 });
 
 async function mockRedis() {
