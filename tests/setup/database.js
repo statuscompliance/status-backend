@@ -53,7 +53,7 @@ export const clearDatabase = async () => {
 };
 
 async function initMongoDB() {
-  const mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryServer.create();
   await mongoose.connect(mongoServer.getUri());
   console.log('[database] In-memory MongoDB connected');
 }

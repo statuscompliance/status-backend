@@ -1,7 +1,6 @@
-import { models } from '../models/models.js';
 import { updateConfigurationsCache } from '../middleware/endpoint.js';
 
-export async function getConfiguration(req, res) {
+export async function getConfiguration(req, res, models) {
   try {
     const configuration = await models.Configuration.findAll();
     res.status(200).json(configuration);
@@ -12,7 +11,7 @@ export async function getConfiguration(req, res) {
   }
 }
 
-export async function getConfigurationByEndpoint(req, res) {
+export async function getConfigurationByEndpoint(req, res, models) {
   try {
     const { endpoint } = req.body;
 
@@ -34,50 +33,42 @@ export async function getConfigurationByEndpoint(req, res) {
   }
 }
 
-export async function updateConfiguration(req, res) {
+export async function updateConfiguration(req, res, models) {
   try {
     const { endpoint, available } = req.body;
 
+    if (!endpoint) {
+      return res.status(400).json({ message: 'Endpoint is required' });
+    }
+
     const configuration = await models.Configuration.findOne({
-      where: {
-        endpoint: endpoint,
-      },
+      where: { endpoint },
     });
 
     if (!configuration) {
-      return res
-        .status(404)
-        .json({ message: `Configuration with endpoint ${endpoint} not found` });
+      return res.status(404).json({ message: `Configuration with endpoint ${endpoint} not found` });
     }
 
-    const configId = configuration.dataValues.id;
-
-    await models.Configuration.update(
-      {
-        endpoint: endpoint,
-        available: available,
-      },
-      {
-        where: {
-          id: configId,
-        },
-      }
+    const [updatedRows] = await models.Configuration.update(
+      { available },
+      { where: { id: configuration.dataValues.id } }
     );
-    
-    await updateConfigurationsCache;
 
-    res.status(200).json({
-      message: `Configuration ${configId} updated successfully`,
-    });
+    await updateConfigurationsCache();
+    
+    if (updatedRows > 0) {
+      return res.status(200).json({ message: `Configuration ${configuration.dataValues.id} updated successfully` });
+    } else {
+      return res.status(200).json({ message: 'No changes were applied to the configuration' });
+    }
+
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      message: `Failed to update configuration, error: ${error.message}`,
-    });
+    return res.status(500).json({ message: `Failed to update configuration, error: ${error.message}` });
   }
 }
 
-export async function getAssistantLimit(req, res) {
+export async function getAssistantLimit(req, res, models) {
   try {
     const configuration = await models.Configuration.findOne({
       where: {
@@ -97,11 +88,14 @@ export async function getAssistantLimit(req, res) {
   }
 }
 
-export async function updateAssistantLimit(req, res) {
-  
+export async function updateAssistantLimit(req, res, models) {
   try {
-    const { limit } = req.params;
-    const assistants = await models.Assistant.findAll();
+    const limit = Number(req.params.limit);
+
+    if (!Number.isInteger(limit) || limit < 1 || limit > Number.MAX_SAFE_INTEGER) {
+      return res.status(400).json({ message: 'Invalid limit value' });
+    }
+
     const configuration = await models.Configuration.findOne({
       where: { endpoint: '/api/assistant' },
     });
@@ -110,32 +104,22 @@ export async function updateAssistantLimit(req, res) {
       return res.status(404).json({ message: 'Configuration undefined not found' });
     }
 
+    const assistants = await models.Assistant.findAll();
     const configId = configuration.dataValues.id;
 
     if (assistants.length > limit) {
       return res.status(400).json({ message: 'Limit cannot be less than the number of assistants' });
     }
 
-    if (limit < 1) {
-      return res.status(400).json({ message: 'Limit cannot be less than 1' });
-    }
-
     await models.Configuration.update(
-      {
-        endpoint: '/api/assistant',
-        limit: limit,
-      },
-      {
-        where: {
-          id: configId,
-        },
-      }
+      { endpoint: '/api/assistant', limit: limit },
+      { where: { id: configId } }
     );
 
     res.status(200).json({ message: 'Limit updated successfully' });
 
   } catch (error) {
-    console.error(error);
+    console.error('Error in updateAssistantLimit:', error);
     res.status(500).json({
       message: `Failed to update configuration, error: ${error.message}`,
     });
