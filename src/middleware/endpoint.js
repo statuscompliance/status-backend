@@ -69,7 +69,6 @@ async function loadAssistantConfiguration(models, endpoint = '/api/assistant') {
 async function getAssistantCount(models) {
   try {
     const assistants = await models.Assistant.findAll();
-
     if (assistants) {
       return assistants.length;
     } else {
