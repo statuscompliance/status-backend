@@ -1,9 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { resolve } from 'node:path';
 
 export default defineConfig({
   test: {
@@ -24,10 +20,16 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@tests': path.resolve(__dirname, './tests'),
+      '@tests': resolve(import.meta.dirname, './tests'),
     },
   },
-  env: {
-    NODE_ENV: 'test',
+  build: {
+    dynamicImportVarsOptions: {
+      /**
+       * This file already uses Vite's import.meta.glob as expected, but Vite report an error
+       * because it detects the dynamic import using static analysis.
+       */
+      exclude: ['src/models/models.js'],
+    }
   },
 });

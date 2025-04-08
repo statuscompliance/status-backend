@@ -1,7 +1,6 @@
 import { DataTypes, UUIDV4 } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Panel = sequelize.define(
+export default (sequelize) => sequelize.define(
   'Panel',
   {
     uid: {
@@ -25,8 +24,6 @@ const Panel = sequelize.define(
     timestamps: false,
   }
 );
-
-export default Panel;
 
 /**
  * @swagger
