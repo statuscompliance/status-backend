@@ -1,10 +1,12 @@
+import { models } from '../models/models.js';
+
 export let configurationsCache = null;
 
 export const setConfigurationCache = (newCache) => {
   configurationsCache = newCache;
 }
 
-export async function updateConfigurationsCache(models) {
+export async function updateConfigurationsCache() {
   try {
     configurationsCache = await models.Configuration.findAll();
   } catch (err) {
@@ -13,7 +15,7 @@ export async function updateConfigurationsCache(models) {
 }
 
 //Endpoint
-async function loadConfigurations(models) {
+async function loadConfigurations() {
   try {
     await updateConfigurationsCache(models);
   } catch (error) {
@@ -30,7 +32,7 @@ function findMatchingConfiguration(endpoint, cache) {
   );
 }
 
-export async function endpointAvailable(req, res, next, models) {
+export async function endpointAvailable(req, res, next) {
 
   if (!configurationsCache) {
     try {
@@ -38,6 +40,11 @@ export async function endpointAvailable(req, res, next, models) {
     } catch (error) {
       return res.status(500).send(error.message);
     }
+  }
+
+  if (!configurationsCache) {
+    console.error('Configurations cache is still empty after loading.');
+    return res.status(500).send('Error loading configurations.');
   }
 
   const endpoint = req.url;
@@ -55,7 +62,7 @@ export async function endpointAvailable(req, res, next, models) {
 }
 
 //Assistant
-async function loadAssistantConfiguration(models, endpoint = '/api/assistant') {
+async function loadAssistantConfiguration(endpoint = '/api/assistant') {
 
   const config = await models.Configuration.findOne({ where: { endpoint } });
 
@@ -66,7 +73,7 @@ async function loadAssistantConfiguration(models, endpoint = '/api/assistant') {
   return config.dataValues.limit;
 }
 
-async function getAssistantCount(models) {
+async function getAssistantCount() {
   try {
     const assistants = await models.Assistant.findAll();
     if (assistants) {
@@ -80,7 +87,7 @@ async function getAssistantCount(models) {
   }
 }
 
-export async function assistantlimitReached(req, res, next, models) {
+export async function assistantlimitReached(req, res, next) {
   if (!configurationsCache) {
     try {
       await updateConfigurationsCache(models);

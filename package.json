@@ -11,6 +11,7 @@
     "test:unit": "set NODE_NO_WARNINGS=1 && vitest run tests/unit",
     "test:integration": "set NODE_NO_WARNINGS=1 && vitest run tests/integration",
     "coverage": "set NODE_NO_WARNINGS=1 && vitest run --coverage --coverage.reporter=text",
+    "coverage:ci": "set NODE_NO_WARNINGS=1 && vitest run --coverage --coverage.reporter=lcov",
     "test:ui": "set NODE_NO_WARNINGS=1 && vitest --coverage.enabled=true --ui",
     "lint": "eslint . --max-warnings=0 --cache --cache-location node_modules/.cache/eslint",
     "format": "eslint . --fix --max-warnings=0 --cache --cache-location node_modules/.cache/eslint",
