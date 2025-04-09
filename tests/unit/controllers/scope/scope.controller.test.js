@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import * as scopeController from '../../../src/controllers/scope.controller.js';
-import { models } from '../../../src/models/models.js';
-import ScopeSet from '../../../src/models/scopeSet.model.js';
+import * as scopeController from '../../../../src/controllers/scope.controller.js';
+import { models } from '../../../../src/models/models.js';
+import ScopeSet from '../../../../src/models/scopeSet.model.js';
 
 // Helper para crear objetos mock de req/res
 function createRes() {
