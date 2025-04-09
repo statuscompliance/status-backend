@@ -14,10 +14,8 @@ export async function getAllScopes(req, res) {
 export async function getScopeById(req, res) {
   try {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Missing ID' });
-    }
-    const scope = await models.Scope.findByPk(req.params.id);
+
+    const scope = await models.Scope.findByPk(id);
     if (scope) {
       res.status(200).json(scope);
     } else {
@@ -54,12 +52,8 @@ export async function createScope(req, res) {
 }
 
 export async function updateScope(req, res) {
-  try {
-   
+  try {   
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Missing ID' });
-    }
 
     // Extract and validate the request body.
     const { name, description, type, default: defaultValue } = req.body;
@@ -97,9 +91,6 @@ export async function deleteScope(req, res) {
   try {
     // Validate the ID parameter.
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: 'Missing ID' });
-    }
     // Check if the scope exists before attempting to delete it.
     const deleted = await models.Scope.destroy({ where: { id } });
     if (deleted > 0) {
@@ -117,7 +108,6 @@ export async function createScopeSet(req, res) {
   try {
     const { controlId, scopes } = req.body;
     const newScopeSet = new ScopeSet({ controlId, scopes });
-    console.log('newScopeSet antes de guardar:', newScopeSet);
     await newScopeSet.save();
     res.status(201).json(newScopeSet);
   } catch (error) {

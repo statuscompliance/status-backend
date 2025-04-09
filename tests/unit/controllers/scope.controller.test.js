@@ -98,15 +98,6 @@ describe('Scope Controller Tests', () => {
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({ error: 'Scope not found' });
     });
-    it('should return 400 if id is missing', async () => {
-      const req = { params: {} };
-      const res = createRes();
-  
-      await scopeController.getScopeById(req, res);
-  
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Missing ID' });
-    });
     it('should return 400 if an error occurs during creation', async () => {
       vi.spyOn(models.Scope, 'create').mockRejectedValue(new Error('DB error'));
   
@@ -217,16 +208,6 @@ describe('Scope Controller Tests', () => {
         error: 'Failed to update scope',
       });
     });
-    it('should return 400 if id param is missing', async () => {
-      const req = { params: {}, body: { name: 'something' } };
-      const res = createRes();
-    
-      await scopeController.updateScope(req, res);
-    
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Missing ID' });
-    });
-    
     it('should return 404 if update returns 0 (scope not found)', async () => {
       vi.spyOn(models.Scope, 'update').mockResolvedValue([0]);
 
@@ -293,15 +274,6 @@ describe('Scope Controller Tests', () => {
   
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Failed to delete scope' });
-    });
-    it('should return 400 if id is missing', async () => {
-      const req = { params: {} };
-      const res = createRes();
-  
-      await scopeController.deleteScope(req, res);
-  
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Missing ID' });
     });
     it('should return 404 if scope not found', async () => {
       const req = { params: { id: 1 } };
