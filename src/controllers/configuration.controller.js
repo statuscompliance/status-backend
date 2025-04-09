@@ -1,6 +1,7 @@
+import { models } from '../models/models.js';
 import { updateConfigurationsCache } from '../middleware/endpoint.js';
 
-export async function getConfiguration(req, res, models) {
+export async function getConfiguration(req, res) {
   try {
     const configuration = await models.Configuration.findAll();
     res.status(200).json(configuration);
@@ -11,7 +12,7 @@ export async function getConfiguration(req, res, models) {
   }
 }
 
-export async function getConfigurationByEndpoint(req, res, models) {
+export async function getConfigurationByEndpoint(req, res) {
   try {
     const { endpoint } = req.body;
 
@@ -33,7 +34,7 @@ export async function getConfigurationByEndpoint(req, res, models) {
   }
 }
 
-export async function updateConfiguration(req, res, models) {
+export async function updateConfiguration(req, res) {
   try {
     const { endpoint, available } = req.body;
 
@@ -68,7 +69,7 @@ export async function updateConfiguration(req, res, models) {
   }
 }
 
-export async function getAssistantLimit(req, res, models) {
+export async function getAssistantLimit(req, res) {
   try {
     const configuration = await models.Configuration.findOne({
       where: {
@@ -102,7 +103,7 @@ export async function getAssistantLimit(req, res, models) {
   }
 }
 
-export async function updateAssistantLimit(req, res, models) {
+export async function updateAssistantLimit(req, res) {
   try {
     const limit = Number(req.params.limit);
 
