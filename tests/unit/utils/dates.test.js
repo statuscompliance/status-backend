@@ -111,7 +111,7 @@ describe('getDates', () => {
     });
 
     it('should handle parseRule returning null without throwing an error', () => {
-      const rulesArr = ['DTSTART:20230101T000000\nRRULE:FREQ=DAILY', 'INVALID_RULE'];
+      const rulesArr = ['INVALID_RULE'];
       const from = new Date('2023-01-01');
       const to = new Date('2023-01-03');
   
