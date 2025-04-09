@@ -6,71 +6,101 @@ export async function getAllScopes(req, res) {
     const scopes = await models.Scope.findAll();
     res.status(200).json(scopes);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error retrieving scopes:', error);
+    res.status(500).json({ error: 'Failed to retrieve scopes' });
   }
 }
 
 export async function getScopeById(req, res) {
   try {
-    const scope = await models.Scope.findByPk(req.params.id);
+    const { id } = req.params;
+
+    const scope = await models.Scope.findByPk(id);
     if (scope) {
       res.status(200).json(scope);
     } else {
       res.status(404).json({ error: 'Scope not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error retrieving scope:', error);
+    res.status(500).json({ error: 'Failed to retrieve scope by ID' });
   }
 }
 
 export async function createScope(req, res) {
   try {
+    
     let { name, description, type, default: defaultValue } = req.body;
     
     if (typeof name !== 'string') {
       return res.status(400).json({ error: 'Name must be a string' });
     }
-    name = name.toLowerCase().replace(/\s+/g, '_');
+    const normalizedName = name.toLowerCase().replace(/\s+/g, '_');
     
-    const newScope = await models.Scope.create({ name, description, type, default: defaultValue });
+    const scopeData = {
+      name: normalizedName,
+      description,
+      type,
+      default: defaultValue,
+    };
+    const newScope = await models.Scope.create(scopeData);
     res.status(201).json(newScope);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Failed to create scope:', error);
+    res.status(400).json({ error: 'Failed to create scope' });
   }
 }
 
 export async function updateScope(req, res) {
-  try {
-    let { name, description, type, default: defaultValue } = req.body;
-    if (typeof name !== 'string') {
+  try {   
+    const { id } = req.params;
+
+    // Extract and validate the request body.
+    const { name, description, type, default: defaultValue } = req.body;
+    if (!name || typeof name !== 'string') {
       return res.status(400).json({ error: 'Name must be a string' });
     }
-    name = name.toLowerCase().replace(/\s+/g, '_');
-    const [updated] = await models.Scope.update(
-      { name, description, type, default: defaultValue },
-      { where: { id: req.params.id } }
-    );
-    if (updated) {
-      const updatedScope = await models.Scope.findByPk(req.params.id);
-      res.status(200).json(updatedScope);
-    } else {
-      res.status(404).json({ error: 'Scope not found' });
+
+    // Normalize the name to lowercase and replace spaces with underscores.
+    const updatedData = {
+      name: name.toLowerCase().replace(/\s+/g, '_'),
+      description,
+      type,
+      default: defaultValue,
+    };
+    // Check if the scope exists before updating.
+    const [updated] = await models.Scope.update(updatedData, { where: { id } });
+    if (!updated) {
+      return res.status(404).json({ error: 'Scope not found' });
     }
+
+    // Fetch the updated scope to return it in the response.
+    const updatedScope = await models.Scope.findByPk(id);
+    if (!updatedScope) {
+      return res.status(404).json({ error: 'Scope not found after update' });
+    }
+
+    return res.status(200).json(updatedScope);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Failed to update scope', error);
+    return res.status(400).json({ error: 'Failed to update scope' });
   }
 }
 
 export async function deleteScope(req, res) {
   try {
-    const deleted = await models.Scope.destroy({ where: { id: req.params.id } });
-    if (deleted) {
-      res.status(204).send();
+    // Validate the ID parameter.
+    const { id } = req.params;
+    // Check if the scope exists before attempting to delete it.
+    const deleted = await models.Scope.destroy({ where: { id } });
+    if (deleted > 0) {
+      return res.status(204).send();
     } else {
-      res.status(404).json({ error: 'Scope not found' });
+      return res.status(404).json({ error: 'Scope not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Failed to delete scope', error);
+    return res.status(500).json({ error: 'Failed to delete scope' });
   }
 }
 
@@ -80,8 +110,9 @@ export async function createScopeSet(req, res) {
     const newScopeSet = new ScopeSet({ controlId, scopes });
     await newScopeSet.save();
     res.status(201).json(newScopeSet);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error('Failed to create scope set', error);
+    res.status(500).json({ error: 'Failed to create scope set' });
   }
 }
 
@@ -89,8 +120,9 @@ export async function getAllScopeSets(req, res) {
   try {
     const scopeSets = await ScopeSet.find();
     res.status(200).json(scopeSets);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error('Failed to retrieve all scope sets', error);
+    res.status(500).json({ error: 'Failed to retrieve all scope sets' });
   }
 }
 
@@ -99,8 +131,9 @@ export async function getScopeSetsByControlId(req, res) {
     const { controlId } = req.params;
     const scopeSets = await ScopeSet.find({ controlId });
     res.status(200).json(scopeSets);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error('Failed to retrieve scope sets by control ID', error);
+    res.status(500).json({ error: 'Failed to retrieve scope sets by control ID' });
   }
 }
 
@@ -114,8 +147,9 @@ export async function updateScopeSetById(req, res) {
     } else {
       res.status(404).json({ error: 'ScopeSet not found' });
     }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error('Failed to update scope set by ID', error);
+    res.status(500).json({ error: 'Failed to update scope set by ID' });
   }
 }
 
@@ -128,7 +162,8 @@ export async function getScopeSetById(req, res) {
     } else {
       res.status(404).json({ error: 'ScopeSet not found' });
     }
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error('Failed to retrieve scope set by ID', error);
+    res.status(500).json({ error: 'Failed to retrieve scope set by ID' });
   }
 }
