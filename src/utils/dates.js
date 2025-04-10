@@ -10,7 +10,7 @@ export const periodTypes = {
 };
 
 export function getDates(from, to, period, customConfig) {
-  
+
   if (!isValid(from)) {
     console.error("Invalid 'from' date provided.");
     return [];
@@ -57,7 +57,7 @@ export function getDates(from, to, period, customConfig) {
 }
 
 export function generateDatesFromRules(rulesArr, from, to) {
-  
+
   const generatedDates = [];
 
   rulesArr.forEach(rule => {
@@ -106,23 +106,34 @@ export function generateDatesForFrequency(ruleData, from, to) {
   const untilDate = ruleData.until ? parseISO(ruleData.until) : to;
   const byHour = Array.isArray(ruleData.byHour) ? ruleData.byHour : [0];
 
+  if (ruleData.frequency === 'WEEKLY' && ruleData.byDay) {
+    const firstOccurrence = findNextWeeklyDate(new Date(add(currentDate, { days: -7 })), ruleData.byDay, 1);
+    if (firstOccurrence && firstOccurrence >= currentDate) {
+      currentDate = firstOccurrence;
+    } else if (firstOccurrence && firstOccurrence < currentDate) {
+      currentDate = findNextWeeklyDate(new Date(currentDate), ruleData.byDay, 1);
+    }
+  }
+
   while (isWithinInterval(currentDate, { start: from, end: untilDate }) || isSameDay(currentDate, untilDate)) {
+
     byHour.forEach(hour => {
-      const dateWithHour = adjustDateToHour(currentDate, hour);
+      const dateWithHour = adjustDateToHour(new Date(currentDate), hour);
       if (isDateWithinRange(dateWithHour, from, to)) {
         generatedDates.push(dateWithHour);
-      }
+      } 
     });
 
     if (ruleData.frequency === 'DAILY') {
       currentDate = add(currentDate, { days: ruleData.interval || 1 });
     } else if (ruleData.frequency === 'WEEKLY' && ruleData.byDay) {
-      currentDate = findNextWeeklyDate(currentDate, ruleData.byDay, ruleData.interval || 1);
-      if (!currentDate) break;
+      const nextDate = findNextWeeklyDate(new Date(currentDate), ruleData.byDay, ruleData.interval || 1);
+      if (!nextDate) break;
+      currentDate = nextDate;
     } else if (ruleData.frequency === 'MONTHLY' && ruleData.byMonthDay !== undefined) {
-      currentDate = advanceToMonthlyDate(currentDate, ruleData.byMonthDay, ruleData.interval || 1);
+      currentDate = advanceToMonthlyDate(new Date(currentDate), ruleData.byMonthDay, ruleData.interval || 1);
     } else if (ruleData.frequency === 'YEARLY' && ruleData.byMonth !== undefined && ruleData.byMonthDay !== undefined) {
-      currentDate = advanceToYearlyDate(currentDate, ruleData.byMonth, ruleData.byMonthDay, ruleData.interval || 1);
+      currentDate = advanceToYearlyDate(new Date(currentDate), ruleData.byMonth, ruleData.byMonthDay, ruleData.interval || 1);
     } else {
       console.warn(`Unsupported frequency or missing parameters: ${ruleData.frequency}`);
       break;
@@ -131,22 +142,23 @@ export function generateDatesForFrequency(ruleData, from, to) {
   return generatedDates.sort((a, b) => a.getTime() - b.getTime());
 }
 
-function adjustDateToHour(date, hour) {
+export function adjustDateToHour(date, hour) {
   const dateWithHour = setSeconds(new Date(date), 0);
   dateWithHour.setHours(hour);
   return dateWithHour;
 }
 
-function isDateWithinRange(date, from, to) {
+export function isDateWithinRange(date, from, to) {
   return isWithinInterval(date, { start: from, end: to }) || isSameDay(date, to);
 }
 
-function findNextWeeklyDate(currentDate, byDay, interval) {
+export function findNextWeeklyDate(currentDate, byDay, interval) {
   let foundDay = false;
   let nextDate = new Date(currentDate);
   for (let i = 1; i <= 7; i++) {
     const potentialDate = add(currentDate, { days: i });
-    if (byDay.includes(['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][getDay(potentialDate)])) {
+    const dayOfWeek = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][getDay(potentialDate)];
+    if (byDay.includes(dayOfWeek)) {
       nextDate = potentialDate;
       foundDay = true;
       break;
@@ -154,13 +166,22 @@ function findNextWeeklyDate(currentDate, byDay, interval) {
   }
 
   if (foundDay) {
-    const daysToAdd = (interval - 1) * 7 + (getDay(nextDate) - getDay(currentDate) + 7) % 7;
-    return add(currentDate, { days: daysToAdd > 0 ? daysToAdd : interval * 7 });
+    const currentDayIndex = getDay(currentDate);
+    const nextDayIndex = getDay(nextDate);
+    // Calculate the number of days to add for the interval
+    let daysToAdd = (interval - 1) * 7;
+    if (nextDayIndex <= currentDayIndex) {
+      daysToAdd += (7 - currentDayIndex + nextDayIndex);
+    } else {
+      daysToAdd += (nextDayIndex - currentDayIndex);
+    }
+    const finalNextDate = add(currentDate, { days: daysToAdd });
+    return finalNextDate;
   }
   return null;
 }
 
-function advanceToMonthlyDate(currentDate, byMonthDay, interval) {
+export function advanceToMonthlyDate(currentDate, byMonthDay, interval) {
   const currentYear = getYear(currentDate);
   const currentMonth = getMonth(currentDate);
   const nextMonth = currentMonth + interval;
@@ -171,7 +192,7 @@ function advanceToMonthlyDate(currentDate, byMonthDay, interval) {
   return new Date(nextYearBasedOnMonth, finalMonth, dayOfMonth, currentDate.getHours(), currentDate.getMinutes(), currentDate.getSeconds());
 }
 
-function advanceToYearlyDate(currentDate, byMonth, byMonthDay, interval) {
+export function advanceToYearlyDate(currentDate, byMonth, byMonthDay, interval) {
   const nextYear = getYear(currentDate) + interval;
   const monthIndex = byMonth - 1;
   const daysInMonth = getDaysInMonth(new Date(nextYear, monthIndex));
