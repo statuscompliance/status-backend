@@ -13,7 +13,6 @@ export const validateUUID = (paramName) => {
   return (req, res, next) => {
     const paramValue = req.params[paramName] || req.query[paramName] || req.body[paramName];
     if (!paramValue && !isUUID(paramValue) && !isGrafanaUID(paramValue)) {
-      console.log('HERE');
       return res.status(400).json({ error: `Invalid or missing UUID for parameter: ${paramName}` });
     }
     next();
