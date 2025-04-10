@@ -17,6 +17,7 @@ function createRes() {
 describe('Scope Controller Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   describe('getAllScopes', () => {
