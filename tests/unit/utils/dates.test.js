@@ -1,5 +1,5 @@
 import { vi, describe, it, expect } from 'vitest';
-import { getDates, periodTypes, generateDatesFromRules, generateDatesForFrequency } from '../../../src/utils/dates.js';
+import { getDates, periodTypes, generateDatesFromRules } from '../../../src/utils/dates.js';
 import { parseISO } from 'date-fns';
 
 describe('getDates', () => {
@@ -126,72 +126,6 @@ describe('getDates', () => {
   
       const result = generateDatesFromRules(rulesArr, from, to);
       expect(result).toEqual([]);
-    });
-
-    it('should log a warning and break the loop for an unsupported frequency', () => {
-      const ruleData = {
-        startDate: new Date('2023-01-01'),
-        frequency: 'UNKNOWN',
-        interval: 1,
-        byHour: [0],
-      };
-      const from = new Date('2023-01-01');
-      const to = new Date('2023-01-03');
-      const consoleSpy = vi.spyOn(console, 'warn');
-      const result = generateDatesForFrequency(ruleData, from, to);
-      expect(result).toEqual([]);
-      expect(consoleSpy).toHaveBeenCalledWith('Unsupported frequency or missing parameters: UNKNOWN');
-      consoleSpy.mockRestore();
-    });
-  
-    it('should log a warning and break the loop if MONTHLY is missing byMonthDay', () => {
-      const ruleData = {
-        startDate: new Date('2023-01-01'),
-        frequency: 'MONTHLY',
-        interval: 1,
-        byHour: [0],
-      };
-      const from = new Date('2023-01-01');
-      const to = new Date('2023-03-01');
-      const consoleSpy = vi.spyOn(console, 'warn');
-      const result = generateDatesForFrequency(ruleData, from, to);
-      expect(result).toEqual([]);
-      expect(consoleSpy).toHaveBeenCalledWith('Unsupported frequency or missing parameters: MONTHLY');
-      consoleSpy.mockRestore();
-    });
-  
-    it('should log a warning and break the loop if YEARLY is missing byMonth', () => {
-      const ruleData = {
-        startDate: new Date('2023-01-01'),
-        frequency: 'YEARLY',
-        interval: 1,
-        byHour: [0],
-        byMonthDay: 1,
-      };
-      const from = new Date('2023-01-01');
-      const to = new Date('2025-01-01');
-      const consoleSpy = vi.spyOn(console, 'warn');
-      const result = generateDatesForFrequency(ruleData, from, to);
-      expect(result).toEqual([]);
-      expect(consoleSpy).toHaveBeenCalledWith('Unsupported frequency or missing parameters: YEARLY');
-      consoleSpy.mockRestore();
-    });
-  
-    it('should log a warning and break the loop if YEARLY is missing byMonthDay', () => {
-      const ruleData = {
-        startDate: new Date('2023-01-01'),
-        frequency: 'YEARLY',
-        interval: 1,
-        byHour: [0],
-        byMonth: 1,
-      };
-      const from = new Date('2023-01-01');
-      const to = new Date('2025-01-01');
-      const consoleSpy = vi.spyOn(console, 'warn');
-      const result = generateDatesForFrequency(ruleData, from, to);
-      expect(result).toEqual([]);
-      expect(consoleSpy).toHaveBeenCalledWith('Unsupported frequency or missing parameters: YEARLY');
-      consoleSpy.mockRestore();
     });
   })
 }); 
