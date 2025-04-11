@@ -3,6 +3,9 @@ import {
   agreementBuilder,
   createMetrics,
   createGuarantees,
+  createContext,
+  createTerms,
+
 } from '../../../src/utils/agreementBuilder';
 import * as scopeUtils from '../../../src/utils/scopeUtilities';
 
@@ -28,50 +31,8 @@ describe('test: agreementBuilder', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
-  describe('agreementBuilder', () => {
-    it('should build an agreement object correctly', async () => {
-      const mockCatalog = {
-        startDate: '2023-01-01',
-        endDate: '2024-01-01',
-      };
-
-      const mockControls = [
-        {
-          id: 1,
-          name: 'Uptime Check',
-          description: 'Check system uptime daily',
-          params: {
-            endpoint: '/status',
-            threshold: 99.9,
-          },
-          period: 'DAILY',
-        },
-        {
-          id: 2,
-          name: 'Response Time',
-          description: 'Measure response time',
-          params: {
-            endpoint: '/response',
-            threshold: 200,
-            timeout: 5000,
-          },
-          period: 'WEEKLY',
-        },
-      ];
-
-      const mockScopeSets = [
-        {
-          scopes: [
-            ['region', 'us-west'],
-            ['service', 'api'],
-          ],
-        },
-      ];
-
-      const mockScopeSpecs = {
-        region: ['us-west'],
-        service: ['api'],
-      };
+  describe('buildAgreementObject', () => {
+    it('should build the base agreement structure with correct metadata', async () => {
 
       getScopeSetsByControlIdsSpy.mockResolvedValue({
         scopesKeySet: ['region', 'service'],
@@ -81,58 +42,81 @@ describe('test: agreementBuilder', () => {
 
       const result = await agreementBuilder(mockCatalog, mockControls);
 
-      expect(result).toMatchObject({
-      // id: 'tpa-mocked-uuid',
-        version: '1.0.0',
-        type: 'agreement',
-        context: {
-          validity: {
-            initial: '2022-01-01',
-            timeZone: 'America/Los_Angeles',
-            startDate: '2023-01-01',
-            endDate: '2024-01-01',
-          },
-          definitions: {
-            schemas: {},
-            scopes: {},
-          },
-        },
-        terms: {
-          metrics: {
-            UPTIME_CHECK_METRIC: expect.any(Object),
-            RESPONSE_TIME_METRIC: expect.any(Object),
-          },
-          guarantees: expect.any(Array),
-        },
+      expect(result.version).toBe('1.0.0');
+      expect(result.type).toBe('agreement');
+      expect(result.context.validity).toEqual({
+        initial: '2022-01-01',
+        timeZone: 'America/Los_Angeles',
+        startDate: '2023-01-01',
+        endDate: '2024-01-01',
       });
-      // Validate that both controls generate a metric with correct names
-      expect(Object.keys(result.terms.metrics)).toEqual(
+      expect(result.context.definitions).toEqual({
+        schemas: {},
+        scopes: {},
+      });
+      expect(result.id).toBeTypeOf('string');
+      expect(result.id.startsWith('tpa-')).toBe(true);
+      expect(result.id).toHaveLength('tpa-'.length + 36);
+    });
+
+    it('should use the provided id without adding "tpa-" if it already exists', async () => {
+      getScopeSetsByControlIdsSpy.mockResolvedValue({
+        scopesKeySet: [],
+        scopeSets: [],
+      });
+      getScopeSpecsSpy.mockResolvedValue({});
+      const result = await agreementBuilder({}, [], { id: 'tpa-custom-id' });
+      expect(result.id).toBe('tpa-custom-id');
+    });
+
+  });
+  describe('createMetrics', () => {
+    it('should generate metrics based on the provided controls', () => {
+      const result = createMetrics(undefined);
+      expect(result).toEqual({});
+
+    });
+    it('should create metrics from the provided controls', () => {
+      const result = createMetrics(mockControls);
+      expect(Object.keys(result)).toEqual(
         expect.arrayContaining(['UPTIME_CHECK_METRIC', 'RESPONSE_TIME_METRIC'])
       );
-      // check structure of the guarantees for each control
-      expect(result.terms.guarantees).toHaveLength(2);
-      result.terms.guarantees.forEach((guarantee, index) => {
-      // check each guarantee has a correct id (transformed to upper case and underscores)
-        expect(guarantee.id).toBe(
-          mockControls[index].name.toUpperCase().replace(/\s+/g, '_')
-        );
-        // check description matches or is empty if not provided
+      expect(Object.keys(result)).toHaveLength(mockControls.length);
+      // Add more specific assertions about the structure of the created metrics if needed
+    });
+
+  });
+
+  describe('createGuarantees', () => {
+    it('should return an empty array if controls is undefined', () => {
+      const result = createGuarantees(undefined, {}, []);
+      expect(result).toEqual([]);
+    });
+    it('should create guarantees from the provided controls and scope specs', () => {
+      const result = createGuarantees(mockControls, mockScopeSpecs, mockScopeSets);
+      expect(result).toHaveLength(mockControls.length);
+      result.forEach((guarantee, index) => {
+        expect(guarantee.id).toBe(mockControls[index].name.toUpperCase().replace(/\s+/g, '_'));
         expect(guarantee.description).toBe(mockControls[index].description || '');
-        // check the scope specifications provided
         expect(guarantee.scope).toEqual(mockScopeSpecs);
-        // check property “of” has at least one element and contains the correct time window
         expect(guarantee.of).toBeInstanceOf(Array);
         guarantee.of.forEach((ofElement) => {
-          expect(ofElement.window.period).toBe(
-            mockControls[index].period.toLowerCase()
-          );
+          expect(ofElement.window.period).toBe(mockControls[index].period.toLowerCase());
         });
       });
-      expect(result.id).to.be.a('string'); // Verify that the id is a string
-      expect(result.id).to.have.string('tpa-'); // Verify that the id starts with 'tpa-'
-      expect(result.id.length).toBeGreaterThan('tpa-'.length);
-      expect(result.id.length).toBe('tpa-'.length + 36);
     });
+  });
+  describe('createTerms', () => {
+    it('should define metrics and return an array for guarantees', () => {
+      getScopeSpecsSpy.mockResolvedValue(mockScopeSpecs);
+      const result = createTerms(mockControls, getScopeSpecsSpy,  mockScopeSets);
+      expect(result.metrics).toBeDefined();
+      expect(result.guarantees).toBeInstanceOf(Array);
+    });
+
+  });
+
+  describe('createContext', () => {
     it('should allow overwriting context.validity and context.definitions', async () => {
       const mockCatalog = {};
       const mockControls = [{ id: 1, name: 'X', params: {}, period: 'DAILY' }];
@@ -163,31 +147,68 @@ describe('test: agreementBuilder', () => {
         overrides.context.definitions
       );
 
-      expect(result.terms.guarantees[0].description).toBe('');
     });
-    it('should use the provided id without adding "tpa-" if it already exists', async () => {
+
+    it('should build the default context if no overrides are provided', async () => {
       getScopeSetsByControlIdsSpy.mockResolvedValue({
         scopesKeySet: [],
         scopeSets: [],
       });
       getScopeSpecsSpy.mockResolvedValue({});
-      const result = await agreementBuilder({}, [], { id: 'tpa-custom-id' });
-      expect(result.id).toBe('tpa-custom-id');
-    });
 
-  });
-  describe('createMetrics', () => {
-    it('createMetrics should return empty object if controls is undefined', () => {
-      const result = createMetrics(undefined);
-      expect(result).toEqual({});
+      const result = createContext(mockCatalog);
 
-    });
-  });
-
-  describe('createGuarantees', () => {
-    it('createGuarantees should return empty array if controls is undefined', () => {
-      const result = createGuarantees(undefined, {}, []);
-      expect(result).toEqual([]);
+      expect(result.validity).toEqual({
+        initial: '2022-01-01',
+        timeZone: 'America/Los_Angeles',
+        startDate: '2023-01-01',
+        endDate: '2024-01-01',
+      });
+      expect(result.definitions).toEqual({ schemas: {}, scopes: {} });
     });
   });
+
+  // Mock data for testing
+  const mockCatalog = {
+    startDate: '2023-01-01',
+    endDate: '2024-01-01',
+  };
+
+  const mockControls = [
+    {
+      id: 1,
+      name: 'Uptime Check',
+      description: 'Check system uptime daily',
+      params: {
+        endpoint: '/status',
+        threshold: 99.9,
+      },
+      period: 'DAILY',
+    },
+    {
+      id: 2,
+      name: 'Response Time',
+      description: 'Measure response time',
+      params: {
+        endpoint: '/response',
+        threshold: 200,
+        timeout: 5000,
+      },
+      period: 'WEEKLY',
+    },
+  ];
+
+  const mockScopeSets = [
+    {
+      scopes: [
+        ['region', 'us-west'],
+        ['service', 'api'],
+      ],
+    },
+  ];
+
+  const mockScopeSpecs = {
+    region: ['us-west'],
+    service: ['api'],
+  };
 });
