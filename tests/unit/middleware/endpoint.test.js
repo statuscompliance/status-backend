@@ -2,17 +2,6 @@ import { endpointAvailable, setConfigurationCache, assistantlimitReached, update
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { models } from '../../../src/models/models.js'
 
-vi.mock('../models/models.js', () => ({
-  Configuration: {
-    findOne: vi.fn(),
-    findAll: vi.fn(() => Promise.resolve([]))
-  },
-  Assistant: {
-    findOne: vi.fn(),
-    findAll: vi.fn()
-  },
-}));
-
 describe('updateConfigurationsCache', () => {
 
   beforeEach(() => {
@@ -166,7 +155,7 @@ describe('assistantlimitReached Middleware', () => {
   it('should return 500 if updating configurations cache fails', async () => {
     vi.spyOn(models.Configuration, 'findAll').mockRejectedValue(new Error('Database error'));
 
-    await assistantlimitReached(mockReq, mockRes, mockNext, models);
+    await assistantlimitReached(mockReq, mockRes, mockNext);
 
     expect(mockRes.status).toHaveBeenCalledWith(500);
     expect(mockRes.send).toHaveBeenCalledWith('Internal server error.');
@@ -177,7 +166,7 @@ describe('assistantlimitReached Middleware', () => {
     vi.spyOn(models.Configuration, 'findAll').mockResolvedValue([]);
     vi.spyOn(models.Configuration, 'findOne').mockResolvedValue(null);
 
-    await assistantlimitReached(mockReq, mockRes, mockNext, models);
+    await assistantlimitReached(mockReq, mockRes, mockNext);
 
     expect(mockRes.status).toHaveBeenCalledWith(404);
     expect(mockRes.json).toHaveBeenCalledWith({ message: 'Endpoint configuration not found.' });
@@ -189,7 +178,7 @@ describe('assistantlimitReached Middleware', () => {
     vi.spyOn(models.Configuration, 'findAll').mockResolvedValue([]);
     vi.spyOn(models.Configuration, 'findOne').mockResolvedValue({ dataValues: { endpoint: '/api/assistant' } });
 
-    await assistantlimitReached(mockReq, mockRes, mockNext, models);
+    await assistantlimitReached(mockReq, mockRes, mockNext);
 
     expect(mockRes.status).toHaveBeenCalledWith(404);
     expect(mockRes.json).toHaveBeenCalledWith({ message: 'Endpoint configuration not found.' });
@@ -202,7 +191,7 @@ describe('assistantlimitReached Middleware', () => {
     vi.spyOn(models.Configuration, 'findOne').mockResolvedValue({ dataValues: { endpoint: '/api/assistant', limit: 2 } });
     vi.spyOn(models.Assistant, 'findAll').mockRejectedValue(new Error('Database error'));
 
-    await assistantlimitReached(mockReq, mockRes, mockNext, models);
+    await assistantlimitReached(mockReq, mockRes, mockNext);
 
     expect(mockRes.status).toHaveBeenCalledWith(500);
     expect(mockRes.send).toHaveBeenCalledWith('Error checking assistant limits.');
@@ -215,7 +204,7 @@ describe('assistantlimitReached Middleware', () => {
     vi.spyOn(models.Configuration, 'findOne').mockResolvedValue({ dataValues: { endpoint: '/api/assistant', limit: 2 } });
     vi.spyOn(models.Assistant, 'findAll').mockResolvedValue([{ id: 1 }]);
 
-    await assistantlimitReached(mockReq, mockRes, mockNext, models);
+    await assistantlimitReached(mockReq, mockRes, mockNext);
 
     expect(mockNext).toHaveBeenCalledTimes(1);
     expect(mockRes.status).not.toHaveBeenCalled();
@@ -228,7 +217,7 @@ describe('assistantlimitReached Middleware', () => {
     vi.spyOn(models.Configuration, 'findOne').mockResolvedValue({ dataValues: { endpoint: '/api/assistant', limit: 1 } });
     vi.spyOn(models.Assistant, 'findAll').mockResolvedValue([{ id: 1 }]);
 
-    await assistantlimitReached(mockReq, mockRes, mockNext, models);
+    await assistantlimitReached(mockReq, mockRes, mockNext);
 
     expect(mockRes.status).toHaveBeenCalledWith(429);
     expect(mockRes.send).toHaveBeenCalledWith('Assistant limit reached.');
@@ -241,7 +230,7 @@ describe('assistantlimitReached Middleware', () => {
     vi.spyOn(models.Configuration, 'findOne').mockResolvedValue({ dataValues: { endpoint: '/api/assistant', limit: 2 } });
     vi.spyOn(models.Assistant, 'findAll').mockResolvedValue([]);
 
-    await assistantlimitReached(mockReq, mockRes, mockNext, models);
+    await assistantlimitReached(mockReq, mockRes, mockNext);
 
     expect(mockNext).toHaveBeenCalledTimes(1);
     expect(mockRes.status).not.toHaveBeenCalled();

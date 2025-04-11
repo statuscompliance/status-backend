@@ -17,7 +17,7 @@ export async function updateConfigurationsCache() {
 //Endpoint
 async function loadConfigurations() {
   try {
-    await updateConfigurationsCache(models);
+    await updateConfigurationsCache();
   } catch (error) {
     console.error('Error updating configurations cache:', error);
     throw new Error('Error loading configurations.');
@@ -36,7 +36,7 @@ export async function endpointAvailable(req, res, next) {
 
   if (!configurationsCache) {
     try {
-      await loadConfigurations(models);
+      await loadConfigurations();
     } catch (error) {
       return res.status(500).send(error.message);
     }
@@ -90,7 +90,7 @@ async function getAssistantCount() {
 export async function assistantlimitReached(req, res, next) {
   if (!configurationsCache) {
     try {
-      await updateConfigurationsCache(models);
+      await updateConfigurationsCache();
     } catch (error) {
       console.error('Error updating configurations cache:', error);
       return res.status(500).send('Error loading configurations.');
@@ -98,8 +98,8 @@ export async function assistantlimitReached(req, res, next) {
   }
 
   try {
-    const limit = await loadAssistantConfiguration(models);
-    const assistantCount = await getAssistantCount(models);
+    const limit = await loadAssistantConfiguration();
+    const assistantCount = await getAssistantCount();
 
     if (limit <= assistantCount) {
       return res.status(429).send('Assistant limit reached.');
