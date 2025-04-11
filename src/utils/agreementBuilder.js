@@ -2,28 +2,34 @@ import { v4 as uuidv4 } from 'uuid';
 import { getScopeSetsByControlIds, getScopeSpecs } from './scopeUtilities.js';
 
 export async function agreementBuilder(catalog, controls, overrides = {}) {
-  const id = overrides.id || uuidv4();
+  // Prefix 'tpa-'
+  let rawId = overrides.id || uuidv4();
+  const id = rawId.startsWith('tpa-') ? rawId : `tpa-${rawId}`;
+
   const controlIds = controls.map(control => control.id);
   const { scopesKeySet, scopeSets } = await getScopeSetsByControlIds(controlIds);
   const scopeSpecs = await getScopeSpecs(scopesKeySet);
+
+  const { context: overridesContext, terms: overridesTerms, ...restOverrides } = overrides;
+
   return {
-    id: `tpa-${id}`,
+    id,
     version: '1.0.0',
     type: 'agreement',
-    context: createContext(catalog ,overrides.context || {}),
-    terms: createTerms(controls, scopeSpecs, scopeSets, overrides.terms || {}),
-    ...overrides
+    context: createContext(catalog, overridesContext || {}),
+    terms: createTerms(controls, scopeSpecs, scopeSets, overridesTerms || {}),
+    ...restOverrides
   };
 }
 
-function createContext(catalog, overrides = {}) {
+export function createContext(catalog, overrides = {}) {
   return {
     validity: {
       initial: '2022-01-01',
       timeZone: 'America/Los_Angeles',
-      startDate: catalog.startDate || '1975-01-01',
-      endDate: catalog.endDate || '2022-01-01',
-      ...overrides.validity // Override validity settings if provided
+      ...overrides.validity, // Apply overrides first
+      startDate: overrides.validity?.startDate || catalog.startDate || '1975-01-01',
+      endDate: overrides.validity?.endDate || catalog.endDate || '2022-01-01',
     },
     definitions: {
       schemas: {},
@@ -33,14 +39,15 @@ function createContext(catalog, overrides = {}) {
   };
 }
 
-function createTerms(controls, scopeSpecs, scopeSets, overrides = {}) {
+export function createTerms(controls, scopeSpecs, scopeSets, overrides = {}) {
   return {
     metrics: createMetrics(controls, overrides.metrics || {}),
     guarantees: createGuarantees(controls, scopeSpecs,  scopeSets, overrides.guarantees || [])
   };
 }
 
-function createMetrics(controls, overrides = {}) {
+export function createMetrics(controls, overrides = {}) {
+  if (!Array.isArray(controls)) return {};
   return controls?.reduce((metrics, control) => {
     const metricName = `${transformText(control.name)}_METRIC`;
     metrics[metricName] = {
@@ -65,7 +72,7 @@ function createMetrics(controls, overrides = {}) {
   }, {});
 }
 
-function createGuarantees(controls, scopeSpecs, scopeSets, overrides = []) {
+export function createGuarantees(controls, scopeSpecs, scopeSets, overrides = []) {
   return controls?.map((control, index) => {
     let withElement = {};
     withElement[`${transformText(control.name)}_METRIC`] = {}; // Here we should add the scoped params of the control
@@ -92,7 +99,7 @@ function createGuarantees(controls, scopeSpecs, scopeSets, overrides = []) {
 }
 
 
-function transformText(text) {
+export function transformText(text) {
   return text.toUpperCase().replace(/\s+/g, '_');
 }
 
