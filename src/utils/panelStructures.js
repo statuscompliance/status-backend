@@ -13,12 +13,10 @@ function createPanelTemplate(type) {
     : undefined;
 
   if (!structure) {
-    throw new Error(`Tipo de panel no soportado: ${type}`);
+    throw new Error(`Panel type not supported: ${type}`);
   }
 
-  return {
-    ...structure,
-  };
+  return structuredClone(structure)
 }
 
 export default createPanelTemplate;
