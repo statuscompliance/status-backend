@@ -11,23 +11,21 @@ import {
   deleteUserThreads,
   changeThreadName,
 } from '../controllers/thread.controller.js';
-import { validateParams } from '../middleware/validation.js';
 
 const router = Router();
 
-router.get('s', validateParams, verifyAuthority, getThreads);
-router.get('', validateParams, verifyAuthority, getThreadsByUserId);
+router.get('s', verifyAuthority, getThreads);
+router.get('', verifyAuthority, getThreadsByUserId);
 router.get(
   '/:gptId',
-  validateParams,
   verifyAuthority,
   getThreadMessages
 );
-router.post('', validateParams, verifyAuthority, createThread);
-router.post('/:gptId', validateParams, verifyAuthority, addNewMessage);
-router.delete('/:gptId', validateParams, verifyAuthority, deleteThread);
-router.delete('', validateParams, verifyAuthority, deleteUserThreads);
-router.put('/:gptId', validateParams, verifyAuthority, changeThreadName);
+router.post('', verifyAuthority, createThread);
+router.post('/:gptId', verifyAuthority, addNewMessage);
+router.delete('/:gptId', verifyAuthority, deleteThread);
+router.delete('', verifyAuthority, deleteUserThreads);
+router.put('/:gptId', verifyAuthority, changeThreadName);
 
 export default router;
 
