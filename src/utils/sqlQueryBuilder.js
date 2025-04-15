@@ -77,6 +77,7 @@ function createSQLQuery({
 
   return query;
 }
+
 function parseSQLQuery(query) {
   const result = {
     aggregations: [],
@@ -89,13 +90,21 @@ function parseSQLQuery(query) {
     table: 'computation',
   };
 
-  // Table
-  const tableMatch = query.match(/FROM\s+statusdb\.(\w+)/i);
-  if (tableMatch) {
-    result.table = tableMatch[1];
-  }
+  result.table = parseTable(query);
+  parseSelect(query, result);
+  parseWhere(query, result);
+  result.groupBy = parseGroupBy(query);
+  parseOrderBy(query, result);
 
-  // Columns and Aggregations
+  return result;
+}
+
+function parseTable(query) {
+  const tableMatch = query.match(/FROM\s+statusdb\.(\w+)/i);
+  return tableMatch ? tableMatch[1] : 'computation';
+}
+
+function parseSelect(query, result) {
   const selectMatch = query.match(/SELECT\s+([\s\w\d_(),.*]+)\s+FROM/i);
   if (selectMatch) {
     const selectFieldsString = selectMatch[1];
@@ -112,35 +121,30 @@ function parseSQLQuery(query) {
         parenCount--;
         field += char;
       } else if (char === ',' && parenCount === 0) {
-        field = field.trim();
-        const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
-        if (aggMatch) {
-          result.aggregations.push({
-            func: aggMatch[1],
-            attr: aggMatch[2],
-          });
-        } else if (field !== '*') {
-          result.columns.push(field);
-        }
+        processSelectField(field.trim(), result);
         field = '';
       } else {
         field += char;
       }
       currentIndex++;
     }
-    field = field.trim();
-    const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
-    if (aggMatch) {
-      result.aggregations.push({
-        func: aggMatch[1],
-        attr: aggMatch[2],
-      });
-    } else if (field !== '*') {
-      result.columns.push(field);
-    }
+    processSelectField(field.trim(), result); // Process the last field
   }
+}
 
-  // WHERE
+function processSelectField(field, result) {
+  const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
+  if (aggMatch) {
+    result.aggregations.push({
+      func: aggMatch[1],
+      attr: aggMatch[2],
+    });
+  } else if (field !== '*') {
+    result.columns.push(field);
+  }
+}
+
+function parseWhere(query, result) {
   const whereMatch = query.match(/WHERE\s+\((.+?)\)/i);
   if (whereMatch) {
     const conditionsString = whereMatch[1];
@@ -177,21 +181,17 @@ function parseSQLQuery(query) {
       processCondition(condition.trim(), result, logicOp);
     }
   }
+}
 
-  // GROUP BY
-  const groupByMatch = query.match(/GROUP\s+BY\s+(\w+)/i);
-  if (groupByMatch) {
-    result.groupBy = groupByMatch[1];
+function processCondition(condition, result, logicOp) {
+  const comparisonMatch = condition.match(/([\w\d_]+)\s+(=|>|<|>=|<=|!=)\s+([\s\S]+)/);
+  if (comparisonMatch) {
+    const key = comparisonMatch[1].trim();
+    const operator = comparisonMatch[2].trim();
+    const value = parseWhereValue(comparisonMatch[3].trim());
+    result.whereConditions.push({ key, operator, value });
+    result.whereLogic = logicOp;
   }
-
-  // ORDER BY
-  const orderByMatch = query.match(/ORDER\s+BY\s+([^(\s]+(?:\([^)]*\))?)\s*(?:(ASC|DESC))?/i);
-  if (orderByMatch) {
-    result.orderByAttr = orderByMatch[1];
-    result.orderDirection = orderByMatch[2]?.toUpperCase() || 'ASC';
-  }
-
-  return result;
 }
 
 function parseWhereValue(value) {
@@ -208,71 +208,17 @@ function parseWhereValue(value) {
   return quotedMatch ? quotedMatch[1] : value;
 }
 
-function processCondition(condition, result, logicOp) {
-  const comparisonMatch = condition.match(/([\w\d_]+)\s+(=|>|<|>=|<=|!=)\s+([\s\S]+)/);
-  if (comparisonMatch) {
-    const key = comparisonMatch[1].trim();
-    const operator = comparisonMatch[2].trim();
-    const value = parseWhereValue(comparisonMatch[3].trim());
-    result.whereConditions.push({ key, operator, value });
-    result.whereLogic = logicOp;
+function parseGroupBy(query) {
+  const groupByMatch = query.match(/GROUP\s+BY\s+(\w+)/i);
+  return groupByMatch ? groupByMatch[1] : null;
+}
+
+function parseOrderBy(query, result) {
+  const orderByMatch = query.match(/ORDER\s+BY\s+([^(\s]+(?:\([^)]*\))?)\s*(?:(ASC|DESC))?/i);
+  if (orderByMatch) {
+    result.orderByAttr = orderByMatch[1];
+    result.orderDirection = orderByMatch[2]?.toUpperCase() || 'ASC';
   }
 }
 
 export { createSQLQuery, parseSQLQuery };
-
-/* EJEMPLOS
-SELECT * FROM statusdb.computation
-{}
-
-SELECT id, date FROM statusdb.computation WHERE (id > '5' AND limit < '5')
-{
-    "columns": ["id", "date"],
-    "whereConditions": [
-        { "key": "id", "operator": ">", "value": 5 },
-        { "key": "limit", "operator": "<", "value": 5 }
-    ],
-    "whereLogic": "AND"
-}
-
-SELECT COUNT(limit), MAX(date) FROM statusdb.computation
-{
-    "aggregations": [
-        { "func": "COUNT", "attr": "limit" },
-        { "func": "MAX", "attr": "date" }
-    ]
-}
-
-SELECT COUNT(limit) FROM statusdb.computation WHERE (available != '5' OR active = '1') GROUP BY limit
-{
-    "aggregations": [
-        { "func": "COUNT", "attr": "limit" }
-    ],
-    "whereConditions": [
-        { "key": "available", "operator": "!=", "value": "5" },
-        { "key": "active", "operator": "=", "value": "1" }
-    ],
-    "whereLogic": "OR",
-    "groupBy": "limit"
-}
-
-SELECT id FROM statusdb.computation ORDER BY limit ASC
-{
-    "columns": ["id"],
-    "orderByAttr": "limit",
-    "orderDirection": "ASC"
-}
-
-SELECT COUNT(limit), id FROM statusdb.computation WHERE (id > '5' AND limit <= '10')
-{
-    "columns": ["id"],
-    "aggregations": [
-        { "func": "COUNT", "attr": "limit" }
-    ],
-    "whereConditions": [
-        { "key": "id", "operator": ">", "value": 5 },
-        { "key": "limit", "operator": "<=", "value": 10 }
-    ],
-    "whereLogic": "AND"
-}
-*/
