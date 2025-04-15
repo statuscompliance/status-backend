@@ -77,7 +77,6 @@ function createSQLQuery({
 
   return query;
 }
-
 function parseSQLQuery(query) {
   const result = {
     aggregations: [],
@@ -102,7 +101,7 @@ function parseSQLQuery(query) {
     const selectFields = selectMatch[1].split(',');
     selectFields.forEach((field) => {
       field = field.trim();
-      const aggMatch = field.match(/(\w+)\((\*)\)/); // ej: COUNT(*)
+      const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
       if (aggMatch) {
         result.aggregations.push({
           func: aggMatch[1],
@@ -115,32 +114,32 @@ function parseSQLQuery(query) {
   }
 
   // WHERE
-  const whereMatch = query.match(/WHERE\s+\((.+)\)/i);
+  const whereMatch = query.match(/WHERE\s+\((.+?)\)/i);
   if (whereMatch) {
-    const conditions = whereMatch[1].split(/\s+(AND|OR)\s+/i);
-    if (conditions.length === 1) {
-      const [key, operator, value] = conditions[0].split(
-        /\s+(=|>|<|>=|<=|!=)\s+/
-      );
-      result.whereConditions.push({
-        key: key.trim(),
-        operator: operator.trim(),
-        value: parseWhereValue(value.trim()),
-      });
+    const conditionsString = whereMatch[1];
+    const conditionParts = conditionsString.split(/\s+(AND|OR)\s+/i);
+    if (conditionParts.length === 1) {
+      const [key, operator, ...valueParts] = conditionParts[0].split(/\s+(=|>|<|>=|<=|!=)\s+/);
+      if (key && operator && valueParts.length > 0) {
+        result.whereConditions.push({
+          key: key.trim(),
+          operator: operator.trim(),
+          value: parseWhereValue(valueParts.join(' ').trim()),
+        });
+      }
     } else {
-      result.whereLogic = conditions[1].toUpperCase() || 'AND'; // AND or OR
-      conditions.forEach((condition) => {
-        if (condition !== 'AND' && condition !== 'OR') {
-          const [key, operator, value] = condition.split(
-            /\s+(=|>|<|>=|<=|!=)\s+/
-          );
+      result.whereLogic = conditionParts[1]?.toUpperCase() || 'AND';
+      for (let i = 0; i < conditionParts.length; i += 2) {
+        const condition = conditionParts[i];
+        const [key, operator, ...valueParts] = condition.split(/\s+(=|>|<|>=|<=|!=)\s+/);
+        if (key && operator && valueParts.length > 0) {
           result.whereConditions.push({
             key: key.trim(),
             operator: operator.trim(),
-            value: parseWhereValue(value.trim()),
+            value: parseWhereValue(valueParts.join(' ').trim()),
           });
         }
-      });
+      }
     }
   }
 
@@ -151,12 +150,10 @@ function parseSQLQuery(query) {
   }
 
   // ORDER BY
-  const orderByMatch = query.match(/ORDER\s+BY\s+(\w+)\s+(ASC|DESC)?/i);
+  const orderByMatch = query.match(/ORDER\s+BY\s+([^(\s]+(?:\([^)]*\))?)\s*(?:(ASC|DESC))?/i);
   if (orderByMatch) {
     result.orderByAttr = orderByMatch[1];
-    result.orderDirection = orderByMatch[2]
-      ? orderByMatch[2].toUpperCase()
-      : 'ASC';
+    result.orderDirection = orderByMatch[2]?.toUpperCase() || 'ASC';
   }
 
   return result;
@@ -172,7 +169,8 @@ function parseWhereValue(value) {
   if (!isNaN(value)) {
     return value;
   }
-  return value.replace(/['"]/g, '');
+  const quotedMatch = value.match(/^['"](.*)['"]$/);
+  return quotedMatch ? quotedMatch[1] : value;
 }
 
 export { createSQLQuery, parseSQLQuery };
