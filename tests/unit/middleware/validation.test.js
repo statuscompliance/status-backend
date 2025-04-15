@@ -125,63 +125,6 @@ describe('validateUUID Middleware', () => {
   });
 });
 
-describe('validateParams Middleware', () => {
-  let mockReq;
-  let mockRes;
-  let mockNext;
-  const mockValidationResult = vi.fn();
-  const { validateParams } = require('../../../src/middleware/validation');
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockReq = { params: {}, query: {}, body: {} };
-    mockRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
-    mockNext = vi.fn();
-
-    vi.doMock('express-validator', () => ({
-      validationResult: mockValidationResult,
-    }));
-  });
-
-  it('should call next if there are no validation errors', () => {
-    mockValidationResult.mockReturnValue({ isEmpty: () => true, array: () => [] });
-    validateParams(mockReq, mockRes, mockNext, mockValidationResult);
-    expect(mockNext).toHaveBeenCalledTimes(1);
-    expect(mockRes.status).not.toHaveBeenCalled();
-    expect(mockRes.json).not.toHaveBeenCalled();
-    expect(mockValidationResult).toHaveBeenCalledTimes(1);
-  });
-
-  const errorCases = [
-    {
-      name: 'should return 400 with single validation error',
-      mockReturnValue: { isEmpty: () => false, array: () => [{ msg: 'Test Error' }] },
-      expectedStatus: 400,
-      expectedJson: { errors: [{ msg: 'Test Error' }] },
-    },
-    {
-      name: 'should return 400 with multiple validation errors',
-      mockReturnValue: { isEmpty: () => false, array: () => [{ msg: 'Error 1' }, { msg: 'Error 2' }] },
-      expectedStatus: 400,
-      expectedJson: { errors: [{ msg: 'Error 1' }, { msg: 'Error 2' }] },
-    },
-  ];
-
-  errorCases.forEach(({ name, mockReturnValue, expectedStatus, expectedJson }) => {
-    it(name, () => {
-      mockValidationResult.mockReturnValue(mockReturnValue);
-      validateParams(mockReq, mockRes, mockNext, mockValidationResult);
-      expect(mockNext).not.toHaveBeenCalled();
-      expect(mockRes.status).toHaveBeenCalledWith(expectedStatus);
-      expect(mockRes.json).toHaveBeenCalledWith(expectedJson);
-      expect(mockValidationResult).toHaveBeenCalledTimes(1);
-    });
-  });
-});
-
 describe('isGrafanaUID Function', () => {
 
   it('should return true for a valid Grafana UID', () => {

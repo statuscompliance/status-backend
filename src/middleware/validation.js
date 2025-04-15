@@ -20,16 +20,6 @@ export const validateUUID = (paramName) => {
   };
 };
 
-export function validateParams(req, res, next, validation) {
-  const errors = validation(req);
-
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ 'errors': errors.array() });
-  }
-
-  next();
-};
-
 export function isGrafanaUID(uid) {
   return /^[a-zA-Z0-9]{12,24}$/.test(uid);
 }
