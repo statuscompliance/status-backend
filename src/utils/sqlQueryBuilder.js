@@ -96,50 +96,85 @@ function parseSQLQuery(query) {
   }
 
   // Columns and Aggregations
-  const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i);
+  const selectMatch = query.match(/SELECT\s+([\s\w\d_(),.*]+)\s+FROM/i);
   if (selectMatch) {
-    const selectFields = selectMatch[1].split(',');
-    selectFields.forEach((field) => {
-      field = field.trim();
-      const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
-      if (aggMatch) {
-        result.aggregations.push({
-          func: aggMatch[1],
-          attr: aggMatch[2],
-        });
+    const selectFieldsString = selectMatch[1];
+    let currentIndex = 0;
+    let field = '';
+    let parenCount = 0;
+
+    while (currentIndex < selectFieldsString.length) {
+      const char = selectFieldsString[currentIndex];
+      if (char === '(') {
+        parenCount++;
+        field += char;
+      } else if (char === ')') {
+        parenCount--;
+        field += char;
+      } else if (char === ',' && parenCount === 0) {
+        field = field.trim();
+        const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
+        if (aggMatch) {
+          result.aggregations.push({
+            func: aggMatch[1],
+            attr: aggMatch[2],
+          });
+        } else if (field !== '*') {
+          result.columns.push(field);
+        }
+        field = '';
       } else {
-        result.columns.push(field);
+        field += char;
       }
-    });
+      currentIndex++;
+    }
+    field = field.trim();
+    const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
+    if (aggMatch) {
+      result.aggregations.push({
+        func: aggMatch[1],
+        attr: aggMatch[2],
+      });
+    } else if (field !== '*') {
+      result.columns.push(field);
+    }
   }
 
   // WHERE
   const whereMatch = query.match(/WHERE\s+\((.+?)\)/i);
   if (whereMatch) {
     const conditionsString = whereMatch[1];
-    const conditionParts = conditionsString.split(/\s+(AND|OR)\s+/i);
-    if (conditionParts.length === 1) {
-      const [key, operator, ...valueParts] = conditionParts[0].split(/\s+(=|>|<|>=|<=|!=)\s+/);
-      if (key && operator && valueParts.length > 0) {
-        result.whereConditions.push({
-          key: key.trim(),
-          operator: operator.trim(),
-          value: parseWhereValue(valueParts.join(' ').trim()),
-        });
-      }
-    } else {
-      result.whereLogic = conditionParts[1]?.toUpperCase() || 'AND';
-      for (let i = 0; i < conditionParts.length; i += 2) {
-        const condition = conditionParts[i];
-        const [key, operator, ...valueParts] = condition.split(/\s+(=|>|<|>=|<=|!=)\s+/);
-        if (key && operator && valueParts.length > 0) {
-          result.whereConditions.push({
-            key: key.trim(),
-            operator: operator.trim(),
-            value: parseWhereValue(valueParts.join(' ').trim()),
-          });
+    let currentIndex = 0;
+    let condition = '';
+    let logicOp = 'AND';
+
+    while (currentIndex < conditionsString.length) {
+      const char = conditionsString[currentIndex];
+
+      if (char === 'A' || char === 'O') {
+        if (conditionsString.substring(currentIndex, currentIndex + 3) === 'AND') {
+          logicOp = 'AND';
+          currentIndex += 3;
+          if (condition.trim() !== '') {
+            processCondition(condition.trim(), result, logicOp);
+            condition = '';
+          }
+          continue;
+        } else if (conditionsString.substring(currentIndex, currentIndex + 2) === 'OR') {
+          logicOp = 'OR';
+          currentIndex += 2;
+          if (condition.trim() !== '') {
+            processCondition(condition.trim(), result, logicOp);
+            condition = '';
+          }
+          continue;
         }
       }
+      condition += char;
+      currentIndex++;
+    }
+    if (condition.trim() !== '') {
+      processCondition(condition.trim(), result, logicOp);
     }
   }
 
@@ -171,6 +206,17 @@ function parseWhereValue(value) {
   }
   const quotedMatch = value.match(/^['"](.*)['"]$/);
   return quotedMatch ? quotedMatch[1] : value;
+}
+
+function processCondition(condition, result, logicOp) {
+  const comparisonMatch = condition.match(/([\w\d_]+)\s+(=|>|<|>=|<=|!=)\s+([\s\S]+)/);
+  if (comparisonMatch) {
+    const key = comparisonMatch[1].trim();
+    const operator = comparisonMatch[2].trim();
+    const value = parseWhereValue(comparisonMatch[3].trim());
+    result.whereConditions.push({ key, operator, value });
+    result.whereLogic = logicOp;
+  }
 }
 
 export { createSQLQuery, parseSQLQuery };
