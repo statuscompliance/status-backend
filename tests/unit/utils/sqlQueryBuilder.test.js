@@ -70,7 +70,7 @@ describe('parseSQLQuery', () => {
       columns: ['id'],
       whereConditions: [
         { key: 'status', operator: '=', value: 'active' },
-        { key: 'value', operator: '>', value: '10' },
+        { key: 'value', operator: '>', value: 10 },
       ],
       whereLogic: 'AND',
       groupBy: 'category',
@@ -117,9 +117,10 @@ describe('parseSQLQuery', () => {
       aggregations: [],
       columns: [],
       whereConditions: [
-        { key: 'age', operator: '>=', value: '18' },
+        { key: 'age', operator: '>=', value: 18 },
         { key: 'name', operator: '!=', value: 'John Doe' },
         { key: 'is_active', operator: '=', value: true },
+        { key: 'role', operator: 'LIKE', value: '%admin%' }
       ],
       whereLogic: 'AND',
       groupBy: null,
