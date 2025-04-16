@@ -97,7 +97,7 @@ describe('parseSQLQuery', () => {
     const result = parseSQLQuery(query);
     expect(result).toEqual({
       aggregations: [],
-      columns: ['*'],
+      columns: [],
       whereConditions: [],
       whereLogic: 'AND',
       groupBy: null,
@@ -127,7 +127,7 @@ describe('parseSQLQuery', () => {
     const result = parseSQLQuery(query);
     expect(result).toEqual({
       aggregations: [],
-      columns: ['*'],
+      columns: [],
       whereConditions: [
         { key: 'age', operator: '>=', value: 18 },
         { key: 'name', operator: '!=', value: 'John Doe' },
@@ -147,7 +147,7 @@ describe('parseSQLQuery', () => {
     const result = parseSQLQuery(query);
     expect(result).toEqual({
       aggregations: [],
-      columns: ['*'],
+      columns: [],
       whereConditions: [
         { key: 'type', operator: '=', value: 'warning' },
         { key: 'level', operator: '=', value: 'critical' },

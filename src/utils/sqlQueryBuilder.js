@@ -141,188 +141,87 @@ function parseSQLQuery(query) {
     table: 'computation',
   };
 
-  try {
-    // Table
-    result.table = parseTable(query);
+  // Table
+  const tableMatch = query.match(/FROM\s+statusdb\.(\w+)/i);
+  if (tableMatch) {
+    result.table = tableMatch[1];
+  }
 
-    // Columns and Aggregations
-    const selectClause = extractSelectClause(query);
-    if (selectClause) {
-      parseSelectClause(selectClause, result);
+  // Columns and Aggregations
+  const selectMatch = query.match(/SELECT\s+([\s\w\d_(),.*]+)\s+FROM/i);
+  if (selectMatch) {
+    const selectFields = selectMatch[1].split(',');
+    selectFields.forEach((field) => {
+      field = field.trim();
+      const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
+      if (aggMatch) {
+        result.aggregations.push({
+          func: aggMatch[1],
+          attr: aggMatch[2],
+        });
+      } else if (field !== '*') {
+        result.columns.push(field);
+      }
+    });
+  }
+
+  // WHERE
+  const whereMatch = query.match(/WHERE\s+\((.+?)\)/i);
+  if (whereMatch) {
+    const conditionsString = whereMatch[1];
+    const conditionParts = conditionsString.split(/\s+(AND|OR)\s+/i);
+    if (conditionParts.length === 1) {
+      const [key, operator, ...valueParts] = conditionParts[0].split(/\s+(=|>|<|>=|<=|!=|LIKE)\s+/i); // Añadido LIKE
+      if (key && operator && valueParts.length > 0) {
+        result.whereConditions.push({
+          key: key.trim(),
+          operator: operator.trim(),
+          value: parseWhereValue(valueParts.join(' ').trim()),
+        });
+      }
+    } else {
+      result.whereLogic = conditionParts[1]?.toUpperCase() || 'AND';
+      for (let i = 0; i < conditionParts.length; i += 2) {
+        const condition = conditionParts[i];
+        const [key, operator, ...valueParts] = condition.split(/\s+(=|>|<|>=|<=|!=|LIKE)\s+/i); // Añadido LIKE
+        if (key && operator && valueParts.length > 0) {
+          result.whereConditions.push({
+            key: key.trim(),
+            operator: operator.trim(),
+            value: parseWhereValue(valueParts.join(' ').trim()),
+          });
+        }
+      }
     }
+  }
 
-    // WHERE
-    const whereClause = extractWhereClause(query);
-    if (whereClause) {
-      parseWhereClause(whereClause, result);
-    }
+  // GROUP BY
+  const groupByMatch = query.match(/GROUP\s+BY\s+(\w+)/i);
+  if (groupByMatch) {
+    result.groupBy = groupByMatch[1];
+  }
 
-    // GROUP BY
-    result.groupBy = parseGroupBy(query);
-
-    // ORDER BY
-    parseOrderBy(query, result);
-  } catch (error) {
-    console.error('Error parsing SQL query:', error);
-    return result;
+  // ORDER BY
+  const orderByMatch = query.match(/ORDER\s+BY\s+([^(\s]+(?:\([^)]*\))?)\s*(?:(ASC|DESC))?/i);
+  if (orderByMatch) {
+    result.orderByAttr = orderByMatch[1];
+    result.orderDirection = orderByMatch[2]?.toUpperCase() || 'ASC';
   }
 
   return result;
 }
 
-function extractSelectClause(query) {
-  const fromIndex = query.toUpperCase().indexOf(' FROM ');
-  if (fromIndex > -1) {
-    const selectStart = query.toUpperCase().indexOf('SELECT ') + 7;
-    return query.substring(selectStart, fromIndex).trim();
-  }
-  return null;
-}
-
-
-function parseTable(query) {
-  const tableMatch = query.match(/FROM\s+statusdb\.(\w+)/i);
-  return tableMatch ? tableMatch[1] : 'computation';
-}
-
-function parseSelectClause(selectClause, result) {
-  if (!selectClause) return;
-
-  const fields = selectClause.split(',').map(s => s.trim());
-  fields.forEach(field => {
-    const aggregation = parseAggregation(field);
-    if (aggregation) {
-      result.aggregations.push(aggregation);
-    } else {
-      result.columns.push(field);
-    }
-  });
-}
-
-function parseAggregation(field) {
-  const funcMatch = field.match(/^(\w+)\((.+)\)$/);
-  if (!funcMatch) {
-    return null;
-  }
-
-  const func = funcMatch[1].toUpperCase();
-  const attr = funcMatch[2].trim();
-
-  if (!isValidAggregationFunction(func)) {
-    throw new Error(`Invalid aggregation function: ${func}`);
-  }
-
-  return { func, attr: attr };
-}
-
-function isValidAggregationFunction(func) {
-  const validFunctions = ['COUNT', 'AVG', 'SUM', 'MIN', 'MAX'];
-  return validFunctions.includes(func);
-}
-
-
-function extractWhereClause(query) {
-  const whereMatch = query.match(/WHERE\s+\((.+)\)/i);
-  return whereMatch ? whereMatch[1] : null;
-}
-
-function parseWhereClause(whereClause, result) {
-  if (!whereClause) return;
-
-  const conditions = splitWhereClause(whereClause);
-  let previousLogic = 'AND';
-
-  conditions.forEach(condition => {
-    const trimmedCondition = condition.trim();
-    if (trimmedCondition.toUpperCase() === 'AND' || trimmedCondition.toUpperCase() === 'OR') {
-      previousLogic = trimmedCondition.toUpperCase();
-      result.whereLogic = previousLogic;
-    } else {
-      const parsedCondition = parseCondition(trimmedCondition);
-      if (parsedCondition) {
-        result.whereConditions.push(parsedCondition);
-      }
-    }
-  });
-}
-
-function splitWhereClause(whereClause) {
-  const conditions = [];
-  let currentCondition = '';
-  let parenCount = 0;
-
-  for (let i = 0; i < whereClause.length; i++) {
-    const char = whereClause[i];
-    if (char === '(') {
-      parenCount++;
-      currentCondition += char;
-    } else if (char === ')') {
-      parenCount--;
-      currentCondition += char;
-    } else if (char === ' ' && i + 1 < whereClause.length) {
-      const nextWord = whereClause.substring(i + 1, i + 4).toUpperCase(); // Check for "AND" or "OR"
-      if (nextWord === 'AND' || nextWord === 'OR') {
-        if (parenCount === 0) {
-          conditions.push(currentCondition.trim());
-          currentCondition = '';
-          i += 3; // Skip 'AND' or 'OR'
-        } else {
-          currentCondition += char;
-        }
-      } else {
-        currentCondition += char;
-      }
-    } else {
-      currentCondition += char;
-    }
-  }
-  conditions.push(currentCondition.trim());
-  return conditions;
-}
-
-
-function parseCondition(condition) {
-  const match = condition.match(/([\w\d_]+)\s+(=|>|<|>=|<=|!=|LIKE)\s+('[^']*'|\d+|true|false|[^\s()]+)/i);
-  if (match) {
-    const key = match[1].trim();
-    const operator = match[2].trim();
-    const value = parseWhereValue(match[3].trim());
-    return { key, operator, value };
-  }
-  return null;
-}
-
-
 function parseWhereValue(value) {
-  if (value.toLowerCase() === 'true') {
-    return true;
-  }
-  if (value.toLowerCase() === 'false') {
-    return false;
+  if (value === 'true' || value === 'false') {
+    return value === 'true';
   }
   if (!isNaN(value)) {
     return Number(value);
   }
-  return value.replace(/['"]/g, '');
+  const quotedMatch = value.match(/^'(.*)'$/);
+  return quotedMatch ? quotedMatch[1] : value;
 }
 
-function parseGroupBy(query) {
-  const groupByMatch = query.match(/GROUP\s+BY\s+(\w+)/i);
-  if (groupByMatch) {
-    return groupByMatch[1];
-  }
-  return null;
-}
-
-function parseOrderBy(query, result) {
-  const orderByMatch = query.match(/ORDER\s+BY\s+(\w+)\s+(ASC|DESC)?/i);
-  if (orderByMatch) {
-    result.orderByAttr = orderByMatch[1];
-    result.orderDirection = orderByMatch[2] ? orderByMatch[2].toUpperCase() : 'ASC';
-  }
-}
-
-// Helper functions for sanitization
 function sanitizeIdentifier(identifier) {
   return identifier.replace(/[^a-zA-Z0-9_]/g, '');
 }
