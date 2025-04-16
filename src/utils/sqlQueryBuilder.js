@@ -17,6 +17,7 @@
  *
  * @returns {string} - La consulta SQL generada.
  */
+
 function createSQLQuery(params = {}) {
   const {
     select = { aggregations: [], columns: [] },
@@ -49,6 +50,7 @@ function createSQLQuery(params = {}) {
  *
  * @returns {string} - La cláusula SELECT.
  */
+
 function buildSelectClause(aggregations, columns) {
   let selectClause = 'SELECT ';
   if (aggregations.length === 0 && columns.length === 0) {
@@ -173,12 +175,12 @@ function parseSQLQuery(query) {
 function extractSelectClause(query) {
   const fromIndex = query.toUpperCase().indexOf(' FROM ');
   if (fromIndex > -1) {
-    const selectEnd = fromIndex;
     const selectStart = query.toUpperCase().indexOf('SELECT ') + 7;
-    return query.substring(selectStart, selectEnd).trim();
+    return query.substring(selectStart, fromIndex).trim();
   }
   return null;
 }
+
 
 function parseTable(query) {
   const tableMatch = query.match(/FROM\s+statusdb\.(\w+)/i);
@@ -188,19 +190,38 @@ function parseTable(query) {
 function parseSelectClause(selectClause, result) {
   if (!selectClause) return;
 
-  const selectFields = selectClause.split(',').map(s => s.trim());
-  selectFields.forEach(field => {
-    const aggMatch = field.match(/(\w+)\(([\w\d_*.]+)\)/i);
-    if (aggMatch) {
-      result.aggregations.push({
-        func: aggMatch[1].toUpperCase(),
-        attr: aggMatch[2],
-      });
+  const fields = selectClause.split(',').map(s => s.trim());
+  fields.forEach(field => {
+    const aggregation = parseAggregation(field);
+    if (aggregation) {
+      result.aggregations.push(aggregation);
     } else {
       result.columns.push(field);
     }
   });
 }
+
+function parseAggregation(field) {
+  const funcMatch = field.match(/^(\w+)\((.+)\)$/);
+  if (!funcMatch) {
+    return null;
+  }
+
+  const func = funcMatch[1].toUpperCase();
+  const attr = funcMatch[2].trim();
+
+  if (!isValidAggregationFunction(func)) {
+    throw new Error(`Invalid aggregation function: ${func}`);
+  }
+
+  return { func, attr: attr };
+}
+
+function isValidAggregationFunction(func) {
+  const validFunctions = ['COUNT', 'AVG', 'SUM', 'MIN', 'MAX'];
+  return validFunctions.includes(func);
+}
+
 
 function extractWhereClause(query) {
   const whereMatch = query.match(/WHERE\s+\((.+)\)/i);
