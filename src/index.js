@@ -15,7 +15,6 @@ import pointRoutes from './routes/point.routes.js';
 import scopeRoutes from './routes/scope.routes.js';
 import cors from 'cors';
 import { verifyAuthority } from './middleware/verifyAuth.js';
-import { validateParams } from './middleware/validation.js';
 import { endpointAvailable } from './middleware/endpoint.js';
 import cookieParser from 'cookie-parser';
 import { models } from './models/models.js';
@@ -74,7 +73,6 @@ const configureApp = () => {
   app.use(endpointAvailable);
   app.use(`${API_PREFIX}`, ghAccess);
   app.use(`${API_PREFIX}/users`, userRoutes);
-  app.use(validateParams);
   app.use(`${API_PREFIX}/scripts`, scriptRoutes);
   app.use(verifyAuthority);
   app.use(`${API_PREFIX}/scopes`, scopeRoutes);
