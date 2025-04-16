@@ -100,6 +100,7 @@ export function parseRule(rule) {
   };
 }
 
+//
 export function generateDatesForFrequency(ruleData, from, to) {
   const generatedDates = [];
   let currentDate = new Date(ruleData.startDate);
@@ -107,41 +108,54 @@ export function generateDatesForFrequency(ruleData, from, to) {
   const byHour = Array.isArray(ruleData.byHour) ? ruleData.byHour : [0];
 
   if (ruleData.frequency === 'WEEKLY' && ruleData.byDay) {
-    const firstOccurrence = findNextWeeklyDate(new Date(add(currentDate, { days: -7 })), ruleData.byDay, 1);
-    if (firstOccurrence && firstOccurrence >= currentDate) {
-      currentDate = firstOccurrence;
-    } else if (firstOccurrence && firstOccurrence < currentDate) {
-      currentDate = findNextWeeklyDate(new Date(currentDate), ruleData.byDay, 1);
-    }
+    currentDate = adjustToFirstWeeklyOccurrence(currentDate, ruleData.byDay);
   }
 
   while (isWithinInterval(currentDate, { start: from, end: untilDate }) || isSameDay(currentDate, untilDate)) {
-
-    byHour.forEach(hour => {
-      const dateWithHour = adjustDateToHour(new Date(currentDate), hour);
-      if (isDateWithinRange(dateWithHour, from, to)) {
-        generatedDates.push(dateWithHour);
-      } 
-    });
-
-    if (ruleData.frequency === 'DAILY') {
-      currentDate = add(currentDate, { days: ruleData.interval || 1 });
-    } else if (ruleData.frequency === 'WEEKLY' && ruleData.byDay) {
-      const nextDate = findNextWeeklyDate(new Date(currentDate), ruleData.byDay, ruleData.interval || 1);
-      if (!nextDate) break;
-      currentDate = nextDate;
-    } else if (ruleData.frequency === 'MONTHLY' && ruleData.byMonthDay !== undefined) {
-      currentDate = advanceToMonthlyDate(new Date(currentDate), ruleData.byMonthDay, ruleData.interval || 1);
-    } else if (ruleData.frequency === 'YEARLY' && ruleData.byMonth !== undefined && ruleData.byMonthDay !== undefined) {
-      currentDate = advanceToYearlyDate(new Date(currentDate), ruleData.byMonth, ruleData.byMonthDay, ruleData.interval || 1);
-    } else {
-      console.warn(`Unsupported frequency or missing parameters: ${ruleData.frequency}`);
-      break;
-    }
+    generateDatesForDay(currentDate, byHour, from, to, generatedDates);
+    currentDate = advanceToNextDate(currentDate, ruleData);
+    if (!currentDate) break;
   }
+
   return generatedDates.sort((a, b) => a.getTime() - b.getTime());
+
 }
 
+function adjustToFirstWeeklyOccurrence(currentDate, byDay) {
+  const firstOccurrence = findNextWeeklyDate(new Date(add(currentDate, { days: -7 })), byDay, 1);
+  if (firstOccurrence && firstOccurrence >= currentDate) {
+    return firstOccurrence;
+  } else if (firstOccurrence && firstOccurrence < currentDate) {
+    return findNextWeeklyDate(new Date(currentDate), byDay, 1);
+  }
+  return currentDate;
+}
+
+function generateDatesForDay(currentDate, byHour, from, to, generatedDates) {
+  byHour.forEach(hour => {
+    const dateWithHour = adjustDateToHour(new Date(currentDate), hour);
+    if (isDateWithinRange(dateWithHour, from, to)) {
+      generatedDates.push(dateWithHour);
+    }
+  });
+}
+
+function advanceToNextDate(currentDate, ruleData) {
+  if (ruleData.frequency === 'DAILY') {
+    return add(currentDate, { days: ruleData.interval || 1 });
+  } else if (ruleData.frequency === 'WEEKLY' && ruleData.byDay) {
+    return findNextWeeklyDate(new Date(currentDate), ruleData.byDay, ruleData.interval || 1);
+  } else if (ruleData.frequency === 'MONTHLY' && ruleData.byMonthDay !== undefined) {
+    return advanceToMonthlyDate(new Date(currentDate), ruleData.byMonthDay, ruleData.interval || 1);
+  } else if (ruleData.frequency === 'YEARLY' && ruleData.byMonth !== undefined && ruleData.byMonthDay !== undefined) {
+    return advanceToYearlyDate(new Date(currentDate), ruleData.byMonth, ruleData.byMonthDay, ruleData.interval || 1);
+  } else {
+    console.warn(`Unsupported frequency or missing parameters: ${ruleData.frequency}`);
+    return null;
+  }
+}
+
+//
 export function adjustDateToHour(date, hour) {
   const dateWithHour = setSeconds(new Date(date), 0);
   dateWithHour.setHours(hour);
