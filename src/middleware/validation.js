@@ -17,9 +17,10 @@ export const validateUUID = (paramName) => {
       return res.status(400).json({ error: `Invalid UUID for parameter: ${paramName}` });
     }
     next();
-  }
+  };
 };
 
 export function isGrafanaUID(uid) {
   return /^[a-zA-Z0-9]{12,24}$/.test(uid);
 }
+
