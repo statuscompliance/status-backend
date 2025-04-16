@@ -151,17 +151,15 @@ function parseSQLQuery(query) {
   }
 
   // Columns and Aggregations
-  const selectMatch = query.match(/SELECT\s+([\s\w\d_(),.*]+)\s+FROM/i);
+  const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i); // Modificado
   if (selectMatch) {
-    const selectFields = selectMatch[1].split(',');
-    selectFields.forEach((field) => {
+    const selectFieldsString = selectMatch[1].trim();
+    const selectFields = selectFieldsString.split(',');
+    selectFields.forEach(field => {
       field = field.trim();
       const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
       if (aggMatch) {
-        result.aggregations.push({
-          func: aggMatch[1],
-          attr: aggMatch[2],
-        });
+        result.aggregations.push({ func: aggMatch[1], attr: aggMatch[2] });
       } else if (field !== '*') {
         result.columns.push(field);
       }
@@ -169,12 +167,12 @@ function parseSQLQuery(query) {
   }
 
   // WHERE
-  const whereMatch = query.match(/WHERE\s+\((.+?)\)/i);
+  const whereMatch = query.match(/WHERE\s+\((.+?)\)/i); // Modificado
   if (whereMatch) {
     const conditionsString = whereMatch[1];
     const conditionParts = conditionsString.split(/\s+(AND|OR)\s+/i);
     if (conditionParts.length === 1) {
-      const [key, operator, ...valueParts] = conditionParts[0].split(/\s+(=|>|<|>=|<=|!=|LIKE)\s+/i); // Añadido LIKE
+      const [key, operator, ...valueParts] = conditionParts[0].split(/\s+(=|>|<|>=|<=|!=|LIKE)\s+/i);
       if (key && operator && valueParts.length > 0) {
         result.whereConditions.push({
           key: key.trim(),
@@ -186,7 +184,7 @@ function parseSQLQuery(query) {
       result.whereLogic = conditionParts[1]?.toUpperCase() || 'AND';
       for (let i = 0; i < conditionParts.length; i += 2) {
         const condition = conditionParts[i];
-        const [key, operator, ...valueParts] = condition.split(/\s+(=|>|<|>=|<=|!=|LIKE)\s+/i); // Añadido LIKE
+        const [key, operator, ...valueParts] = condition.split(/\s+(=|>|<|>=|<=|!=|LIKE)\s+/i);
         if (key && operator && valueParts.length > 0) {
           result.whereConditions.push({
             key: key.trim(),
@@ -205,7 +203,7 @@ function parseSQLQuery(query) {
   }
 
   // ORDER BY
-  const orderByMatch = query.match(/ORDER\s+BY\s+([^(\s]+(?:\([^)]*\))?)\s*(?:(ASC|DESC))?/i);
+  const orderByMatch = query.match(/ORDER\s+BY\s+([a-zA-Z0-9_.]+)\s*(?:(ASC|DESC))?/i); // Modificado
   if (orderByMatch) {
     result.orderByAttr = orderByMatch[1];
     result.orderDirection = orderByMatch[2]?.toUpperCase() || 'ASC';
@@ -242,3 +240,4 @@ function sanitizeOperator(operator) {
 }
 
 export { createSQLQuery, parseSQLQuery };
+
