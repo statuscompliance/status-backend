@@ -1,81 +1,135 @@
 /**
  * Genera una consulta SQL dinámica basada en los parámetros proporcionados.
  *
- * @param {Object} sql - Objeto con los parámetros para construir la consulta.
- * @param {Array<{func: string, attr: string}>} [sql.aggregations=[]] - Lista de agregaciones, cada una con su función (COUNT, AVG, etc.) y el atributo correspondiente.
- * @param {Array<string>} [sql.columns=[]] - Lista de columnas a seleccionar en la consulta.
- * @param {Array<{key: string, operator: string, value: any}>} [sql.whereConditions=[]] - Lista de condiciones para la cláusula WHERE, cada una con una clave, un operador y un valor.
- * @param {string} [sql.whereLogic='AND'] - Operador lógico que une las condiciones WHERE ('AND' o 'OR').
- * @param {string} [sql.groupBy] - Columna por la que se agruparán los resultados.
- * @param {string} [sql.orderByAttr] - Columna por la que se ordenarán los resultados.
- * @param {string} [sql.orderDirection='ASC'] - Dirección de orden (ASC o DESC).
- * @param {string} [sql.table='computation'] - Nombre de la tabla, por defecto 'computation'.
+ * @param {Object} params - Objeto con los parámetros para construir la consulta.
+ * @param {Object} [params.select] - Objeto que define la parte SELECT de la consulta.
+ * @param {Array<{func: string, attr: string}>} [params.select.aggregations=[]] - Lista de agregaciones, cada una con su función (COUNT, AVG, etc.) y el atributo correspondiente.
+ * @param {Array<string>} [params.select.columns=[]] - Lista de columnas a seleccionar en la consulta.
+ * @param {Object} [params.from] - Objeto que define la parte FROM de la consulta.
+ * @param {string} [params.from.table='computation'] - Nombre de la tabla.
+ * @param {Object} [params.where] - Objeto que define la parte WHERE de la consulta.
+ * @param {Array<{key: string, operator: string, value: any}>} [params.where.conditions=[]] - Lista de condiciones para la cláusula WHERE.
+ * @param {string} [params.where.logic='AND'] - Operador lógico que une las condiciones WHERE ('AND' o 'OR').
+ * @param {string} [params.groupBy] - Columna por la que se agruparán los resultados.
+ * @param {Object} [params.orderBy] - Objeto que define la parte ORDER BY de la consulta.
+ * @param {string} [params.orderBy.attr] - Columna por la que se ordenarán los resultados.
+ * @param {string} [params.orderBy.direction='ASC'] - Dirección de orden (ASC o DESC).
  *
  * @returns {string} - La consulta SQL generada.
  */
+function createSQLQuery(params = {}) {
+  const {
+    select = { aggregations: [], columns: [] },
+    from = { table: 'computation' },
+    where = { conditions: [], logic: 'AND' },
+    groupBy,
+    orderBy = {}
+  } = params;
 
-function createSQLQuery({
-  aggregations = [],
-  columns = [],
-  whereConditions = [],
-  whereLogic = 'AND',
-  groupBy,
-  orderByAttr,
-  orderDirection,
-  table = 'computation',
-}) {
-  let query = 'SELECT ';
+  const selectClause = buildSelectClause(select.aggregations, select.columns);
+  const fromClause = buildFromClause(from.table);
+  const whereClause = buildWhereClause(where.conditions, where.logic);
+  const groupByClause = buildGroupByClause(groupBy);
+  const orderByClause = buildOrderByClause(orderBy.attr, orderBy.direction);
 
-  // Aggregations
-  if (aggregations.length > 0) {
-    query += aggregations
-      .map((agg) => `${agg.func}(${agg.attr})`)
-      .join(', ');
+  return [
+    selectClause,
+    fromClause,
+    whereClause,
+    groupByClause,
+    orderByClause
+  ].filter(clause => clause !== '').join(' ');
+}
+
+/**
+ * Construye la cláusula SELECT de la consulta.
+ *
+ * @param {Array<{func: string, attr: string}>} aggregations - Lista de agregaciones.
+ * @param {Array<string>} columns - Lista de columnas.
+ *
+ * @returns {string} - La cláusula SELECT.
+ */
+function buildSelectClause(aggregations, columns) {
+  let selectClause = 'SELECT ';
+  const aggs = Array.isArray(aggregations) ? aggregations : [];
+  const cols = Array.isArray(columns) ? columns : [];
+
+  if (aggs.length === 0 && cols.length === 0) {
+    selectClause += '*';
+  } else {
+    const selectParts = [];
+    aggs.forEach(agg => {
+      const attr = agg.func.toUpperCase() === 'COUNT' && agg.attr === '*' ? '*' : sanitizeIdentifier(agg.attr);
+      selectParts.push(`${sanitizeIdentifier(agg.func)}(${attr})`);
+    });
+    cols.forEach(col => {
+      selectParts.push(sanitizeIdentifier(col));
+    });
+    selectClause += selectParts.join(', ');
   }
+  return selectClause;
+}
 
-  // Raw columns
-  if (columns.length > 0) {
-    if (aggregations.length > 0) query += ', ';
-    query += columns.map((col) => `${col}`).join(', ');
+/**
+ * Construye la cláusula FROM de la consulta.
+ *
+ * @param {string} table - Nombre de la tabla.
+ *
+ * @returns {string} - La cláusula FROM.
+ */
+function buildFromClause(table) {
+  return `FROM statusdb.${sanitizeIdentifier(table)}`;
+}
+
+/**
+ * Construye la cláusula WHERE de la consulta.
+ *
+ * @param {Array<{key: string, operator: string, value: any}>} conditions - Lista de condiciones.
+ * @param {string} logic - Operador lógico ('AND' o 'OR').
+ *
+ * @returns {string} - La cláusula WHERE.
+ */
+function buildWhereClause(conditions, logic) {
+  if (conditions.length === 0) {
+    return '';
   }
+  const whereClauses = conditions.map(condition => {
+    const value = sanitizeValue(condition.value);
+    const operator = sanitizeOperator(condition.operator);
+    const key = sanitizeIdentifier(condition.key);
+    return `${key} ${operator} ${value}`;
+  });
+  return `WHERE (${whereClauses.join(` ${logic} `)})`;
+}
 
-  if (aggregations.length === 0 && columns.length === 0) {
-    query += '*';
+/**
+ * Construye la cláusula GROUP BY de la consulta.
+ *
+ * @param {string} groupBy - Columna para agrupar.
+ *
+ * @returns {string} - La cláusula GROUP BY.
+ */
+function buildGroupByClause(groupBy) {
+  if (!groupBy) {
+    return '';
   }
+  return `GROUP BY ${sanitizeIdentifier(groupBy)}`;
+}
 
-  query += ` FROM statusdb.${table}`;
-
-  // WHERE
-  if (whereConditions.length > 0) {
-    const whereClause = whereConditions
-      .map((cond) => {
-        const value =
-                    typeof cond.value === 'number' ||
-                    cond.value === true ||
-                    cond.value === false
-                      ? cond.value
-                      : `'${cond.value}'`;
-        return `${cond.key} ${cond.operator} ${value}`;
-      })
-      .join(` ${whereLogic} `);
-    query += ` WHERE (${whereClause})`;
+/**
+ * Construye la cláusula ORDER BY de la consulta.
+ *
+ * @param {string} attr - Columna para ordenar.
+ * @param {string} direction - Dirección de orden ('ASC' o 'DESC').
+ *
+ * @returns {string} - La cláusula ORDER BY.
+ */
+function buildOrderByClause(attr, direction = 'ASC') {
+  if (!attr) {
+    return '';
   }
-
-  // GROUP BY
-  if (groupBy) {
-    query += ` GROUP BY ${groupBy}`;
-  }
-
-  // ORDER BY
-  if (orderByAttr) {
-    const direction =
-            orderDirection && orderDirection.toUpperCase() === 'DESC'
-              ? 'DESC'
-              : 'ASC';
-    query += ` ORDER BY ${orderByAttr} ${direction}`;
-  }
-
-  return query;
+  const orderDirection = direction.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+  return `ORDER BY ${sanitizeIdentifier(attr)} ${orderDirection}`;
 }
 
 function parseSQLQuery(query) {
@@ -97,50 +151,48 @@ function parseSQLQuery(query) {
   }
 
   // Columns and Aggregations
-  const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i);
+  const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i); // Modificado
   if (selectMatch) {
-    const selectFields = selectMatch[1].split(',');
-    selectFields.forEach((field) => {
+    const selectFieldsString = selectMatch[1].trim();
+    const selectFields = selectFieldsString.split(',');
+    selectFields.forEach(field => {
       field = field.trim();
-      const aggMatch = field.match(/(\w+)\((\*)\)/); // ej: COUNT(*)
+      const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
       if (aggMatch) {
-        result.aggregations.push({
-          func: aggMatch[1],
-          attr: aggMatch[2],
-        });
-      } else {
+        result.aggregations.push({ func: aggMatch[1], attr: aggMatch[2] });
+      } else if (field !== '*') {
         result.columns.push(field);
       }
     });
   }
 
   // WHERE
-  const whereMatch = query.match(/WHERE\s+\((.+)\)/i);
+  const whereMatch = query.match(/WHERE\s+\((.+?)\)/i); // Modificado
   if (whereMatch) {
-    const conditions = whereMatch[1].split(/\s+(AND|OR)\s+/i);
-    if (conditions.length === 1) {
-      const [key, operator, value] = conditions[0].split(
-        /\s+(=|>|<|>=|<=|!=)\s+/
-      );
-      result.whereConditions.push({
-        key: key.trim(),
-        operator: operator.trim(),
-        value: parseWhereValue(value.trim()),
-      });
+    const conditionsString = whereMatch[1];
+    const conditionParts = conditionsString.split(/\s+(AND|OR)\s+/i);
+    if (conditionParts.length === 1) {
+      const [key, operator, ...valueParts] = conditionParts[0].split(/\s+(=|>|<|>=|<=|!=|LIKE)\s+/i);
+      if (key && operator && valueParts.length > 0) {
+        result.whereConditions.push({
+          key: key.trim(),
+          operator: operator.trim(),
+          value: parseWhereValue(valueParts.join(' ').trim()),
+        });
+      }
     } else {
-      result.whereLogic = conditions[1].toUpperCase() || 'AND'; // AND or OR
-      conditions.forEach((condition) => {
-        if (condition !== 'AND' && condition !== 'OR') {
-          const [key, operator, value] = condition.split(
-            /\s+(=|>|<|>=|<=|!=)\s+/
-          );
+      result.whereLogic = conditionParts[1]?.toUpperCase() || 'AND';
+      for (let i = 0; i < conditionParts.length; i += 2) {
+        const condition = conditionParts[i];
+        const [key, operator, ...valueParts] = condition.split(/\s+(=|>|<|>=|<=|!=|LIKE)\s+/i);
+        if (key && operator && valueParts.length > 0) {
           result.whereConditions.push({
             key: key.trim(),
             operator: operator.trim(),
-            value: parseWhereValue(value.trim()),
+            value: parseWhereValue(valueParts.join(' ').trim()),
           });
         }
-      });
+      }
     }
   }
 
@@ -151,84 +203,41 @@ function parseSQLQuery(query) {
   }
 
   // ORDER BY
-  const orderByMatch = query.match(/ORDER\s+BY\s+(\w+)\s+(ASC|DESC)?/i);
+  const orderByMatch = query.match(/ORDER\s+BY\s+([a-zA-Z0-9_.]+)\s*(?:(ASC|DESC))?/i); // Modificado
   if (orderByMatch) {
     result.orderByAttr = orderByMatch[1];
-    result.orderDirection = orderByMatch[2]
-      ? orderByMatch[2].toUpperCase()
-      : 'ASC';
+    result.orderDirection = orderByMatch[2]?.toUpperCase() || 'ASC';
   }
 
   return result;
 }
 
 function parseWhereValue(value) {
-  if (value.toLowerCase() === 'true') {
-    return true;
-  }
-  if (value.toLowerCase() === 'false') {
-    return false;
+  if (value === 'true' || value === 'false') {
+    return value === 'true';
   }
   if (!isNaN(value)) {
-    return value;
+    return Number(value);
   }
-  return value.replace(/['"]/g, '');
+  const quotedMatch = value.match(/^'(.*)'$/);
+  return quotedMatch ? quotedMatch[1] : value;
+}
+
+function sanitizeIdentifier(identifier) {
+  return identifier.replace(/[^a-zA-Z0-9_]/g, '');
+}
+
+function sanitizeValue(value) {
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return String(value).replace(/['"]/g, '');
+}
+
+function sanitizeOperator(operator) {
+  const validOperators = ['=', '>', '<', '>=', '<=', '!=', 'LIKE'];
+  return validOperators.includes(operator.toUpperCase()) ? operator : '=';
 }
 
 export { createSQLQuery, parseSQLQuery };
 
-/* EJEMPLOS
-SELECT * FROM statusdb.computation
-{}
-
-SELECT id, date FROM statusdb.computation WHERE (id > '5' AND limit < '5')
-{
-    "columns": ["id", "date"],
-    "whereConditions": [
-        { "key": "id", "operator": ">", "value": 5 },
-        { "key": "limit", "operator": "<", "value": 5 }
-    ],
-    "whereLogic": "AND"
-}
-
-SELECT COUNT(limit), MAX(date) FROM statusdb.computation
-{
-    "aggregations": [
-        { "func": "COUNT", "attr": "limit" },
-        { "func": "MAX", "attr": "date" }
-    ]
-}
-
-SELECT COUNT(limit) FROM statusdb.computation WHERE (available != '5' OR active = '1') GROUP BY limit
-{
-    "aggregations": [
-        { "func": "COUNT", "attr": "limit" }
-    ],
-    "whereConditions": [
-        { "key": "available", "operator": "!=", "value": "5" },
-        { "key": "active", "operator": "=", "value": "1" }
-    ],
-    "whereLogic": "OR",
-    "groupBy": "limit"
-}
-
-SELECT id FROM statusdb.computation ORDER BY limit ASC
-{
-    "columns": ["id"],
-    "orderByAttr": "limit",
-    "orderDirection": "ASC"
-}
-
-SELECT COUNT(limit), id FROM statusdb.computation WHERE (id > '5' AND limit <= '10')
-{
-    "columns": ["id"],
-    "aggregations": [
-        { "func": "COUNT", "attr": "limit" }
-    ],
-    "whereConditions": [
-        { "key": "id", "operator": ">", "value": 5 },
-        { "key": "limit", "operator": "<=", "value": 10 }
-    ],
-    "whereLogic": "AND"
-}
-*/
