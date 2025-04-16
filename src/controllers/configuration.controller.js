@@ -21,7 +21,7 @@ export async function getConfigurationByEndpoint(req, res) {
         endpoint: endpoint,
       },
     });
-    if (configuration.length === 0) {
+    if (!configuration || configuration.length == 0) {
       return res
         .status(404)
         .json({ message: `Configuration ${endpoint} not found` });
@@ -38,40 +38,34 @@ export async function updateConfiguration(req, res) {
   try {
     const { endpoint, available } = req.body;
 
-    const configuration = await models.Configuration.findOne({
-      where: {
-        endpoint: endpoint,
-      },
-    });
-    const configId = configuration.dataValues.id;
-
-    if (configuration.length === 0) {
-      return res
-        .status(404)
-        .json({ message: `Configuration ${configId} not found` });
+    if (!endpoint) {
+      return res.status(400).json({ message: 'Endpoint is required' });
     }
-    await models.Configuration.update(
-      {
-        endpoint: endpoint,
-        available: available,
-      },
-      {
-        where: {
-          id: configId,
-        },
-      }
+
+    const configuration = await models.Configuration.findOne({
+      where: { endpoint },
+    });
+
+    if (!configuration) {
+      return res.status(404).json({ message: `Configuration with endpoint ${endpoint} not found` });
+    }
+
+    const [updatedRows] = await models.Configuration.update(
+      { available },
+      { where: { id: configuration.dataValues.id } }
     );
 
-    await updateConfigurationsCache;
+    await updateConfigurationsCache();
+    
+    if (updatedRows > 0) {
+      return res.status(200).json({ message: `Configuration ${configuration.dataValues.id} updated successfully` });
+    } else {
+      return res.status(200).json({ message: 'No changes were applied to the configuration' });
+    }
 
-    res.status(200).json({
-      message: `Configuration ${configId} updated successfully`,
-    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      message: `Failed to update configuration, error: ${error.message}`,
-    });
+    return res.status(500).json({ message: `Failed to update configuration, error: ${error.message}` });
   }
 }
 
@@ -82,13 +76,27 @@ export async function getAssistantLimit(req, res) {
         endpoint: '/api/assistant',
       },
     });
-    if (configuration.length === 0) {
+    console.log('Configuration:', configuration);
+
+    if (!configuration) {
       return res
         .status(404)
         .json({ message: 'Configuration /api/assistant not found' });
     }
-    res.status(200).json({ limit: configuration.dataValues.limit });
+
+    const limit = configuration.dataValues.limit;
+    console.log('Limit:', limit);
+
+    if (limit === null || limit === undefined) {
+      return res
+        .status(400)
+        .json({ message: 'Assistant limit is not set' });
+    }
+
+    res.status(200).json({ limit });
+
   } catch (error) {
+    console.error('Error in getAssistantLimit:', error);
     res.status(500).json({
       message: `Failed to get configuration, error: ${error.message}`,
     });
@@ -97,44 +105,36 @@ export async function getAssistantLimit(req, res) {
 
 export async function updateAssistantLimit(req, res) {
   try {
-    const { limit } = req.params;
-    const assistants = await models.Assistant.findAll();
-    if (assistants.length > limit) {
-      return res.status(400).json({
-        message: 'Limit cannot be less than the number of assistants',
-      });
-    } else if (limit < 1) {
-      return res
-        .status(400)
-        .json({ message: 'Limit cannot be less than 1' });
+    const limit = Number(req.params.limit);
+
+    if (!Number.isInteger(limit) || limit < 1 || limit > Number.MAX_SAFE_INTEGER) {
+      return res.status(400).json({ message: 'Invalid limit value' });
     }
+
     const configuration = await models.Configuration.findOne({
-      where: {
-        endpoint: '/api/assistant',
-      },
+      where: { endpoint: '/api/assistant' },
     });
+
+    if (!configuration) {
+      return res.status(404).json({ message: 'Configuration undefined not found' });
+    }
+
+    const assistants = await models.Assistant.findAll();
     const configId = configuration.dataValues.id;
 
-    if (configuration.length === 0) {
-      return res
-        .status(404)
-        .json({ message: `Configuration ${configId} not found` });
+    if (assistants.length > limit) {
+      return res.status(400).json({ message: 'Limit cannot be less than the number of assistants' });
     }
+
     await models.Configuration.update(
-      {
-        endpoint: '/api/assistant',
-        limit: limit,
-      },
-      {
-        where: {
-          id: configId,
-        },
-      }
+      { endpoint: '/api/assistant', limit: limit },
+      { where: { id: configId } }
     );
 
     res.status(200).json({ message: 'Limit updated successfully' });
+
   } catch (error) {
-    console.error(error);
+    console.error('Error in updateAssistantLimit:', error);
     res.status(500).json({
       message: `Failed to update configuration, error: ${error.message}`,
     });
