@@ -31,6 +31,51 @@ describe('test: agreementBuilder', () => {
     vi.restoreAllMocks();
   });
 
+  // Mock data for testing
+  const mockCatalog = {
+    startDate: '2023-01-01',
+    endDate: '2024-01-01',
+  };
+  
+  const mockControls = [
+    {
+      id: 1,
+      name: 'Uptime Check',
+      description: 'Check system uptime daily',
+      params: {
+        endpoint: '/status',
+        threshold: 99.9,
+      },
+      period: 'DAILY',
+    },
+    {
+      id: 2,
+      name: 'Response Time',
+      description: 'Measure response time',
+      params: {
+        endpoint: '/response',
+        threshold: 200,
+        timeout: 5000,
+      },
+      period: 'WEEKLY',
+    },
+  ];
+  
+  const mockScopeSets = [
+    {
+      scopes: [
+        ['region', 'us-west'],
+        ['service', 'api'],
+      ],
+    },
+  ];
+  
+  const mockScopeSpecs = {
+    region: ['us-west'],
+    service: ['api'],
+  };
+
+
   describe('buildAgreementObject', () => {
     it('should build the base agreement structure with correct metadata', async () => {
 
@@ -171,48 +216,4 @@ describe('test: agreementBuilder', () => {
       expect(result.definitions).toEqual({ schemas: {}, scopes: {} });
     });
   });
-
-  // Mock data for testing
-  const mockCatalog = {
-    startDate: '2023-01-01',
-    endDate: '2024-01-01',
-  };
-
-  const mockControls = [
-    {
-      id: 1,
-      name: 'Uptime Check',
-      description: 'Check system uptime daily',
-      params: {
-        endpoint: '/status',
-        threshold: 99.9,
-      },
-      period: 'DAILY',
-    },
-    {
-      id: 2,
-      name: 'Response Time',
-      description: 'Measure response time',
-      params: {
-        endpoint: '/response',
-        threshold: 200,
-        timeout: 5000,
-      },
-      period: 'WEEKLY',
-    },
-  ];
-
-  const mockScopeSets = [
-    {
-      scopes: [
-        ['region', 'us-west'],
-        ['service', 'api'],
-      ],
-    },
-  ];
-
-  const mockScopeSpecs = {
-    region: ['us-west'],
-    service: ['api'],
-  };
 });
