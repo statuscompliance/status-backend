@@ -5,19 +5,25 @@ describe('createSQLQuery', () => {
 
   it('should handle basic query construction', () => {
     const query = createSQLQuery({
-      columns: ['id', 'name'],
-      aggregations: [{ func: 'COUNT', attr: '*' }],
-      whereConditions: [
-        { key: 'status', operator: '=', value: 'active' },
-        { key: 'value', operator: '>', value: 10 },
-      ],
-      whereLogic: 'OR',
+      select: {
+        columns: ['id', 'name'],
+        aggregations: [{ func: 'COUNT', attr: '*' }],
+      },
+      where: {
+        conditions: [
+          { key: 'status', operator: '=', value: 'active' },
+          { key: 'value', operator: '>', value: 10 },
+        ],
+        logic: 'OR',
+      },
       groupBy: 'category',
-      orderByAttr: 'timestamp',
-      orderDirection: 'DESC',
-      table: 'custom_table'
+      orderBy: {
+        attr: 'timestamp',
+        direction: 'DESC',
+      },
+      from: { table: 'custom_table' }
     });
-    expect(query).toBe("SELECT COUNT(*), id, name FROM statusdb.custom_table WHERE (status = 'active' OR value > 10) GROUP BY category ORDER BY timestamp DESC");
+    expect(query).toBe('SELECT COUNT(*), id, name FROM statusdb.custom_table WHERE (status = active OR value > 10) GROUP BY category ORDER BY timestamp DESC');
   });
 
   it('should handle default values', () => {
@@ -27,12 +33,14 @@ describe('createSQLQuery', () => {
 
   it('should handle multiple aggregations', () => {
     const query = createSQLQuery({
-      aggregations: [
-        { func: 'COUNT', attr: '*' },
-        { func: 'AVG', attr: 'value' },
-        { func: 'MAX', attr: 'price' },
-      ],
-      columns: ['category'],
+      select: {
+        aggregations: [
+          { func: 'COUNT', attr: '*' },
+          { func: 'AVG', attr: 'value' },
+          { func: 'MAX', attr: 'price' },
+        ],
+        columns: ['category'],
+      },
       groupBy: 'category'
     });
     expect(query).toBe('SELECT COUNT(*), AVG(value), MAX(price), category FROM statusdb.computation GROUP BY category');
@@ -40,21 +48,25 @@ describe('createSQLQuery', () => {
 
   it('should handle WHERE conditions with different operators and data types', () => {
     const query = createSQLQuery({
-      whereConditions: [
-        { key: 'age', operator: '>=', value: 18 },
-        { key: 'name', operator: '!=', value: 'John Doe' },
-        { key: 'is_active', operator: '=', value: true },
-        { key: 'role', operator: 'LIKE', value: '%admin%' }
-      ],
-      whereLogic: 'AND'
+      where: {
+        conditions: [
+          { key: 'age', operator: '>=', value: 18 },
+          { key: 'name', operator: '!=', value: 'John Doe' },
+          { key: 'is_active', operator: '=', value: true },
+          { key: 'role', operator: 'LIKE', value: '%admin%' }
+        ],
+        logic: 'AND'
+      }
     });
-    expect(query).toBe("SELECT * FROM statusdb.computation WHERE (age >= 18 AND name != 'John Doe' AND is_active = true AND role LIKE '%admin%')");
+    expect(query).toBe('SELECT * FROM statusdb.computation WHERE (age >= 18 AND name != John Doe AND is_active = true AND role LIKE %admin%)');
   });
 
   it('should handle ORDER BY with different direction', () => {
     const query = createSQLQuery({
-      orderByAttr: 'name',
-      orderDirection: 'ASC'
+      orderBy: {
+        attr: 'name',
+        direction: 'ASC'
+      }
     });
     expect(query).toBe('SELECT * FROM statusdb.computation ORDER BY name ASC');
   });
@@ -85,7 +97,7 @@ describe('parseSQLQuery', () => {
     const result = parseSQLQuery(query);
     expect(result).toEqual({
       aggregations: [],
-      columns: [],
+      columns: ['*'],
       whereConditions: [],
       whereLogic: 'AND',
       groupBy: null,
@@ -115,7 +127,7 @@ describe('parseSQLQuery', () => {
     const result = parseSQLQuery(query);
     expect(result).toEqual({
       aggregations: [],
-      columns: [],
+      columns: ['*'],
       whereConditions: [
         { key: 'age', operator: '>=', value: 18 },
         { key: 'name', operator: '!=', value: 'John Doe' },
@@ -135,7 +147,7 @@ describe('parseSQLQuery', () => {
     const result = parseSQLQuery(query);
     expect(result).toEqual({
       aggregations: [],
-      columns: [],
+      columns: ['*'],
       whereConditions: [
         { key: 'type', operator: '=', value: 'warning' },
         { key: 'level', operator: '=', value: 'critical' },

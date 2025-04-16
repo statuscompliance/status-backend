@@ -1,76 +1,132 @@
 /**
  * Genera una consulta SQL dinámica basada en los parámetros proporcionados.
  *
- * @param {Object} sql - Objeto con los parámetros para construir la consulta.
- * @param {Array<{func: string, attr: string}>} [sql.aggregations=[]] - Lista de agregaciones, cada una con su función (COUNT, AVG, etc.) y el atributo correspondiente.
- * @param {Array<string>} [sql.columns=[]] - Lista de columnas a seleccionar en la consulta.
- * @param {Array<{key: string, operator: string, value: any}>} [sql.whereConditions=[]] - Lista de condiciones para la cláusula WHERE, cada una con una clave, un operador y un valor.
- * @param {string} [sql.whereLogic='AND'] - Operador lógico que une las condiciones WHERE ('AND' o 'OR').
- * @param {string} [sql.groupBy] - Columna por la que se agruparán los resultados.
- * @param {string} [sql.orderByAttr] - Columna por la que se ordenarán los resultados.
- * @param {string} [sql.orderDirection='ASC'] - Dirección de orden (ASC o DESC).
- * @param {string} [sql.table='computation'] - Nombre de la tabla, por defecto 'computation'.
+ * @param {Object} params - Objeto con los parámetros para construir la consulta.
+ * @param {Object} [params.select] - Objeto que define la parte SELECT de la consulta.
+ * @param {Array<{func: string, attr: string}>} [params.select.aggregations=[]] - Lista de agregaciones, cada una con su función (COUNT, AVG, etc.) y el atributo correspondiente.
+ * @param {Array<string>} [params.select.columns=[]] - Lista de columnas a seleccionar en la consulta.
+ * @param {Object} [params.from] - Objeto que define la parte FROM de la consulta.
+ * @param {string} [params.from.table='computation'] - Nombre de la tabla.
+ * @param {Object} [params.where] - Objeto que define la parte WHERE de la consulta.
+ * @param {Array<{key: string, operator: string, value: any}>} [params.where.conditions=[]] - Lista de condiciones para la cláusula WHERE.
+ * @param {string} [params.where.logic='AND'] - Operador lógico que une las condiciones WHERE ('AND' o 'OR').
+ * @param {string} [params.groupBy] - Columna por la que se agruparán los resultados.
+ * @param {Object} [params.orderBy] - Objeto que define la parte ORDER BY de la consulta.
+ * @param {string} [params.orderBy.attr] - Columna por la que se ordenarán los resultados.
+ * @param {string} [params.orderBy.direction='ASC'] - Dirección de orden (ASC o DESC).
  *
  * @returns {string} - La consulta SQL generada.
  */
-function createSQLQuery({
-  aggregations = [],
-  columns = [],
-  whereConditions = [],
-  whereLogic = 'AND',
-  groupBy,
-  orderByAttr,
-  orderDirection,
-  table = 'computation',
-}) {
-  let query = 'SELECT ';
+function createSQLQuery(params = {}) {
+  const {
+    select = { aggregations: [], columns: [] },
+    from = { table: 'computation' },
+    where = { conditions: [], logic: 'AND' },
+    groupBy,
+    orderBy = {}
+  } = params;
 
-  // Aggregations
-  if (aggregations.length > 0) {
-    query += aggregations
-      .map(agg => `${sanitizeIdentifier(agg.func)}(${sanitizeIdentifier(agg.attr)})`) // Sanitize aggregations
-      .join(', ');
-  }
+  const selectClause = buildSelectClause(select.aggregations, select.columns);
+  const fromClause = buildFromClause(from.table);
+  const whereClause = buildWhereClause(where.conditions, where.logic);
+  const groupByClause = buildGroupByClause(groupBy);
+  const orderByClause = buildOrderByClause(orderBy.attr, orderBy.direction);
 
-  // Columns
-  if (columns.length > 0) {
-    if (aggregations.length > 0) query += ', ';
-    query += columns.map(col => sanitizeIdentifier(col)).join(', '); // Sanitize columns
-  }
+  return [
+    selectClause,
+    fromClause,
+    whereClause,
+    groupByClause,
+    orderByClause
+  ].filter(clause => clause !== '').join(' ');
+}
 
+/**
+ * Construye la cláusula SELECT de la consulta.
+ *
+ * @param {Array<{func: string, attr: string}>} aggregations - Lista de agregaciones.
+ * @param {Array<string>} columns - Lista de columnas.
+ *
+ * @returns {string} - La cláusula SELECT.
+ */
+function buildSelectClause(aggregations, columns) {
+  let selectClause = 'SELECT ';
   if (aggregations.length === 0 && columns.length === 0) {
-    query += '*';
+    selectClause += '*';
+  } else {
+    const selectParts = [];
+    aggregations.forEach(agg => {
+      const attr = agg.func.toUpperCase() === 'COUNT' && agg.attr === '*' ? '*' : sanitizeIdentifier(agg.attr);
+      selectParts.push(`${sanitizeIdentifier(agg.func)}(${attr})`);
+    });
+    columns.forEach(col => {
+      selectParts.push(sanitizeIdentifier(col));
+    });
+    selectClause += selectParts.join(', ');
   }
+  return selectClause;
+}
 
-  query += ` FROM statusdb.${sanitizeIdentifier(table)}`; // Sanitize table name
+/**
+ * Construye la cláusula FROM de la consulta.
+ *
+ * @param {string} table - Nombre de la tabla.
+ *
+ * @returns {string} - La cláusula FROM.
+ */
+function buildFromClause(table) {
+  return `FROM statusdb.${sanitizeIdentifier(table)}`;
+}
 
-  // WHERE
-  if (whereConditions.length > 0) {
-    const whereClause = whereConditions
-      .map(cond => {
-        const value = sanitizeValue(cond.value); // Sanitize values
-        const operator = sanitizeOperator(cond.operator); // Sanitize operator
-        return `${sanitizeIdentifier(cond.key)} ${operator} ${value}`; // Sanitize key
-      })
-      .join(` ${whereLogic} `);
-    query += ` WHERE (${whereClause})`;
+/**
+ * Construye la cláusula WHERE de la consulta.
+ *
+ * @param {Array<{key: string, operator: string, value: any}>} conditions - Lista de condiciones.
+ * @param {string} logic - Operador lógico ('AND' o 'OR').
+ *
+ * @returns {string} - La cláusula WHERE.
+ */
+function buildWhereClause(conditions, logic) {
+  if (conditions.length === 0) {
+    return '';
   }
+  const whereClauses = conditions.map(condition => {
+    const value = sanitizeValue(condition.value);
+    const operator = sanitizeOperator(condition.operator);
+    const key = sanitizeIdentifier(condition.key);
+    return `${key} ${operator} ${value}`;
+  });
+  return `WHERE (${whereClauses.join(` ${logic} `)})`;
+}
 
-  // GROUP BY
-  if (groupBy) {
-    query += ` GROUP BY ${sanitizeIdentifier(groupBy)}`; // Sanitize groupBy
+/**
+ * Construye la cláusula GROUP BY de la consulta.
+ *
+ * @param {string} groupBy - Columna para agrupar.
+ *
+ * @returns {string} - La cláusula GROUP BY.
+ */
+function buildGroupByClause(groupBy) {
+  if (!groupBy) {
+    return '';
   }
+  return `GROUP BY ${sanitizeIdentifier(groupBy)}`;
+}
 
-  // ORDER BY
-  if (orderByAttr) {
-    const direction =
-      orderDirection && orderDirection.toUpperCase() === 'DESC'
-        ? 'DESC'
-        : 'ASC';
-    query += ` ORDER BY ${sanitizeIdentifier(orderByAttr)} ${direction}`; // Sanitize orderByAttr
+/**
+ * Construye la cláusula ORDER BY de la consulta.
+ *
+ * @param {string} attr - Columna para ordenar.
+ * @param {string} direction - Dirección de orden ('ASC' o 'DESC').
+ *
+ * @returns {string} - La cláusula ORDER BY.
+ */
+function buildOrderByClause(attr, direction = 'ASC') {
+  if (!attr) {
+    return '';
   }
-
-  return query;
+  const orderDirection = direction.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+  return `ORDER BY ${sanitizeIdentifier(attr)} ${orderDirection}`;
 }
 
 function parseSQLQuery(query) {
@@ -86,115 +142,94 @@ function parseSQLQuery(query) {
   };
 
   try {
-    const fromClause = extractFromClause(query);
-    if (fromClause) {
-      result.table = parseTable(fromClause);
-    }
+    // Table
+    result.table = parseTable(query);
 
+    // Columns and Aggregations
     const selectClause = extractSelectClause(query);
     if (selectClause) {
-      parseSelect(selectClause, result);
+      parseSelectClause(selectClause, result);
     }
 
+    // WHERE
     const whereClause = extractWhereClause(query);
     if (whereClause) {
-      parseWhere(whereClause, result);
+      parseWhereClause(whereClause, result);
     }
 
-    const groupByClause = extractGroupByClause(query);
-    if (groupByClause) {
-      result.groupBy = parseGroupBy(groupByClause);
-    }
+    // GROUP BY
+    result.groupBy = parseGroupBy(query);
 
-    const orderByClause = extractOrderByClause(query);
-    if (orderByClause) {
-      parseOrderBy(orderByClause, result);
-    }
+    // ORDER BY
+    parseOrderBy(query, result);
   } catch (error) {
-    console.error('Error al analizar la consulta SQL:', error);
-    // Considerar lanzar el error o devolver un objeto/valor por defecto
-    return result; // Devolver el resultado parcialmente analizado
+    console.error('Error parsing SQL query:', error);
+    return result;
   }
 
   return result;
 }
 
-function extractFromClause(query) {
-  const match = query.match(/FROM\s+statusdb\.\w+/i);
-  return match ? match[0] : null;
-}
-
 function extractSelectClause(query) {
-  const match = query.match(/SELECT\s+[\s\w\d_(),.*]+?\s+FROM/i);
-  return match ? match[0] : null;
+  const fromIndex = query.toUpperCase().indexOf(' FROM ');
+  if (fromIndex > -1) {
+    const selectEnd = fromIndex;
+    const selectStart = query.toUpperCase().indexOf('SELECT ') + 7;
+    return query.substring(selectStart, selectEnd).trim();
+  }
+  return null;
 }
 
-function extractWhereClause(query) {
-  const match = query.match(/WHERE\s+\([^)]+\)/i);
-  return match ? match[0] : null;
-}
-
-
-function extractGroupByClause(query) {
-  const match = query.match(/GROUP\s+BY\s+[\w\d_]+/i);
-  return match ? match[0] : null;
-}
-
-function extractOrderByClause(query) {
-  const match = query.match(/ORDER\s+BY\s+[\w\d_]+(?:\s+ASC|\s+DESC)?/i);
-  return match ? match[0] : null;
-}
-
-
-function parseTable(fromClause) {
-  const tableMatch = fromClause.match(/statusdb\.(\w+)/i);
+function parseTable(query) {
+  const tableMatch = query.match(/FROM\s+statusdb\.(\w+)/i);
   return tableMatch ? tableMatch[1] : 'computation';
 }
 
-function parseSelect(selectClause, result) {
-  const selectFieldsString = selectClause.replace(/SELECT\s+/i, '').replace(/\s+FROM/i, '').split(',').map(s => s.trim());
+function parseSelectClause(selectClause, result) {
+  if (!selectClause) return;
 
-  selectFieldsString.forEach(field => {
-    const aggMatch = field.match(/^(\w+)\(([\w\d_.*]+)\)$/);
+  const selectFields = selectClause.split(',').map(s => s.trim());
+  selectFields.forEach(field => {
+    const aggMatch = field.match(/(\w+)\(([\w\d_*.]+)\)/i);
     if (aggMatch) {
       result.aggregations.push({
         func: aggMatch[1].toUpperCase(),
         attr: aggMatch[2],
       });
-    } else if (field !== '*') {
+    } else {
       result.columns.push(field);
     }
   });
 }
 
+function extractWhereClause(query) {
+  const whereMatch = query.match(/WHERE\s+\((.+)\)/i);
+  return whereMatch ? whereMatch[1] : null;
+}
 
-function parseWhere(whereClause, result) {
-  const conditionsString = whereClause.replace(/WHERE\s+\(/i, '').replace(/\)/i, '');
-  const atomicConditionRegex = /([\w\d_]+)\s+(=|>|<|>=|<=|!=|LIKE)\s+('[^']*'|\d+|true|false|[^\s()]+)/gi;
-  let match;
+function parseWhereClause(whereClause, result) {
+  const conditions = whereClause.split(/\s+(AND|OR)\s+/i);
   let previousLogic = 'AND';
-  let firstCondition = true;
 
-  while ((match = atomicConditionRegex.exec(conditionsString)) !== null) {
-    const key = match[1];
-    const operator = match[2];
-    const value = parseWhereValue(match[3]);
-
-    if (!firstCondition) {
-      result.whereLogic = previousLogic;
-    }
-    result.whereConditions.push({ key, operator, value });
-    firstCondition = false;
-
-    const andOrRegex = /\s(AND|OR)\s/gi;
-    andOrRegex.lastIndex = atomicConditionRegex.lastIndex;
-    const logicMatch = andOrRegex.exec(conditionsString);
-    if (logicMatch) {
-      previousLogic = logicMatch[1].toUpperCase();
-      atomicConditionRegex.lastIndex = andOrRegex.lastIndex;
+  for (let i = 0; i < conditions.length; i++) {
+    const condition = conditions[i].trim();
+    if (condition.toUpperCase() === 'AND' || condition.toUpperCase() === 'OR') {
+      previousLogic = condition.toUpperCase();
+      if (i > 0) {
+        result.whereLogic = previousLogic;
+      }
+    } else {
+      const match = condition.match(/([\w\d_]+)\s+(=|>|<|>=|<=|!=|LIKE)\s+('[^']*'|\d+|true|false|[^\s()]+)/i);
+      if (match) {
+        const key = match[1].trim();
+        const operator = match[2].trim();
+        const value = parseWhereValue(match[3].trim());
+        result.whereConditions.push({ key, operator, value });
+      }
     }
   }
 }
+
 
 function parseWhereValue(value) {
   if (value.toLowerCase() === 'true') {
@@ -206,24 +241,24 @@ function parseWhereValue(value) {
   if (!isNaN(value)) {
     return Number(value);
   }
-  const quotedMatch = value.match(/^'([^']*)'$/);
-  return quotedMatch ? quotedMatch[1] : value;
+  return value.replace(/['"]/g, '');
 }
 
-
-function parseGroupBy(groupByClause) {
-  const groupByMatch = groupByClause.match(/GROUP\s+BY\s+([\w\d_]+)/i);
-  return groupByMatch ? groupByMatch[1] : null;
+function parseGroupBy(query) {
+  const groupByMatch = query.match(/GROUP\s+BY\s+(\w+)/i);
+  if (groupByMatch) {
+    return groupByMatch[1];
+  }
+  return null;
 }
 
-function parseOrderBy(orderByClause, result) {
-  const orderByMatch = orderByClause.match(/ORDER\s+BY\s+([\w\d_]+)\s*(?:(ASC|DESC))?/i);
+function parseOrderBy(query, result) {
+  const orderByMatch = query.match(/ORDER\s+BY\s+(\w+)\s+(ASC|DESC)?/i);
   if (orderByMatch) {
     result.orderByAttr = orderByMatch[1];
-    result.orderDirection = orderByMatch[2]?.toUpperCase() || 'ASC';
+    result.orderDirection = orderByMatch[2] ? orderByMatch[2].toUpperCase() : 'ASC';
   }
 }
-
 
 // Helper functions for sanitization
 function sanitizeIdentifier(identifier) {
