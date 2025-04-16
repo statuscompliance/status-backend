@@ -51,15 +51,18 @@ function createSQLQuery(params = {}) {
  */
 function buildSelectClause(aggregations, columns) {
   let selectClause = 'SELECT ';
-  if (aggregations.length === 0 && columns.length === 0) {
+  const aggs = Array.isArray(aggregations) ? aggregations : [];
+  const cols = Array.isArray(columns) ? columns : [];
+
+  if (aggs.length === 0 && cols.length === 0) {
     selectClause += '*';
   } else {
     const selectParts = [];
-    aggregations.forEach(agg => {
+    aggs.forEach(agg => {
       const attr = agg.func.toUpperCase() === 'COUNT' && agg.attr === '*' ? '*' : sanitizeIdentifier(agg.attr);
       selectParts.push(`${sanitizeIdentifier(agg.func)}(${attr})`);
     });
-    columns.forEach(col => {
+    cols.forEach(col => {
       selectParts.push(sanitizeIdentifier(col));
     });
     selectClause += selectParts.join(', ');
