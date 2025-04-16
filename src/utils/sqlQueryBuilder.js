@@ -17,7 +17,6 @@
  *
  * @returns {string} - La consulta SQL generada.
  */
-
 function createSQLQuery(params = {}) {
   const {
     select = { aggregations: [], columns: [] },
@@ -50,7 +49,6 @@ function createSQLQuery(params = {}) {
  *
  * @returns {string} - La cláusula SELECT.
  */
-
 function buildSelectClause(aggregations, columns) {
   let selectClause = 'SELECT ';
   if (aggregations.length === 0 && columns.length === 0) {
@@ -229,26 +227,69 @@ function extractWhereClause(query) {
 }
 
 function parseWhereClause(whereClause, result) {
-  const conditions = whereClause.split(/\s+(AND|OR)\s+/i);
+  if (!whereClause) return;
+
+  const conditions = splitWhereClause(whereClause);
   let previousLogic = 'AND';
 
-  for (let i = 0; i < conditions.length; i++) {
-    const condition = conditions[i].trim();
-    if (condition.toUpperCase() === 'AND' || condition.toUpperCase() === 'OR') {
-      previousLogic = condition.toUpperCase();
-      if (i > 0) {
-        result.whereLogic = previousLogic;
-      }
+  conditions.forEach(condition => {
+    const trimmedCondition = condition.trim();
+    if (trimmedCondition.toUpperCase() === 'AND' || trimmedCondition.toUpperCase() === 'OR') {
+      previousLogic = trimmedCondition.toUpperCase();
+      result.whereLogic = previousLogic;
     } else {
-      const match = condition.match(/([\w\d_]+)\s+(=|>|<|>=|<=|!=|LIKE)\s+('[^']*'|\d+|true|false|[^\s()]+)/i);
-      if (match) {
-        const key = match[1].trim();
-        const operator = match[2].trim();
-        const value = parseWhereValue(match[3].trim());
-        result.whereConditions.push({ key, operator, value });
+      const parsedCondition = parseCondition(trimmedCondition);
+      if (parsedCondition) {
+        result.whereConditions.push(parsedCondition);
       }
     }
+  });
+}
+
+function splitWhereClause(whereClause) {
+  const conditions = [];
+  let currentCondition = '';
+  let parenCount = 0;
+
+  for (let i = 0; i < whereClause.length; i++) {
+    const char = whereClause[i];
+    if (char === '(') {
+      parenCount++;
+      currentCondition += char;
+    } else if (char === ')') {
+      parenCount--;
+      currentCondition += char;
+    } else if (char === ' ' && i + 1 < whereClause.length) {
+      const nextWord = whereClause.substring(i + 1, i + 4).toUpperCase(); // Check for "AND" or "OR"
+      if (nextWord === 'AND' || nextWord === 'OR') {
+        if (parenCount === 0) {
+          conditions.push(currentCondition.trim());
+          currentCondition = '';
+          i += 3; // Skip 'AND' or 'OR'
+        } else {
+          currentCondition += char;
+        }
+      } else {
+        currentCondition += char;
+      }
+    } else {
+      currentCondition += char;
+    }
   }
+  conditions.push(currentCondition.trim());
+  return conditions;
+}
+
+
+function parseCondition(condition) {
+  const match = condition.match(/([\w\d_]+)\s+(=|>|<|>=|<=|!=|LIKE)\s+('[^']*'|\d+|true|false|[^\s()]+)/i);
+  if (match) {
+    const key = match[1].trim();
+    const operator = match[2].trim();
+    const value = parseWhereValue(match[3].trim());
+    return { key, operator, value };
+  }
+  return null;
 }
 
 
