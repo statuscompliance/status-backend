@@ -26,6 +26,7 @@ describe('Point Controller Tests', () => {
     vi.mock('uuid', () => ({
       validate: vi.fn(() => true),
     }));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   describe('getPoints', () => {
