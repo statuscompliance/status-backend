@@ -1,15 +1,15 @@
-import models from '../models/models.js';
+import { models } from '../models/models.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import nodered from '../config/nodered.js';
 import { verifyAccessToken } from '../utils/tokenUtils.js';
-
+import { getNodeRedToken } from '../utils/nodeRedToken.js';
 
 const token_expiration = parseInt(process.env.JWT_EXPIRATION) || 3600;
-const refreshToken_expiration = parseInt(process.env.JWT_REFRESH_EXPIRATION) || 3600 * 24 * 7;
+const refreshToken_expiration =
+  parseInt(process.env.JWT_REFRESH_EXPIRATION) || 3600 * 24 * 7;
 
 export async function signUp(req, res) {
-  const { username, authority='USER' , password, email } = req.body;
+  const { username, authority = 'USER', password, email } = req.body;
 
   const userEmail = await models.User.findOne({
     where: {
@@ -48,27 +48,13 @@ export async function signUp(req, res) {
   }
 }
 
-async function getNodeRedToken(username, password) {
-  try {
-    const response = await nodered.post('/auth/token', {
-      client_id: 'node-red-admin',
-      grant_type: 'password',
-      scope: '*',
-      username: username,
-      password: password,
-    });
-    return response.data.access_token;
-  } catch (error) {
-    console.error('Error in refreshAccessToken:', error);
-    throw new Error('Failed to get Node-RED token');
-  }
-}
-
 export async function signIn(req, res) {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).json({ message: 'Username and password are required' });
+    return res
+      .status(400)
+      .json({ message: 'Username and password are required' });
   }
   try {
     const user = await models.User.findOne({
@@ -87,7 +73,6 @@ export async function signIn(req, res) {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid password' });
     } else {
-
       const accessToken = jwt.sign(
         {
           user_id: user.id,
@@ -112,14 +97,26 @@ export async function signIn(req, res) {
         { where: { username } }
       );
       let nodeRedToken = '';
-      if(user.authority === 'DEVELOPER') {
+      if (user.authority === 'DEVELOPER') {
         nodeRedToken = await getNodeRedToken(username, password);
       }
-      
-      res.cookie('accessToken', accessToken, { httpOnly: true, path:'/', maxAge: token_expiration * 1000 });
-      res.cookie('refreshToken', refreshToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000 });
-      if(nodeRedToken !== ''){
-        res.cookie('nodeRedToken', nodeRedToken, { httpOnly: true, path:'/', maxAge: refreshToken_expiration * 1000 });
+
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        path: '/',
+        maxAge: token_expiration * 1000,
+      });
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        path: '/',
+        maxAge: refreshToken_expiration * 1000,
+      });
+      if (nodeRedToken !== '') {
+        res.cookie('nodeRedToken', nodeRedToken, {
+          httpOnly: true,
+          path: '/',
+          maxAge: refreshToken_expiration * 1000,
+        });
       }
 
       res.status(200).json({
@@ -153,7 +150,7 @@ export async function signOut(req, res) {
       res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: true,
-        sameSite: 'none'
+        sameSite: 'none',
       });
       return res
         .status(404)
@@ -170,7 +167,7 @@ export async function signOut(req, res) {
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: true,
-      sameSite: 'none'
+      sameSite: 'none',
     });
 
     return res.status(204).json({ message: 'Signed out successfully' });
@@ -202,6 +199,7 @@ export async function getAuthority(req, res) {
 
   const { decoded, error } = await verifyAccessToken(accessToken);
   if (error) {
+    console.error('Error in getAuthority:', error);
     return res.status(403).json({ message: 'Invalid token' });
   }
 

@@ -1,5 +1,5 @@
 import ScopeSet from '../models/scopeSet.model.js';
-import models from '../models/models.js';
+import { models } from '../models/models.js';
 import { Op } from 'sequelize';
 
 export async function getScopeSpecs(scopeKeys){
@@ -35,20 +35,25 @@ export async function getScopeSetsByControlIds(controlIds){
   }
 }
 
-
-function getUniqueScopeKeys(objects) {
+export function getUniqueScopeKeys(objects) {
   const keys = new Set();
 
+  // Protection against null, undefined, etc.
+  if (!objects) return [];
+
+  // Ensures it is an array
   if (!Array.isArray(objects)) {
     objects = [objects];
   }
 
   objects.forEach(obj => {
-    if (obj.scopes && typeof obj.scopes === 'object') {
-      obj.scopes.keys().forEach(key => {
+    // Verify that obj.scopes is an iterable object (such as Map).
+    if (obj.scopes && typeof obj.scopes?.keys === 'function') {
+      for (const key of obj.scopes.keys()) {
         keys.add(key);
-      });
+      }
     }
   });
+
   return Array.from(keys);
 }

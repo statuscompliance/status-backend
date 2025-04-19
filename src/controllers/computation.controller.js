@@ -1,4 +1,4 @@
-import models from '../models/models.js';
+import { models } from '../models/models.js';
 import { Op } from 'sequelize';
 import { checkRequiredProperties } from '../utils/checkRequiredProperties.js';
 import nodered from '../config/nodered.js';

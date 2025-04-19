@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../db/database.js';
 
-const Catalog = sequelize.define('Catalog', {
+export default (sequelize) => sequelize.define('Catalog', {
   name: {
     type: DataTypes.STRING(100),
     allowNull: false
@@ -27,15 +26,13 @@ const Catalog = sequelize.define('Catalog', {
     allowNull: true
   },
   status: {
-    type: DataTypes.ENUM('draft', 'finalized'),
+    type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('draft', 'finalized'),
     defaultValue: 'finalized'
   }
 }, {
   tableName: 'catalog',
   timestamps: false
 });
-
-export default Catalog;
 
 /**
  * @swagger

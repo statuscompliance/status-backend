@@ -15,17 +15,16 @@ import pointRoutes from './routes/point.routes.js';
 import scopeRoutes from './routes/scope.routes.js';
 import cors from 'cors';
 import { verifyAuthority } from './middleware/verifyAuth.js';
-import { validateParams } from './middleware/validation.js';
 import { endpointAvailable } from './middleware/endpoint.js';
 import cookieParser from 'cookie-parser';
-import Configuration from './models/configuration.model.js';
-import db from './db/database.js';
+import { models } from './models/models.js';
+import { sequelize } from './db/database.js';
 import { verifyAdmin } from './middleware/verifyAdmin.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
 // Check if we are in a test environment
-const isTestEnvironment = process.env.NODE_ENV === 'test';
+const isTestEnvironment = !!import.meta.env?.VITEST;
 
 const API_PREFIX = process.env.API_PREFIX || '';
 const swaggerOptions = {
@@ -74,7 +73,6 @@ const configureApp = () => {
   app.use(endpointAvailable);
   app.use(`${API_PREFIX}`, ghAccess);
   app.use(`${API_PREFIX}/users`, userRoutes);
-  app.use(validateParams);
   app.use(`${API_PREFIX}/scripts`, scriptRoutes);
   app.use(verifyAuthority);
   app.use(`${API_PREFIX}/scopes`, scopeRoutes);
@@ -110,15 +108,15 @@ async function insertEndpointsToConfig() {
     'api-docs',
   ];
   try {
-    await db.sync({ alter: true });
+    await sequelize.sync({ alter: true });
     for (const endpoint of endpoints) {
       if (endpoint === `${API_PREFIX}/assistant`) {
-        await Configuration.findOrCreate({
+        await models.Configuration.findOrCreate({
           where: { endpoint },
           defaults: { endpoint, available: true, limit: 5 },
         });
       } else {
-        await Configuration.findOrCreate({
+        await models.Configuration.findOrCreate({
           where: { endpoint },
           defaults: { endpoint, available: true },
         });

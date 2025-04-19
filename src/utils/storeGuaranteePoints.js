@@ -1,5 +1,5 @@
-import models from '../models/models.js';
-import moment from 'moment';
+import { models }from '../models/models.js';
+import { parseISO, formatISO } from 'date-fns';
 import { getDates } from './dates.js';
 
 export async function storeGuaranteePoints(guaranteeStates, agreement) {
@@ -19,7 +19,7 @@ export async function storeGuaranteePoints(guaranteeStates, agreement) {
     );
     guaranteeResultWindow.from = guaranteeResultWindow.from[guaranteeResultWindow.from.length - 1];
 
-    const timestamp = moment(guaranteeResultWindow.from).toISOString();
+    const timestamp = formatISO(parseISO(guaranteeResultWindow.from));
     const computationGroup = guaranteeResult.evidences[0]?.computationGroup;
     console.log(`Computation Group: ${computationGroup}`);
     const pointData = {
