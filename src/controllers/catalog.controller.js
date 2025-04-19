@@ -4,6 +4,7 @@ import registry from '../config/registry.js';
 import { agreementBuilder } from '../utils/agreementBuilder.js';
 import { v4 as uuidv4 } from 'uuid';
 import _ from 'lodash';
+import { finalizeControlsByCatalogId } from './control.controller.js';
 
 export const getCatalogs = async (req, res) => {
   try {
@@ -30,11 +31,11 @@ export const getCatalog = async (req, res) => {
 
 export const createCatalog = async (req, res) => {
   try {
-    const { name, description, startDate, endDate, dashboard_id } = req.body;
+    const { name, description, startDate, endDate, dashboard_id, status } = req.body;
     if (!name || !startDate || !endDate) {
       return res.status(400).json({ message: 'Missing required fields: name, startDate, and/or endDate' });
     }
-    const tpaId = `tpa-${uuidv4()}`;
+    const tpaId = status === 'draft' ? null : `tpa-${uuidv4()}`;
     const rows = await models.Catalog.create({
       name,
       description,
@@ -42,6 +43,7 @@ export const createCatalog = async (req, res) => {
       endDate,
       dashboard_id,
       tpaId,
+      status: status || 'finalized',
     });
     res.status(201).json(rows);
   } catch (error) {
@@ -52,11 +54,16 @@ export const createCatalog = async (req, res) => {
 export const updateCatalog = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, startDate, endDate, dashboard_id, tpaId } = req.body;
+    const { name, description, startDate, endDate, dashboard_id, tpaId, status } = req.body;
 
     const currentCatalog = await models.Catalog.findByPk(id);
     if (!currentCatalog) {
       return res.status(404).json({ message: 'Catalog not found' });
+    }
+
+    // Prevent changing status from finalized to draft
+    if (currentCatalog.status === 'finalized' && status === 'draft') {
+      return res.status(400).json({ message: 'Cannot change status from finalized to draft' });
     }
 
     const updatedCatalog = await models.Catalog.update(
@@ -67,6 +74,7 @@ export const updateCatalog = async (req, res) => {
         endDate,
         dashboard_id,
         tpaId,
+        status,
       },
       {
         where: {
@@ -148,3 +156,89 @@ async function updateOrCreateAgreement(catalog, controls, agreementId) {
     }
   }
 }
+
+// Draft Catalogs
+
+export const getDraftCatalogs = async (req, res) => {
+  try {
+    const catalogs = await models.Catalog.findAll({
+      where: {
+        status: 'draft'
+      }
+    });
+    res.status(200).json(catalogs);
+  } catch (error) {
+    res.status(500).json({ message: `Failed to retrieve draft catalogs, error: ${error.message}` });
+  }
+};
+
+export const createDraftCatalog = async (req, res) => {
+  try {
+    const { name, description, startDate, endDate, dashboard_id } = req.body;
+    if (!name || !startDate) {
+      return res.status(400).json({ message: 'Missing required fields: name and/or startDate' });
+    }
+    
+    const rows = await models.Catalog.create({
+      name,
+      description,
+      startDate: startDate,
+      endDate,
+      dashboard_id,
+      tpaId: null,
+      status: 'draft',
+    });
+    res.status(201).json(rows);
+  } catch (error) {
+    res.status(500).json({ message: `Failed to create draft catalog, error: ${error.message}` });
+  }
+};
+
+export const finalizeCatalog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const currentCatalog = await models.Catalog.findByPk(id);
+    if (!currentCatalog) {
+      return res.status(404).json({ message: 'Catalog not found' });
+    }
+    
+    if (currentCatalog.status !== 'draft') {
+      return res.status(400).json({ message: 'Only draft catalogs can be finalized' });
+    }
+    
+    if (!currentCatalog.startDate || !currentCatalog.endDate) {
+      return res.status(400).json({ message: 'Catalog must have startDate and endDate to be finalized' });
+    }
+    
+    const tpaId = `tpa-${uuidv4()}`;
+    
+    // First we update the catalog status and TPA ID
+    const updatedCatalog = await models.Catalog.update(
+      {
+        status: 'finalized',
+        tpaId,
+      },
+      {
+        where: {
+          id,
+        },
+        returning: true,
+        plain: true,
+      }
+    );
+    
+    // Then we finalize the controls
+    const controlsResult = await finalizeControlsByCatalogId(id);
+    
+    // Return the updated catalog and the number of finalized controls
+    res.status(200).json({
+      catalog: updatedCatalog[1],
+      controls: {
+        finalized: controlsResult.updated.length,
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: `Failed to finalize catalog, error: ${error.message}` });
+  }
+};
