@@ -7,15 +7,16 @@ import {
   updateAssistantLimit,
 } from '../controllers/configuration.controller.js';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  router.get('', getConfiguration);
+  router.get('/assistant/limit', getAssistantLimit);
+  router.post('', getConfigurationByEndpoint);
+  router.put('', updateConfiguration);
+  router.put('/assistant/limit/:limit', updateAssistantLimit);
 
-router.get('', getConfiguration);
-router.get('/assistant/limit', getAssistantLimit);
-router.post('', getConfigurationByEndpoint);
-router.put('', updateConfiguration);
-router.put('/assistant/limit/:limit', updateAssistantLimit);
-
-export default router;
+  return router;
+}
 
 /**
  * Retrieves all configurations.

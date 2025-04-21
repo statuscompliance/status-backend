@@ -1,8 +1,9 @@
-import {Router} from 'express'
-import {welcome} from '../controllers/index.controller.js'
+import { Router } from 'express';
+import { welcome } from '../controllers/index.controller.js'
 
-const router = Router()
+export default function () {
+  const router = Router();
+  router.get('/', welcome);
 
-router.get('/', welcome)
-
-export default router
+  return router;
+}

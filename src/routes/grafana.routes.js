@@ -27,50 +27,51 @@ import {
   deleteFolder
 } from '../controllers/grafana.controller.js';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  //SEARCH
+  router.get('/search', searchItems);
 
-//SEARCH
-router.get('/search', searchItems);
+  //SERVICE ACCOUNT
+  router.post('/serviceaccount', createServiceAccount);
+  router.get('/serviceaccount/:id', getServiceAccountById);
+  router.post('/serviceaccount/:id/token', createServiceAccountToken);
 
-//SERVICE ACCOUNT
-router.post('/serviceaccount', createServiceAccount);
-router.get('/serviceaccount/:id', getServiceAccountById);
-router.post('/serviceaccount/:id/token', createServiceAccountToken);
+  //FOLDER
+  router.get('/folder', getFolders);
+  router.post('/folder', createFolder);
+  router.get('/folder/:uid', validateUUID('uid'), getFolderByUID);
+  router.delete('/folder/:uid', validateUUID('uid'),deleteFolder);
+  router.get('/folder/:uid/dashboard', getFolderDashboardsByUID);
 
-//FOLDER
-router.get('/folder', getFolders);
-router.post('/folder', createFolder);
-router.get('/folder/:uid', validateUUID('uid'), getFolderByUID);
-router.delete('/folder/:uid', validateUUID('uid'),deleteFolder);
-router.get('/folder/:uid/dashboard', getFolderDashboardsByUID);
+  //DASHBOARD
+  router.post('/dashboard', createDashboard);
+  router.post('/dashboard/template', createDashboardTemplate);
+  router.post('/dashboard/import', importDashboard);
+  router.get('/dashboard/:uid', validateUUID('uid'), getDashboardByUID);
+  router.delete('/dashboard/:uid', validateUUID('uid'), deleteDashboardByUID);
+  router.get('/dashboard/:uid/panel', validateUUID('uid'), getPanelsByDashboardUID);
+  router.post('/dashboard/:uid/panel', validateUUID('uid'), addDashboardPanel);
+  router.patch('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, updatePanelByID);
+  router.delete('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, deletePanelByID);
+  router.get(
+    '/dashboard/:uid/panel/query',
+    validateUUID('uid'), 
+    checkIdParam, 
+    getDashboardPanelQueriesByUID
+  );
+  router.get('/dashboard/:uid/panel/:id/query', validateUUID('uid'), checkIdParam, getPanelQueryByID);
 
-//DASHBOARD
-router.post('/dashboard', createDashboard);
-router.post('/dashboard/template', createDashboardTemplate);
-router.post('/dashboard/import', importDashboard);
-router.get('/dashboard/:uid', validateUUID('uid'), getDashboardByUID);
-router.delete('/dashboard/:uid', validateUUID('uid'), deleteDashboardByUID);
-router.get('/dashboard/:uid/panel', validateUUID('uid'), getPanelsByDashboardUID);
-router.post('/dashboard/:uid/panel', validateUUID('uid'), addDashboardPanel);
-router.patch('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, updatePanelByID);
-router.delete('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, deletePanelByID);
-router.get(
-  '/dashboard/:uid/panel/query',
-  validateUUID('uid'), 
-  checkIdParam, 
-  getDashboardPanelQueriesByUID
-);
-router.get('/dashboard/:uid/panel/:id/query', validateUUID('uid'), checkIdParam, getPanelQueryByID);
+  //DATASOURCE
+  router.get('/datasource', getDatasources);
+  router.post('/datasource', addDatasource);
 
-//DATASOURCE
-router.get('/datasource', getDatasources);
-router.post('/datasource', addDatasource);
+  //ENDPOINT FOR TESTING SQL QUERY BUILDER
+  router.post('/sql/parse', parseQuery);
+  router.post('/sql/build', createQuery);
 
-//ENDPOINT FOR TESTING SQL QUERY BUILDER
-router.post('/sql/parse', parseQuery);
-router.post('/sql/build', createQuery);
-
-export default router;
+  return router;
+}
 
 /**
  * @swagger
