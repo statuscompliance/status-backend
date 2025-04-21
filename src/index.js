@@ -65,26 +65,26 @@ const configureApp = () => {
   );
 
   app.use(cookieParser());
-  app.use(indexRoutes);
+  app.use(indexRoutes());
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
   app.get('/api-docs', (req, res) => {
     res.json(specs);
   });
   app.use(endpointAvailable);
-  app.use(`${API_PREFIX}`, ghAccess);
-  app.use(`${API_PREFIX}/users`, userRoutes);
-  app.use(`${API_PREFIX}/scripts`, scriptRoutes);
+  app.use(`${API_PREFIX}`, ghAccess());
+  app.use(`${API_PREFIX}/users`, userRoutes());
+  app.use(`${API_PREFIX}/scripts`, scriptRoutes());
   app.use(verifyAuthority);
-  app.use(`${API_PREFIX}/scopes`, scopeRoutes);
-  app.use(`${API_PREFIX}/points`, pointRoutes);
-  app.use(`${API_PREFIX}/grafana`, grafanaRoutes);
-  app.use(`${API_PREFIX}/controls`, controlRoutes);
-  app.use(`${API_PREFIX}/catalogs`, catalogRoutes);
-  app.use(`${API_PREFIX}/computations`, computationRoutes);
-  app.use(`${API_PREFIX}/assistant`, assistantRoutes);
-  app.use(`${API_PREFIX}/thread`, threadRoutes);
+  app.use(`${API_PREFIX}/scopes`, scopeRoutes());
+  app.use(`${API_PREFIX}/points`, pointRoutes());
+  app.use(`${API_PREFIX}/grafana`, grafanaRoutes());
+  app.use(`${API_PREFIX}/controls`, controlRoutes());
+  app.use(`${API_PREFIX}/catalogs`, catalogRoutes());
+  app.use(`${API_PREFIX}/computations`, computationRoutes());
+  app.use(`${API_PREFIX}/assistant`, assistantRoutes());
+  app.use(`${API_PREFIX}/thread`, threadRoutes());
   app.use(verifyAdmin);
-  app.use(`${API_PREFIX}/config`, configRoutes);
+  app.use(`${API_PREFIX}/config`, configRoutes());
 
   return app;
 };
@@ -131,7 +131,7 @@ async function insertEndpointsToConfig() {
 if (!isTestEnvironment) {
   const app = configureApp();
   app.listen(3001, () => {
-    console.log('[server] Running on http://localhost:3001');
+    console.log(`[server] Running on http://localhost:3001${API_PREFIX}`);
     console.log('[server] Doc on http://localhost:3001/docs');
     console.log('[server] API Raw Spec on http://localhost:3001/api-docs');
   });

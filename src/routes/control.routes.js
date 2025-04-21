@@ -11,49 +11,48 @@ import {
   createDraftControl,
   finalizeControl,
 } from '../controllers/control.controller.js';
-
 import { 
   getComputationsByControlId,
   deleteComputationByControlId,
   getComputationsByControlIdAndCreationDate,
   setComputeIntervalBytControlIdAndCreationDate,
 } from '../controllers/computation.controller.js';
-
 import { checkIdParam } from '../middleware/validation.js';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  // Draft Controls
+  router.post('/drafts', createDraftControl);
+  router.patch('/:id/finalize', finalizeControl);
 
-// Draft Controls
-router.post('/drafts', createDraftControl);
-router.patch('/:id/finalize', finalizeControl);
+  // Controls
+  router.get('', getControls);
+  router.get('/:id', checkIdParam, getControl);
+  router.post('', createControl);
+  router.patch('/:id',  checkIdParam, updateControl);
+  router.delete('/:id', checkIdParam, deleteControl);
 
-// Controls
-router.get('', getControls);
-router.get('/:id', checkIdParam, getControl);
-router.post('', createControl);
-router.patch('/:id',  checkIdParam, updateControl);
-router.delete('/:id', checkIdParam, deleteControl);
+  router.get('/:id/panels', getPanelsByControlId);
+  router.post('/:id/panel/:panelId', addPanelToControl);
+  router.delete('/:id/panels/:panelId', deletePanelFromControl);
 
-router.get('/:id/panels', getPanelsByControlId);
-router.post('/:id/panel/:panelId', addPanelToControl);
-router.delete('/:id/panels/:panelId', deletePanelFromControl);
+  // Controls computations 
+  router.get('/controls/:controlId/computations', getComputationsByControlId);
+  router.get(
+    '/controls/:controlId/computations/:createdAt',
+    getComputationsByControlIdAndCreationDate
+  );
+  router.put(
+    '/controls/:controlId/computations',
+    setComputeIntervalBytControlIdAndCreationDate
+  );
+  router.delete(
+    '/controls/:controlId/computations',
+    deleteComputationByControlId
+  );
 
-// Controls computations 
-router.get('/controls/:controlId/computations', getComputationsByControlId);
-router.get(
-  '/controls/:controlId/computations/:createdAt',
-  getComputationsByControlIdAndCreationDate
-);
-router.put(
-  '/controls/:controlId/computations',
-  setComputeIntervalBytControlIdAndCreationDate
-);
-router.delete(
-  '/controls/:controlId/computations',
-  deleteComputationByControlId
-);
-
-export default router;
+  return router;
+}
 
 /**
  * @swagger

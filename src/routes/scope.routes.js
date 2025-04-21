@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { checkIdParam, validateUUID} from '../middleware/validation.js';
+import { checkIdParam, validateUUID } from '../middleware/validation.js';
 import {
   getAllScopes,
   getScopeById,
@@ -13,21 +13,21 @@ import {
   updateScopeSetById
 } from '../controllers/scope.controller.js';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  router.get('/sets', getAllScopeSets);
+  router.post('/sets', createScopeSet);
+  router.get('/sets/:id', checkIdParam, getScopeSetById);
+  router.put('/sets/:id', checkIdParam, updateScopeSetById);
+  router.get('/sets/control/:controlId', getScopeSetsByControlId);
+  router.get('', getAllScopes);
+  router.get('/:id', validateUUID('id'), getScopeById);
+  router.post('', createScope);
+  router.put('/:id', validateUUID('id'), updateScope);
+  router.delete('/:id', validateUUID('id'), deleteScope);
 
-router.get('/sets', getAllScopeSets);
-router.post('/sets', createScopeSet);
-router.get('/sets/:id', checkIdParam, getScopeSetById);
-router.put('/sets/:id', checkIdParam, updateScopeSetById);
-router.get('/sets/control/:controlId', getScopeSetsByControlId);
-router.get('', getAllScopes);
-router.get('/:id', validateUUID('id'), getScopeById);
-router.post('', createScope);
-router.put('/:id', validateUUID('id'), updateScope);
-router.delete('/:id', validateUUID('id'), deleteScope);
-
-
-export default router;
+  return router;
+}
 
 /**
  * @swagger

@@ -11,24 +11,23 @@ import {
 } from '../controllers/catalog.controller.js';
 import { getCatalogControls } from '../controllers/control.controller.js';
 
+export default function () {
+  const router = Router();
+  // Draft Catalogs
+  router.post('/drafts', createDraftCatalog);
+  router.patch('/:id/finalize', finalizeCatalog);
 
-const router = Router();
+  // Catalogs
+  router.get('', getCatalogs);
+  router.get('/:id', getCatalog);
+  router.post('', createCatalog);
+  router.patch('/:id', updateCatalog);
+  router.delete('/:id', deleteCatalog);
+  router.get('/:tpaId/points', calculatePoints);
+  router.get('/:catalogId/controls', getCatalogControls);
 
-// Draft Catalogs
-router.post('/drafts', createDraftCatalog);
-router.patch('/:id/finalize', finalizeCatalog);
-
-// Catalogs
-router.get('', getCatalogs);
-router.get('/:id', getCatalog);
-router.post('', createCatalog);
-router.patch('/:id', updateCatalog);
-router.delete('/:id', deleteCatalog);
-router.get('/:tpaId/points', calculatePoints);
-router.get('/:catalogId/controls', getCatalogControls);
-
-
-export default router;
+  return router;
+}
 
 /**
  * @swagger
