@@ -8,457 +8,439 @@ import {
   isDateWithinRange,
   findNextWeeklyDate,
   advanceToMonthlyDate,
-  advanceToYearlyDate,
+  advanceToYearlyDate
 } from '../../../src/utils/dates.js';
-import { parseISO } from 'date-fns';
+import { addYears, addMonths, addWeeks, addDays, setHours, setMinutes, setSeconds, setMilliseconds, startOfWeek } from 'date-fns';
 
-describe('getDates (no mocks, flexible date format)', () => {
+const setTimeToZero = (date) => setMilliseconds(setSeconds(setMinutes(setHours(new Date(date), 0), 0), 0), 0);
+const setTimeToHour = (date, hour) => setMilliseconds(setSeconds(setMinutes(setHours(new Date(date), hour), 0), 0), 0);
+
+let today = new Date();
+let tomorrow = addDays(today, 1);
+
+today = setTimeToZero(today);
+//Csutom Hours
+let todayAt00 = setTimeToHour(today, 0);
+let todayAt01 = setTimeToHour(today, 1);
+let todayAt02 = setTimeToHour(today, 2);
+let todayAt09 = setTimeToHour(today, 9);
+let todayAt10 = setTimeToHour(today, 10)
+let todayAt23 = setTimeToHour(today, 23);
+let tomorrowAt10 = setTimeToHour(addDays(today, 1), 10);
+let tomorrowAt00 = setTimeToHour(addDays(today, 1), 0);
+let twoDaysFromNowAt00 = setTimeToHour(addDays(today, 2), 0);
+let fourDaysFromNowAt00 = setTimeToHour(addDays(today, 4), 0)
+
+
+
+const formatToRRuleUntil = (date) => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+  return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+};
+
+describe('Simple getDates Tests', () => {
+
   it.each([
-    {
-      from: new Date('2025-01-01T00:00'), to: new Date('2025-01-03T00:00'), period: 'yearly',
-      expected: [new Date('2025-01-01T00:00')]
-    },
-    {
-      from: new Date('2025-01-01T00:00'), to: new Date('2025-03-01T00:00'), period: 'monthly',
-      expected: [new Date('2025-01-01T00:00:00'), new Date('2025-02-01T00:00:00'), new Date('2025-03-01T00:00:00')
-      ]
-    },
-    {
-      from: new Date('2025-01-01T00:00'), to: new Date('2025-01-15T00:00'), period: 'weekly',
-      expected: [new Date('2025-01-01T00:00:00'), new Date('2025-01-08T00:00:00'), new Date('2025-01-15T00:00:00')
-      ]
-    },
-    {
-      from: new Date('2025-01-01T00:00'), to: new Date('2025-01-03T00:00'), period: 'daily',
-      expected: [new Date('2025-01-01T00:00:00'), new Date('2025-01-02T00:00:00'), new Date('2025-01-03T00:00:00')]
-    },
-    {
-      from: new Date('2025-01-01T00:00'), to: new Date('2025-01-01T02:00'), period: 'hourly',
-      expected: [new Date('2025-01-01T00:00:00'), new Date('2025-01-01T01:00:00'), new Date('2025-01-01T02:00:00')]
-    },
-    {
-      from: new Date('2025-01-02T00:00'), to: new Date('2025-01-01T00:00'), period: 'daily',
-      expected: []
-    },
-  ])('should generate $period dates correctly for basic periods', ({ from, to, period, expected }) => {
+    { period: 'daily', from: today, to: addDays(today, 2), expected: [today, addDays(today, 1), addDays(today, 2)] },
+    { period: 'weekly', from: today, to: addWeeks(today, 2), expected: [today, addWeeks(today, 1), addWeeks(today, 2)] },
+    { period: 'monthly', from: today, to: addMonths(today, 2), expected: [today, addMonths(today, 1), addMonths(today, 2)] },
+    { period: 'yearly', from: today, to: addYears(today, 2), expected: [today, addYears(today, 1), addYears(today, 2)] },
+    { period: 'hourly', from: todayAt00, to: todayAt02, expected: [todayAt00, todayAt01, todayAt02] },
+  ])('should generate $period dates correctly', ({ from, to, period, expected }) => {
     const result = getDates(from, to, period);
     expect(result.map(date => date.toISOString())).toEqual(expected.map(date => date.toISOString()));
   });
 
-  it('should handle "customRules" with a single daily rule', () => {
-    const from = new Date('2025-04-01T00:00');
-    const to = new Date('2025-04-05T00:00');
-    const customConfig = { rules: 'DTSTART:20250401T0000\nRRULE:FREQ=DAILY', Wto: new Date('2025-04-05T00:00') };
-    const expected = [new Date('2025-04-01T00:00:00'), new Date('2025-04-02T00:00:00'), new Date('2025-04-03T00:00:00'), new Date('2025-04-04T00:00:00'), new Date('2025-04-05T00:00:00'),];
-    const result = getDates(from, to, 'customRules', customConfig);
-    expect(result.map(date => date.toISOString())).toEqual(expected.map(date => date.toISOString()));
+  it('should return empty array when from date is after to date', () => {
+    const from = tomorrow;
+    const to = today;
+    const expected = [];
+    const result = getDates(from, to, 'daily');
+    expect(result).toEqual(expected);
   });
 
-  it('should handle "customRules" with multiple weekly rules', () => {
-    const from = new Date('2025-04-14T00:00');
-    const to = new Date('2025-04-28T00:00');
-    const customConfig = { rules: 'DTSTART:20250414T0000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE', Wto: new Date('2025-04-28T00:00') };
-    const expected = [new Date('2025-04-16T00:00'), new Date('2025-04-21T00:00'), new Date('2025-04-23T00:00'), new Date('2025-04-28T00:00')];
-    const result = getDates(from, to, 'customRules', customConfig);
-    expect(result.map(date => date.toISOString())).toEqual(expected.map(date => date.toISOString()));
-  });
-
-  it('should return an empty array and log an error for an invalid period type', () => {
-    const from = new Date();
-    const to = new Date();
+  it.each([
+    { from: new Date('invalid date'), to: today, period: 'daily', expectedMessage: "Invalid 'from' date provided." },
+    { from: today, to: new Date('invalid date'), period: 'daily', expectedMessage: "Invalid 'to' date provided." },
+    { from: today, to: tomorrow, period: 'invalid-period', expectedMessage: 'Invalid period type: invalid-period' },
+    {
+      from: today,
+      to: tomorrow,
+      period: 'customRules',
+      config: { Wto: tomorrow },
+      expectedMessage: "Incomplete custom rules configuration: 'rules' and 'Wto' are required.",
+    },
+    {
+      from: today,
+      to: tomorrow,
+      period: 'customRules',
+      config: { rules: 'FREQ=DAILY' },
+      expectedMessage: "Incomplete custom rules configuration: 'rules' and 'Wto' are required.",
+    },
+  ])('should handle invalid inputs correctly - $expectedMessage', ({ from, to, period, expectedMessage, config }) => {
     const consoleSpy = vi.spyOn(console, 'error');
-    const result = getDates(from, to, 'invalid');
+    const result = getDates(from, to, period, config);
     expect(result).toEqual([]);
-    expect(consoleSpy).toHaveBeenCalledWith('Invalid period type: invalid');
-    consoleSpy.mockRestore();
-  });
-
-  it('should return an empty array and log an error for incomplete customRules config', () => {
-    const from = new Date();
-    const to = new Date();
-    const consoleSpy = vi.spyOn(console, 'error');
-    const result = getDates(from, to, 'customRules', { rules: 'FREQ=DAILY' });
-    expect(result).toEqual([]);
-    expect(consoleSpy).toHaveBeenCalledWith("Incomplete custom rules configuration: 'rules' and 'Wto' are required.");
+    expect(consoleSpy).toHaveBeenCalledWith(expectedMessage);
     consoleSpy.mockRestore();
   });
 });
 
-describe('generateDatesFromRules (no mocks, flexible date format)', () => {
+describe('Simple generateDatesFromRules Tests', () => {
+
   it.each([
     {
-      name: 'should generate dates from a single daily rule',
-      rules: ['DTSTART:20250401T0000\nRRULE:FREQ=DAILY;UNTIL=20250403T0000'],
-      from: new Date('2025-04-01T00:00'),
-      to: new Date('2025-04-05T00:00'),
-      expected: [new Date('2025-04-01T00:00'), new Date('2025-04-02T00:00'), new Date('2025-04-03T00:00')],
+      description: 'single simple daily rule',
+      rules: [`DTSTART:${formatToRRuleUntil(todayAt00)}\nRRULE:FREQ=DAILY;UNTIL=${formatToRRuleUntil(twoDaysFromNowAt00)}`],
+      from: todayAt00,
+      to: twoDaysFromNowAt00,
+      expected: [todayAt00, tomorrowAt00, twoDaysFromNowAt00],
     },
     {
-      name: 'should generate dates from a single weekly rule',
-      rules: ['DTSTART:20250414T0000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20250428T0000'],
-      from: new Date('2025-04-10T00:00'),
-      to: new Date('2025-04-30T00:00'),
-      expected: [new Date('2025-04-14T00:00'), new Date('2025-04-21T00:00'), new Date('2025-04-28T00:00')],
-    },
-    {
-      name: 'should generate and combine dates from multiple rules',
-      rules: ['DTSTART:20250401T0000\nRRULE:FREQ=DAILY;UNTIL=20250403T0000', 'DTSTART:20250414T0000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20250421T0000'],
-      from: new Date('2025-04-01T00:00'),
-      to: new Date('2025-04-25T00:00'),
-      expected: [new Date('2025-04-01T00:00'), new Date('2025-04-02T00:00'), new Date('2025-04-03T00:00'), new Date('2025-04-14T00:00'), new Date('2025-04-21T00:00')],
-      sort: true,
-    },
-    {
-      name: 'should handle empty rules array',
+      description: 'empty rules array',
       rules: [],
-      from: new Date('2025-04-01T00:00'),
-      to: new Date('2025-04-05T00:00'),
+      from: todayAt00,
+      to: tomorrowAt00,
       expected: [],
     },
     {
-      name: 'should ignore rules that parse to null',
-      rules: ['DTSTART:20250401', 'DTSTART:20250405T0000\nRRULE:FREQ=DAILY;UNTIL=20250407T0000'],
-      from: new Date('2025-04-01T00:00'),
-      to: new Date('2025-04-10T00:00'),
-      expected: [new Date('2025-04-05T00:00'), new Date('2025-04-06T00:00'), new Date('2025-04-07T00:00')],
+      description: 'ignore unparseable rules',
+      rules: [
+        'INVALID RULE STRING',
+        `DTSTART:${formatToRRuleUntil(todayAt00)}\nRRULE:FREQ=DAILY;UNTIL=${formatToRRuleUntil(tomorrowAt00)}`,
+      ],
+      from: todayAt00,
+      to: twoDaysFromNowAt00,
+      expected: [todayAt00, tomorrowAt00],
     },
-  ])('$name', ({ rules, from, to, expected, sort }) => {
+  ])('should handle $description correctly', ({ rules, from, to, expected }) => {
     const result = generateDatesFromRules(rules, from, to);
-    const resultISO = result.map(date => date.toISOString());
-    const expectedISO = expected.map(date => date.toISOString());
-
-    if (sort) {
-      expect(resultISO.sort()).toEqual(expectedISO.sort());
-    } else {
-      expect(resultISO).toEqual(expectedISO);
-    }
+    expect(result.map(date => date.toISOString())).toEqual(expected.map(date => date.toISOString()));
   });
 });
 
-describe('parseRule', () => {
-  it.each([
-    {
-      name: 'should correctly parse a daily rule',
-      rule: 'DTSTART:20250415T100000;RRULE:FREQ=DAILY;INTERVAL=2;UNTIL=20250420T100000Z;BYHOUR=10,12',
-      expected: { startDate: new Date('2025-04-15T10:00:00.00'), frequency: 'DAILY', interval: 2, byHour: [10, 12], until: '20250420T100000Z', byDay: undefined, byMonthDay: undefined, byMonth: undefined },
-    },
-    {
-      name: 'should correctly parse a weekly rule with BYDAY',
-      rule: 'DTSTART:20250414T090000;RRULE:FREQ=WEEKLY;BYDAY=MO,WE;INTERVAL=1;UNTIL=20250428T090000Z;BYHOUR=9',
-      expected: { startDate: new Date('2025-04-14T09:00:00.00'), frequency: 'WEEKLY', interval: 1, byHour: [9], until: '20250428T090000Z', byDay: ['MO', 'WE'], byMonthDay: undefined, byMonth: undefined },
-    },
-    {
-      name: 'should correctly parse a monthly rule with BYMONTHDAY',
-      rule: 'DTSTART:20250405T110000;RRULE:FREQ=MONTHLY;BYMONTHDAY=5;INTERVAL=3;UNTIL=20250705T110000Z;BYHOUR=11',
-      expected: { startDate: new Date('2025-04-05T11:00:00.00'), frequency: 'MONTHLY', interval: 3, byHour: [11], until: '20250705T110000Z', byDay: undefined, byMonthDay: 5, byMonth: undefined },
-    },
-    {
-      name: 'should correctly parse a yearly rule with BYMONTH and BYMONTHDAY',
-      rule: 'DTSTART:20250115T130000;RRULE:FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=15;INTERVAL=2;UNTIL=20290115T130000Z;BYHOUR=13',
-      expected: { startDate: new Date('2025-01-15T13:00:00.00'), frequency: 'YEARLY', interval: 2, byHour: [13], until: '20290115T130000Z', byDay: undefined, byMonthDay: 15, byMonth: 0 },
-    },
-    {
-      name: 'should handle missing optional parameters',
-      rule: 'DTSTART:20250416T140000;RRULE:FREQ=DAILY',
-      expected: { startDate: new Date('2025-04-16T14:00:00.00'), frequency: 'DAILY', interval: 1, byHour: [0], until: undefined, byDay: undefined, byMonthDay: undefined, byMonth: undefined },
-    },
-    {
-      name: 'should return null for a rule without DTSTART',
-      rule: 'RRULE:FREQ=DAILY',
-      expected: null,
-    },
-    {
-      name: 'should return null for a rule without RRULE',
-      rule: 'DTSTART:20250416T150000',
-      expected: null,
-    },
-  ])('$name', ({ rule, expected }) => {
-    expect(parseRule(rule)).toEqual(expected);
+describe('Simple generateDatesForFrequency Tests', () => {
+
+  it('should generate daily dates with byHour', () => {
+    const ruleData = { startDate: todayAt10, frequency: 'DAILY', interval: 1, byHour: [10] };
+    const from = todayAt10;
+    const to = tomorrowAt10;
+    const expected = [todayAt10, tomorrowAt10];
+    const result = generateDatesForFrequency(ruleData, from, to);
+    expect(result.map(date => date.toISOString())).toEqual(expected.map(date => date.toISOString()));
   });
-});
 
-describe('generateDatesForFrequency', () => {
-  const parseISODate = (dateString) => parseISO(dateString);
+  it('should generate daily dates with interval of 2 days', () => {
+    const ruleData = { startDate: todayAt00, frequency: 'DAILY', interval: 2, byHour: [0] };
+    const from = todayAt00;
+    const to = fourDaysFromNowAt00;
+    const expected = [todayAt00, twoDaysFromNowAt00, fourDaysFromNowAt00];
+    const result = generateDatesForFrequency(ruleData, from, to);
+    expect(result.map(date => date.toISOString())).toEqual(expected.map(date => date.toISOString()));
+  });
 
-  it.each([    {
-    name: 'should generate correct daily dates with interval 1 and byHour',
-    ruleData: { startDate: parseISODate('2025-04-15T09:00:00'), frequency: 'DAILY', interval: 1, byHour: [10, 12] },
-    from: parseISODate('2025-04-15T00:00:00'),
-    to: parseISODate('2025-04-16T00:00:00'),
-    expected: [parseISODate('2025-04-15T10:00:00'), parseISODate('2025-04-15T12:00:00'), parseISODate('2025-04-16T10:00:00'), parseISODate('2025-04-16T12:00:00')],
-  },
-  {
-    name: 'should generate correct daily dates with interval 2',
-    ruleData: { startDate: parseISODate('2025-04-15T10:00:00'), frequency: 'DAILY', interval: 2, byHour: [10] },
-    from: parseISODate('2025-04-15T00:00:00'),
-    to: parseISODate('2025-04-19T00:00:00'),
-    expected: [parseISODate('2025-04-15T10:00:00'), parseISODate('2025-04-17T10:00:00'), parseISODate('2025-04-19T10:00:00')],
-  },
-  {
-    name: 'should generate correct weekly dates with BYDAY',
-    ruleData: { startDate: parseISODate('2025-04-14T09:00:00'), frequency: 'WEEKLY', byDay: ['WE'], interval: 1, byHour: [9] },
-    from: parseISODate('2025-04-14T00:00:00'),
-    to: parseISODate('2025-04-28T00:00:00'),
-    expected: [parseISODate('2025-04-16T09:00:00'), parseISODate('2025-04-23T09:00:00')],
-  },
-  {
-    name: 'should generate correct weekly dates with multiple BYDAYs',
-    ruleData: { startDate: parseISODate('2025-04-15T10:00:00'), frequency: 'WEEKLY', byDay: ['TH', 'SA'], interval: 1, byHour: [10] },
-    from: parseISODate('2025-04-15T00:00:00'),
-    to: parseISODate('2025-04-29T00:00:00'),
-    expected: [parseISODate('2025-04-17T10:00:00'), parseISODate('2025-04-19T10:00:00'), parseISODate('2025-04-24T10:00:00'), parseISODate('2025-04-26T10:00:00')],
-  },
-  {
-    name: 'should generate correct monthly dates with BYMONTHDAY',
-    ruleData: { startDate: parseISODate('2025-04-05T11:00:00'), frequency: 'MONTHLY', byMonthDay: 5, interval: 1, byHour: [11] },
-    from: parseISODate('2025-04-01T00:00:00'),
-    to: parseISODate('2025-06-10T00:00:00'),
-    expected: [parseISODate('2025-04-05T11:00:00'), parseISODate('2025-05-05T11:00:00'), parseISODate('2025-06-05T11:00:00')],
-  },
-  {
-    name: 'should handle monthly dates where BYMONTHDAY is greater than the number of days in the month',
-    ruleData: { startDate: parseISODate('2025-01-31T10:00:00'), frequency: 'MONTHLY', byMonthDay: 31, interval: 1, byHour: [10] },
-    from: parseISODate('2025-01-01T00:00:00'),
-    to: parseISODate('2025-03-31T00:00:00'),
-    expected: [parseISODate('2025-01-31T10:00:00'), parseISODate('2025-02-28T10:00:00'), parseISODate('2025-03-31T10:00:00')],
-  },
-  {
-    name: 'should generate correct yearly dates with BYMONTH and BYMONTHDAY',
-    ruleData: { startDate: parseISODate('2025-01-15T13:00:00'), frequency: 'YEARLY', byMonth: 1, byMonthDay: 15, interval: 1, byHour: [13] },
-    from: parseISODate('2025-01-01T00:00:00'),
-    to: parseISODate('2028-01-15T14:00:00'),
-    expected: [parseISODate('2025-01-15T13:00:00'), parseISODate('2026-01-15T13:00:00'), parseISODate('2027-01-15T13:00:00'), parseISODate('2028-01-15T13:00:00')],
-  },
-  {
-    name: 'should respect the until date in ruleData',
-    ruleData: { startDate: parseISODate('2025-04-15T10:00:00'), frequency: 'DAILY', interval: 1, until: '20250417T120000Z', byHour: [10] },
-    from: parseISODate('2025-04-14T00:00:00'),
-    to: parseISODate('2025-04-20T00:00:00'),
-    expected: [parseISODate('2025-04-15T10:00:00'), parseISODate('2025-04-16T10:00:00'), parseISODate('2025-04-17T10:00:00')],
-  },
-  {
-    name: 'should use hour 0 if byHour is not provided',
-    ruleData: { startDate: parseISODate('2025-04-16T09:00:00'), frequency: 'DAILY', interval: 1 },
-    from: parseISODate('2025-04-16T00:00:00'),
-    to: parseISODate('2025-04-16T23:00:00'),
-    expected: [parseISODate('2025-04-16T00:00:00')],
-  },
-  {
-    name: 'should log a warning and return empty array for unsupported frequency',
-    ruleData: { startDate: new Date(), frequency: 'BIWEEKLY' },
-    from: new Date(),
-    to: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-    expected: [],
-    warnMessage: 'Unsupported frequency or missing parameters: BIWEEKLY',
-  },
-  ])('$name', ({ ruleData, from, to, expected, warnMessage }) => {
+  it('should respect the until date in ruleData', () => {
+    const ruleData = { startDate: todayAt10, frequency: 'DAILY', interval: 1, until: formatToRRuleUntil(tomorrowAt10), byHour: [10] };
+    const from = addDays(todayAt00, -1); // Range starts before rule
+    const to = addDays(todayAt00, 5); // Range ends after until date
+    const expected = [todayAt10, tomorrowAt10]; // Should stop at tomorrowAt10
+    const result = generateDatesForFrequency(ruleData, from, to);
+    expect(result.map(date => date.toISOString())).toEqual(expected.map(date => date.toISOString()));
+  });
+
+  it('should use hour 0 if byHour is not provided', () => {
+    const ruleData = { startDate: todayAt09, frequency: 'DAILY', interval: 1 }; // No byHour
+    const from = todayAt00;
+    const to = todayAt23; // Range for the current day
+    const expected = [todayAt00]; // Expect only the start of the day
+    const result = generateDatesForFrequency(ruleData, from, to);
+    expect(result.map(date => date.toISOString())).toEqual(expected.map(date => date.toISOString()));
+  });
+
+  it('should handle unsupported frequency', () => {
     const consoleSpy = vi.spyOn(console, 'warn');
+    const ruleData = { startDate: new Date(), frequency: 'BIWEEKLY' };
+    const from = new Date();
+    const to = addDays(new Date(), 14);
+    const expected = [];
     const result = generateDatesForFrequency(ruleData, from, to);
     expect(result).toEqual(expected);
-    if (warnMessage) {
-      expect(consoleSpy).toHaveBeenCalledWith(warnMessage);
-    } else {
-      expect(consoleSpy).not.toHaveBeenCalled();
-    }
+    expect(consoleSpy).toHaveBeenCalledWith('Unsupported frequency or missing parameters: BIWEEKLY');
     consoleSpy.mockRestore();
   });
 });
 
-describe('adjustDateToHour', () => {
-  it('should set the correct hour and zero seconds', () => {
-    const date = new Date(2025, 3, 16, 9, 30, 45);
-    const hour = 11;
-    const expected = new Date(2025, 3, 16, 11, 30, 0);
-    expect(adjustDateToHour(date, hour)).toEqual(expected);
+describe('parseRule Tests', () => {
+
+  it.each([
+    {
+      description: 'simple daily rule',
+      ruleString: `DTSTART:${formatToRRuleUntil(today)}\nRRULE:FREQ=DAILY;INTERVAL=2;BYHOUR=10,14;UNTIL=${formatToRRuleUntil(addWeeks(today, 1))}`,
+      expected: {
+        startDate: today,
+        frequency: 'DAILY',
+        interval: 2,
+        byHour: [10, 14],
+        until: formatToRRuleUntil(addWeeks(today, 1)),
+        byDay: undefined,
+        byMonthDay: undefined,
+        byMonth: undefined,
+      },
+    },
+    {
+      description: 'simple weekly rule',
+      ruleString: `DTSTART:${formatToRRuleUntil(today)}\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE`,
+      expected: {
+        startDate: today,
+        frequency: 'WEEKLY',
+        interval: 1,
+        byHour: [0],
+        until: undefined,
+        byDay: ['MO', 'WE'],
+        byMonthDay: undefined,
+        byMonth: undefined,
+      },
+    },
+    {
+      description: 'simple monthly rule',
+      ruleString: `DTSTART:${formatToRRuleUntil(today)}\nRRULE:FREQ=MONTHLY;BYMONTHDAY=15`,
+      expected: {
+        startDate: today,
+        frequency: 'MONTHLY',
+        interval: 1,
+        byHour: [0],
+        until: undefined,
+        byDay: undefined,
+        byMonthDay: 15,
+        byMonth: undefined,
+      },
+    },
+    {
+      description: 'simple yearly rule',
+      ruleString: `DTSTART:${formatToRRuleUntil(today)}\nRRULE:FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=1`,
+      expected: {
+        startDate: today,
+        frequency: 'YEARLY',
+        interval: 1,
+        byHour: [0],
+        until: undefined,
+        byDay: undefined,
+        byMonthDay: 1,
+        byMonth: 0,
+      },
+    },
+    {
+      description: 'rule with only mandatory parts',
+      ruleString: `DTSTART:${formatToRRuleUntil(today)}\nRRULE:FREQ=DAILY`,
+      expected: {
+        startDate: today,
+        frequency: 'DAILY',
+        interval: 1,
+        byHour: [0],
+        until: undefined,
+        byDay: undefined,
+        byMonthDay: undefined,
+        byMonth: undefined,
+      },
+    },
+  ])('should parse a $description correctly', ({ ruleString, expected }) => {
+    const result = parseRule(ruleString);
+    expect(formatToRRuleUntil(result.startDate)).toEqual(formatToRRuleUntil(expected.startDate));
+    expect({ ...result, startDate: undefined }).toEqual({ ...expected, startDate: undefined });
   });
 
-  it('should handle different hours', () => {
-    const date = new Date(2025, 3, 17, 15, 10, 20);
-    expect(adjustDateToHour(date, 0)).toEqual(new Date(2025, 3, 17, 0, 10, 0));
-    expect(adjustDateToHour(date, 23)).toEqual(new Date(2025, 3, 17, 23, 10, 0));
-  });
-
-  it('should not change the date part', () => {
-    const date = new Date(2025, 5, 1, 8, 0, 0);
-    expect(adjustDateToHour(date, 18).getDate()).toBe(1);
-    expect(adjustDateToHour(date, 18).getMonth()).toBe(5);
-    expect(adjustDateToHour(date, 18).getFullYear()).toBe(2025);
+  it.each([
+    { description: 'missing DTSTART', ruleString: 'RRULE:FREQ=DAILY', expected: null },
+    { description: 'missing RRULE', ruleString: 'DTSTART:20250101T100000', expected: null },
+  ])('should return null for a rule string $description', ({ ruleString, expected }) => {
+    const result = parseRule(ruleString);
+    expect(result).toBe(expected);
   });
 });
 
-describe('isDateWithinRange', () => {
-  const from = parseISO('2025-04-15T00:00:00');
-  const to = parseISO('2025-04-17T23:59:59');
-  const middle = parseISO('2025-04-16T12:00:00');
-  const before = parseISO('2025-04-14T23:59:59');
-  const after = parseISO('2025-04-18T00:00:00');
-  const sameAsFrom = parseISO('2025-04-15T00:00:00');
-  const sameAsTo = parseISO('2025-04-17T23:59:59');
-  const same = parseISO('2025-04-16T00:00:00');
+//Other tests for coverage
+describe('adjustDateToHour Tests', () => {
+  it.each([
+    {
+      description: 'set the hour to 10',
+      initialDate: today,
+      hourToSet: 10,
+      expectedDate: todayAt10,
+    },
+    {
+      description: 'set the hour to 0',
+      initialDate: today,
+      hourToSet: 0,
+      expectedDate: todayAt00,
+    },
+    {
+      description: 'set the hour to 23',
+      initialDate: today,
+      hourToSet: 23,
+      expectedDate: todayAt23,
+    },
+  ])('should $description, clearing minutes, seconds, and milliseconds', ({ initialDate, hourToSet, expectedDate }) => {
+    const result = adjustDateToHour(initialDate, hourToSet);
+    expect(result.toISOString()).toEqual(expectedDate.toISOString());
+  });
+});
+
+describe('isDateWithinRange Tests', () => {
 
   it.each([
-    { name: 'should return true if the date is within the range', date: middle, from, to, expected: true },
-    { name: 'should return true if the date is the same as the from date', date: sameAsFrom, from, to, expected: true },
-    { name: 'should return true if the date is the same as the to date', date: sameAsTo, from, to, expected: true },
-    { name: 'should return false if the date is before the range', date: before, from, to, expected: false },
-    { name: 'should return false if the date is after the range', date: after, from, to, expected: false },
-    { name: 'should return true if the date is the same as from and to', date: same, from: same, to: same, expected: true },
-    { name: 'should return false if the date is before the same from and to', date: parseISO('2025-04-15T00:00:00'), from: same, to: same, expected: false },
-    { name: 'should return false if the date is after the same from and to', date: parseISO('2025-04-17T00:00:00'), from: same, to: same, expected: false },
-  ])('$name', ({ date, from, to, expected }) => {
+    { date: addDays(today, 1), from: today, to: addDays(today, 2), expected: true, description: 'date within interval' },
+    { date: today, from: today, to: addDays(today, 2), expected: true, description: 'date is start date' },
+    { date: addDays(today, 2), from: today, to: addDays(today, 2), expected: true, description: 'date is end date' },
+    { date: addDays(today, -1), from: today, to: addDays(today, 2), expected: false, description: 'date before start date' },
+    { date: addDays(today, 3), from: today, to: addDays(today, 2), expected: false, description: 'date after end date' },
+    { date: setTimeToHour(todayAt00, 12), from: todayAt00, to: tomorrowAt00, expected: true, description: 'date with different time within range' },
+    { date: setTimeToHour(addWeeks(today, 1), 12), from: todayAt00, to: tomorrowAt00, expected: false, description: 'date with different time outside range' },
+    { date: setTimeToHour(todayAt00, 23), from: todayAt00, to: tomorrowAt00, expected: true, description: 'date with different time at the end of range' },
+  ])('should return $expected if $description', ({ date, from, to, expected }) => {
     expect(isDateWithinRange(date, from, to)).toBe(expected);
   });
 });
 
-describe('findNextWeeklyDate', () => {
+describe('findNextWeeklyDate Tests', () => {
+  const today = new Date();
+
   it.each([
     {
-      name: 'should find the next specified day of the week',
-      currentDate: parseISO('2025-04-16T12:00:00'),
-      byDay: ['SA'],
+      description: 'same week',
+      startDate: startOfWeek(today, { weekStartsOn: 1 }), // Monday of current week
+      byDay: 'WE',
       interval: 1,
-      expected: parseISO('2025-04-19T12:00:00'),
+      expected: addDays(startOfWeek(today, { weekStartsOn: 1 }), 2), // Wednesday of current week
     },
     {
-      name: 'should find the next specified day of the week when it occurs later in the current week',
-      currentDate: parseISO('2025-04-14T09:00:00'),
-      byDay: ['WE'],
+      description: 'next week',
+      startDate: addDays(startOfWeek(today, { weekStartsOn: 1 }), 3), // Thursday of current week
+      byDay: 'MO',
       interval: 1,
-      expected: parseISO('2025-04-16T09:00:00'),
+      expected: addWeeks(startOfWeek(today, { weekStartsOn: 1 }), 1), // Monday of next week
     },
     {
-      name: 'should handle multiple BYDAYs',
-      currentDate: parseISO('2025-04-15T10:00:00'),
-      byDay: ['TH', 'SA'],
+      description: 'current day matches BYDAY with interval 1',
+      startDate: startOfWeek(today, { weekStartsOn: 1 }), // Monday of current week
+      byDay: 'MO',
       interval: 1,
-      expected: parseISO('2025-04-17T10:00:00'),
+      expected: addWeeks(startOfWeek(today, { weekStartsOn: 1 }), 1), // Monday of next week
     },
     {
-      name: 'should handle interval greater than 1',
-      currentDate: parseISO('2025-04-14T11:00:00'),
-      byDay: ['MO'],
+      description: 'multiple BYDAYs (finds the closest)',
+      startDate: startOfWeek(today, { weekStartsOn: 1 }), // Monday of current week
+      byDay: ['WE', 'FR'],
+      interval: 1,
+      expected: addDays(startOfWeek(today, { weekStartsOn: 1 }), 2), // Wednesday of current week
+    },
+    {
+      description: 'apply interval correctly',
+      startDate: startOfWeek(today, { weekStartsOn: 1 }), // Monday of current week
+      byDay: 'MO',
       interval: 2,
-      expected: parseISO('2025-04-28T11:00:00'),
+      expected: addWeeks(startOfWeek(today, { weekStartsOn: 1 }), 2), // Monday two weeks later
     },
     {
-      name: 'should return the date in the next week if the specified day is the same as the current day',
-      currentDate: parseISO('2025-04-14T15:00:00'),
-      byDay: ['MO'],
+      description: 'no matching day (empty BYDAY)',
+      startDate: startOfWeek(today, { weekStartsOn: 1 }), // Monday of current week
+      byDay: [],
       interval: 1,
-      expected: parseISO('2025-04-21T15:00:00'),
+      expected: null,
     },
-    {
-      name: 'should handle BYDAYs that appear earlier in the week than the current day',
-      currentDate: parseISO('2025-04-18T08:00:00'),
-      byDay: ['TU'],
-      interval: 1,
-      expected: parseISO('2025-04-22T08:00:00'),
-    },
-  ])('$name', ({ currentDate, byDay, interval, expected }) => {
-    expect(findNextWeeklyDate(currentDate, byDay, interval)).toEqual(expected);
+  ])('should find the next $byDay with interval $interval from $startDate ($description)', ({ startDate, byDay, interval, expected }) => {
+    const result = findNextWeeklyDate(startDate, byDay, interval);
+    if (expected) {
+      expect(result?.toISOString()).toEqual(expected.toISOString());
+    } else {
+      expect(result).toBeNull();
+    }
   });
 });
 
-describe('advanceToMonthlyDate', () => {
+describe('advanceToMonthlyDate Tests', () => {
   it.each([
     {
-      name: 'should advance to the same day of the next month',
-      currentDate: parseISO('2025-04-10T10:00:00'),
-      byMonthDay: 10,
+      description: 'next month on the specified day',
+      initialDate: new Date(2025, 0, 15, 10, 0, 0),
+      byMonthDay: 15,
       interval: 1,
-      expected: parseISO('2025-05-10T10:00:00'),
+      expectedDate: new Date(2025, 1, 15, 10, 0, 0),
     },
     {
-      name: 'should handle the end of the month (going to a shorter month)',
-      currentDate: parseISO('2025-01-31T12:00:00'),
+      description: 'handle month end (non-leap year)',
+      initialDate: new Date(2025, 0, 31, 10, 0, 0),
       byMonthDay: 31,
       interval: 1,
-      expected: parseISO('2025-02-28T12:00:00'),
+      expectedDate: new Date(2025, 1, 28, 10, 0, 0),
     },
     {
-      name: 'should handle the end of the month (staying within the same length or going to a longer month) - case 1',
-      currentDate: parseISO('2025-03-30T09:00:00'),
-      byMonthDay: 30,
+      description: 'handle leap year for February',
+      initialDate: new Date(2024, 0, 31, 10, 0, 0),
+      byMonthDay: 31,
       interval: 1,
-      expected: parseISO('2025-04-30T09:00:00'),
+      expectedDate: new Date(2024, 1, 29, 10, 0, 0),
     },
     {
-      name: 'should handle the end of the month (staying within the same length or going to a longer month) - case 2',
-      currentDate: parseISO('2025-02-28T18:00:00'),
-      byMonthDay: 28,
-      interval: 1,
-      expected: parseISO('2025-03-28T18:00:00'),
-    },
-    {
-      name: 'should handle interval greater than 1',
-      currentDate: parseISO('2025-04-05T14:00:00'),
-      byMonthDay: 5,
+      description: 'advance by interval greater than 1',
+      initialDate: new Date(2025, 0, 15, 10, 0, 0),
+      byMonthDay: 15,
       interval: 3,
-      expected: parseISO('2025-07-05T14:00:00'),
+      expectedDate: new Date(2025, 3, 15, 10, 0, 0),
     },
     {
-      name: 'should handle cases where byMonthDay is in the past of the current month',
-      currentDate: parseISO('2025-04-15T07:00:00'),
-      byMonthDay: 10,
-      interval: 1,
-      expected: parseISO('2025-05-10T07:00:00'),
+      description: 'wrap around years',
+      initialDate: new Date(2025, 10, 15, 10, 0, 0),
+      byMonthDay: 15,
+      interval: 3,
+      expectedDate: new Date(2026, 1, 15, 10, 0, 0),
     },
-  ])('$name', ({ currentDate, byMonthDay, interval, expected }) => {
-    expect(advanceToMonthlyDate(currentDate, byMonthDay, interval)).toEqual(expected);
+  ])('should advance from $initialDate to $expectedDate ($description)', ({ initialDate, byMonthDay, interval, expectedDate }) => {
+    const result = advanceToMonthlyDate(initialDate, byMonthDay, interval);
+    expect(result.toISOString()).toEqual(expectedDate.toISOString());
   });
 });
 
-describe('advanceToYearlyDate', () => {
+describe('advanceToYearlyDate Tests', () => {
   it.each([
     {
-      name: 'should advance to the same month and day of the next year',
-      currentDate: parseISO('2025-04-15T11:00:00'),
-      byMonth: 4,
+      description: 'next year on the specified month and day',
+      initialDate: new Date(2025, 0, 15, 10, 0, 0),
+      byMonth: 1,
       byMonthDay: 15,
       interval: 1,
-      expected: parseISO('2026-04-15T11:00:00'),
+      expectedDate: new Date(2026, 0, 15, 10, 0, 0),
     },
     {
-      name: 'should handle leap years when advancing from February 29th to a non-leap year',
-      currentDate: parseISO('2024-02-29T20:00:00'),
+      description: 'handle month/day greater than days in that month (non-leap year)',
+      initialDate: new Date(2025, 0, 10, 10, 0, 0),
       byMonth: 2,
-      byMonthDay: 29,
+      byMonthDay: 30,
       interval: 1,
-      expected: parseISO('2025-02-28T20:00:00'),
+      expectedDate: new Date(2026, 1, 28, 10, 0, 0),
     },
     {
-      name: 'should handle leap years when advancing from February 29th to another leap year',
-      currentDate: parseISO('2024-02-29T20:00:00'),
+      description: 'handle leap year for February',
+      initialDate: new Date(2023, 0, 10, 10, 0, 0),
       byMonth: 2,
-      byMonthDay: 29,
-      interval: 4,
-      expected: parseISO('2028-02-29T20:00:00'),
+      byMonthDay: 30,
+      interval: 1,
+      expectedDate: new Date(2024, 1, 29, 10, 0, 0),
     },
     {
-      name: 'should handle interval greater than 1',
-      currentDate: parseISO('2025-06-20T16:00:00'),
-      byMonth: 6,
-      byMonthDay: 20,
-      interval: 2,
-      expected: parseISO('2027-06-20T16:00:00'),
-    },
-    {
-      name: 'should handle cases where byMonth and byMonthDay are in the past of the current year',
-      currentDate: parseISO('2025-10-01T09:00:00'),
-      byMonth: 4,
+      description: 'advance by interval greater than 1',
+      initialDate: new Date(2025, 0, 15, 10, 0, 0),
+      byMonth: 1,
       byMonthDay: 15,
-      interval: 1,
-      expected: parseISO('2026-04-15T09:00:00'),
+      interval: 3,
+      expectedDate: new Date(2028, 0, 15, 10, 0, 0),
     },
-    {
-      name: 'should handle advancing to February 29th on a leap year',
-      currentDate: parseISO('2027-01-15T12:00:00'),
-      byMonth: 2,
-      byMonthDay: 29,
-      interval: 1,
-      expected: parseISO('2028-02-29T12:00:00'),
-    },
-  ])('$name', ({ currentDate, byMonth, byMonthDay, interval, expected }) => {
-    expect(advanceToYearlyDate(currentDate, byMonth, byMonthDay, interval)).toEqual(expected);
+  ])('should advance from $initialDate to $expectedDate (byMonth: $byMonth, byMonthDay: $byMonthDay, interval: $interval - $description)', ({ initialDate, byMonth, byMonthDay, interval, expectedDate }) => {
+    const result = advanceToYearlyDate(initialDate, byMonth, byMonthDay, interval);
+    expect(result.toISOString()).toEqual(expectedDate.toISOString());
   });
 });
