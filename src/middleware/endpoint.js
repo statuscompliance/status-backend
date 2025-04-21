@@ -34,6 +34,14 @@ export const setConfigurationCache = (newCache) => {
 
 export const getConfigurationsCache = () => configurationsCache;
 
+export async function updateConfigurationsCache() {
+  try {
+    configurationsCache = await models.Configuration.findAll();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 async function fetchAllConfigurations() {
   try {
     return await models.Configuration.findAll();
