@@ -753,3 +753,67 @@ export async function updatePanelByID(req, res) {
     }
   }
 }
+
+export async function createDashboardTemplate(req, res) {
+  try {
+    const { name, folderId, startDate, endDate } = req.body;
+
+    // Set time range based on startDate and endDate parameters
+    let timeRange = {
+      from: 'now-6h',
+      to: 'now'
+    };
+
+    if (startDate) {
+      const startDateObj = new Date(startDate);
+      timeRange.from = startDateObj.toISOString();
+    }
+
+    if (endDate) {
+      const endDateObj = new Date(endDate);
+      timeRange.to = endDateObj.toISOString();
+    }
+
+    const dashboardTemplate = {
+      dashboard: {
+        annotations: {
+          list: []
+        },
+        editable: true,
+        fiscalYearStartMonth: 0,
+        graphTooltip: 0,
+        panels: [],
+        schemaVersion: 27,
+        tags: [],
+        templating: {
+          list: []
+        },
+        time: timeRange,
+        timepicker: null,
+        timezone: 'browser',
+        title: name || 'New Dashboard Template',
+        version: 0,
+        weekStart: ''
+      },
+      overwrite: false,
+      inputs: [{}],
+      folderUid: folderId || null
+    };
+
+    const response = await methods.dashboard.postDashboard(dashboardTemplate);
+    return res.status(201).json({
+      message: 'Dashboard template created successfully',
+      dashboard: response.data
+    });
+  } catch (error) {
+    if (error.response) {
+      const { status, data } = error.response;
+      return res.status(status).json(data);
+    } else {
+      return res.status(500).json({
+        message: 'Failed to create dashboard template in Grafana due to server error',
+        error: error.message
+      });
+    }
+  }
+}
