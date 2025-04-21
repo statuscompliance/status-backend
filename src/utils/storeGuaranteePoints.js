@@ -1,4 +1,4 @@
-import models from '../models/models.js';
+import { models }from '../models/models.js';
 import { parseISO, formatISO } from 'date-fns';
 import { getDates } from './dates.js';
 
