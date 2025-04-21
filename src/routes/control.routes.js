@@ -8,6 +8,10 @@ import {
   addPanelToControl,
   getPanelsByControlId,
   deletePanelFromControl,
+  getDraftControls,
+  getDraftControlsByCatalogId,
+  createDraftControl,
+  finalizeControl,
 } from '../controllers/control.controller.js';
 
 import { 
@@ -20,6 +24,12 @@ import {
 import { checkIdParam } from '../middleware/validation.js';
 
 const router = Router();
+
+// Draft Controls
+router.get('/drafts', getDraftControls);
+router.get('/drafts/catalog/:catalogId', getDraftControlsByCatalogId);
+router.post('/drafts', createDraftControl);
+router.patch('/:id/finalize', finalizeControl);
 
 // Controls
 router.get('', getControls);
@@ -442,6 +452,179 @@ export default router;
  *                   type: string
  *       500:
  *         description: Failed to delete panel
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /controls/drafts:
+ *   get:
+ *     summary: Retrieves all draft controls
+ *     tags: [Controls]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of draft controls
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Control'
+ *       500:
+ *         description: Failed to get draft controls
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /controls/drafts/catalog/{catalogId}:
+ *   get:
+ *     summary: Retrieves all draft controls for a specific catalog
+ *     tags: [Controls]
+ *     parameters:
+ *       - in: path
+ *         name: catalogId
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The catalog ID
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of draft controls for the specified catalog
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Control'
+ *       404:
+ *         description: Catalog not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to get draft controls
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /controls/drafts:
+ *   post:
+ *     summary: Creates a new draft control
+ *     tags: [Controls]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Control'
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Draft control created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Control'
+ *       400:
+ *         description: Invalid input or catalog is not in draft status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       404:
+ *         description: Catalog not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Failed to create draft control
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /controls/{id}/finalize:
+ *   patch:
+ *     summary: Finalizes a draft control
+ *     tags: [Controls]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The control ID
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Control finalized successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Control'
+ *       400:
+ *         description: Cannot finalize (missing required fields or already finalized)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Control not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to finalize control
  *         content:
  *           application/json:
  *             schema:

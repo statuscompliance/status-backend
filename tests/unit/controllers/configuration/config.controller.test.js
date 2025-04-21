@@ -29,6 +29,7 @@ describe('Configuration Controller', () => {
     mockRes = createRes();
     vi.clearAllMocks();
     vi.spyOn(endpointModule, 'updateConfigurationsCache').mockResolvedValue();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   describe('getConfiguration', () => {
