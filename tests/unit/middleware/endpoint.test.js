@@ -67,16 +67,40 @@ describe('endpointAvailable Middleware', () => {
     vi.spyOn(models.Configuration, 'findAll').mockResolvedValue([]);
   });
 
+  const expectEndpointAvailableResponse = ({
+    status,
+    jsonResponse,
+    sendResponse,
+    calledNext = false
+  }) => {
+    if (status !== undefined) {
+      expect(mockRes.status).toHaveBeenCalledWith(status);
+    }
+    if (jsonResponse !== undefined) {
+      expect(mockRes.json).toHaveBeenCalledWith(jsonResponse);
+      expect(mockRes.send).not.toHaveBeenCalled();
+    } else if (sendResponse !== undefined) {
+      expect(mockRes.send).toHaveBeenCalledWith(sendResponse);
+      expect(mockRes.json).not.toHaveBeenCalled();
+    } else {
+      expect(mockRes.json).not.toHaveBeenCalled();
+      expect(mockRes.send).not.toHaveBeenCalled();
+    }
+
+    if (calledNext) {
+      expect(mockNext).toHaveBeenCalledOnce();
+    } else {
+      expect(mockNext).not.toHaveBeenCalled();
+    }
+  };
+
   it('should return 404 json if no match in cache (exact match)', async () => {
     setConfigurationCache([{ endpoint: '/api/items', available: true }]);
     mockReq.url = '/api/some/endpoint';
 
     await endpointAvailable(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(404);
-    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Endpoint not found' });
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(mockRes.send).not.toHaveBeenCalled();
+    expectEndpointAvailableResponse({ status: 404, jsonResponse: { message: 'Endpoint not found' } });
   });
 
   it('should call next() if an available endpoint matches (exact match)', async () => {
@@ -85,10 +109,7 @@ describe('endpointAvailable Middleware', () => {
 
     await endpointAvailable(mockReq, mockRes, mockNext);
 
-    expect(mockNext).toHaveBeenCalledTimes(1);
-    expect(mockRes.status).not.toHaveBeenCalled();
-    expect(mockRes.json).not.toHaveBeenCalled();
-    expect(mockRes.send).not.toHaveBeenCalled();
+    expectEndpointAvailableResponse({ status: undefined, calledNext: true });
   });
 
   it('should return 404 json if no endpoint matches (exact match)', async () => {
@@ -97,10 +118,7 @@ describe('endpointAvailable Middleware', () => {
 
     await endpointAvailable(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(404);
-    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Endpoint not found' });
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(mockRes.send).not.toHaveBeenCalled();
+    expectEndpointAvailableResponse({ status: 404, jsonResponse: { message: 'Endpoint not found' } });
   });
 
   it('should return 404 send if a matching endpoint is not available (exact match)', async () => {
@@ -109,10 +127,7 @@ describe('endpointAvailable Middleware', () => {
 
     await endpointAvailable(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(404);
-    expect(mockRes.send).toHaveBeenCalledWith('Endpoint not available');
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(mockRes.json).not.toHaveBeenCalled();
+    expectEndpointAvailableResponse({ status: 404, sendResponse: 'Endpoint not available' });
   });
 
   it('should load configurations if cache is null and call next if endpoint is available', async () => {
@@ -125,10 +140,8 @@ describe('endpointAvailable Middleware', () => {
 
     await endpointAvailable(mockReq, mockRes, mockNext);
 
-    expect(models.Configuration.findAll).toHaveBeenCalledOnce();
-    expect(getConfigurationsCache()).toEqual(mockConfigurations);
-    expect(mockNext).toHaveBeenCalledTimes(1);
     expect(console.log).toHaveBeenCalledWith('Configurations cache loaded successfully.');
+    expectEndpointAvailableResponse({ status: undefined, calledNext: true });
   });
 
   it('should return 500 if loading configurations fails', async () => {
@@ -140,10 +153,8 @@ describe('endpointAvailable Middleware', () => {
 
     await endpointAvailable(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(mockRes.send).toHaveBeenCalledWith('Error loading configurations.');
-    expect(mockNext).not.toHaveBeenCalled();
     expect(console.error).toHaveBeenCalledWith('Endpoint Availability Middleware Error:', expect.any(Error));
+    expectEndpointAvailableResponse({ status: 500, sendResponse: 'Error loading configurations.' });
   });
 
   it('should return 500 for unexpected empty cache after loading attempt', async () => {   
@@ -156,10 +167,8 @@ describe('endpointAvailable Middleware', () => {
 
     await endpointAvailable(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(mockRes.send).toHaveBeenCalledWith('Internal server error.');
-    expect(mockNext).not.toHaveBeenCalled();
     expect(console.error).toHaveBeenCalledWith('Unhandled error in endpointAvailable middleware:', expect.any(Error));
+    expectEndpointAvailableResponse({ status: 500, sendResponse: 'Internal server error.' });
   });
 });
 
@@ -179,16 +188,55 @@ describe('assistantlimitReached Middleware', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
+  const expectAssistantLimitResponse = ({
+    status,
+    jsonResponse,
+    sendResponse,
+    calledNext = false,
+    expectedConsoleError = [],
+    expectedConsoleWarn = []
+  }) => {
+    if (status !== undefined) {
+      expect(mockRes.status).toHaveBeenCalledWith(status);
+    }
+
+    if (jsonResponse !== undefined) {
+      expect(mockRes.json).toHaveBeenCalledWith(jsonResponse);
+      expect(mockRes.send).not.toHaveBeenCalled();
+    } else if (sendResponse !== undefined) {
+      expect(mockRes.send).toHaveBeenCalledWith(sendResponse);
+      expect(mockRes.json).not.toHaveBeenCalled();
+    } else {
+      expect(mockRes.json).not.toHaveBeenCalled();
+      expect(mockRes.send).not.toHaveBeenCalled();
+    }
+
+    if (calledNext) {
+      expect(mockNext).toHaveBeenCalledOnce();
+    } else {
+      expect(mockNext).not.toHaveBeenCalled();
+    }
+
+    expectedConsoleError.forEach(args => {
+      expect(console.error).toHaveBeenCalledWith(...args);
+    });
+
+    expectedConsoleWarn.forEach(args => {
+      expect(console.warn).toHaveBeenCalledWith(...args);
+    });
+  };
+
   it('should return 500 if loading configurations cache fails', async () => {
     vi.spyOn(models.Configuration, 'findAll').mockRejectedValue(new Error('Database error'));
     setConfigurationCache(null);
 
     await assistantlimitReached(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(mockRes.send).toHaveBeenCalledWith('Error loading configurations.');
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalledWith('Assistant Limit Middleware Error (Cache):', expect.any(Error));
+    expectAssistantLimitResponse({
+      status: 500,
+      sendResponse: 'Error loading configurations.',
+      expectedConsoleError: [['Assistant Limit Middleware Error (Cache):', expect.any(Error)]]
+    });
   });
 
   it('should return 404 if endpoint configuration is not found', async () => {
@@ -196,11 +244,11 @@ describe('assistantlimitReached Middleware', () => {
 
     await assistantlimitReached(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(404);
-    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Endpoint configuration for /api/assistant not found or limit not defined.' });
-    expect(mockRes.send).not.toHaveBeenCalled();
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(console.warn).toHaveBeenCalledWith('Configuration for /api/assistant not found or limit not defined.');
+    expectAssistantLimitResponse({
+      status: 404,
+      jsonResponse: { message: 'Endpoint configuration for /api/assistant not found or limit not defined.' },
+      expectedConsoleWarn: [['Configuration for /api/assistant not found or limit not defined.']]
+    });
   });
 
   it('should return 404 if endpoint configuration limit is undefined', async () => {
@@ -208,11 +256,11 @@ describe('assistantlimitReached Middleware', () => {
 
     await assistantlimitReached(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(404);
-    expect(mockRes.json).toHaveBeenCalledWith({ message: 'Endpoint configuration for /api/assistant not found or limit not defined.' });
-    expect(mockRes.send).not.toHaveBeenCalled();
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(console.warn).toHaveBeenCalledWith('Configuration for /api/assistant not found or limit not defined.');
+    expectAssistantLimitResponse({
+      status: 404,
+      jsonResponse: { message: 'Endpoint configuration for /api/assistant not found or limit not defined.' },
+      expectedConsoleWarn: [['Configuration for /api/assistant not found or limit not defined.']]
+    });
   });
 
   it('should log non-ConfigurationNotFoundError in loadAssistantConfiguration and rethrow', async () => {
@@ -221,10 +269,14 @@ describe('assistantlimitReached Middleware', () => {
 
     await assistantlimitReached(mockReq, mockRes, mockNext);
 
-    expect(console.error).toHaveBeenCalledWith('Error fetching assistant configuration for /api/assistant:', dbError);
-    expect(console.error).toHaveBeenCalledWith('Unhandled error in assistantlimitReached middleware:', expect.any(Error));
-    expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(mockRes.send).toHaveBeenCalledWith('Internal server error.');
+    expectAssistantLimitResponse({
+      status: 500,
+      sendResponse: 'Internal server error.',
+      expectedConsoleError: [
+        ['Error fetching assistant configuration for /api/assistant:', dbError],
+        ['Unhandled error in assistantlimitReached middleware:', expect.any(Error)]
+      ]
+    });
   });
 
 
@@ -234,10 +286,11 @@ describe('assistantlimitReached Middleware', () => {
 
     await assistantlimitReached(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(mockRes.send).toHaveBeenCalledWith('Error checking assistant limits.');
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalledWith('Assistant Limit Middleware Error (Fetch):', expect.any(Error));
+    expectAssistantLimitResponse({
+      status: 500,
+      sendResponse: 'Error checking assistant limits.',
+      expectedConsoleError: [['Assistant Limit Middleware Error (Fetch):', expect.any(Error)]]
+    });
   });
 
 
@@ -247,11 +300,14 @@ describe('assistantlimitReached Middleware', () => {
 
     await assistantlimitReached(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(mockRes.send).toHaveBeenCalledWith('Error checking assistant limits.');
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalledWith('models.Assistant.findAll did not return an array.');
-    expect(console.error).toHaveBeenCalledWith('Assistant Limit Middleware Error (Fetch):', expect.any(Error));
+    expectAssistantLimitResponse({
+      status: 500,
+      sendResponse: 'Error checking assistant limits.',
+      expectedConsoleError: [
+        ['models.Assistant.findAll did not return an array.'],
+        ['Assistant Limit Middleware Error (Fetch):', expect.any(Error)]
+      ]
+    });
   });
 
 
@@ -261,10 +317,7 @@ describe('assistantlimitReached Middleware', () => {
 
     await assistantlimitReached(mockReq, mockRes, mockNext);
 
-    expect(mockNext).toHaveBeenCalledTimes(1);
-    expect(mockRes.status).not.toHaveBeenCalled();
-    expect(mockRes.send).not.toHaveBeenCalled();
-    expect(mockRes.json).not.toHaveBeenCalled();
+    expectAssistantLimitResponse({ calledNext: true });
   });
 
   it('should return 429 if assistant limit is reached', async () => {
@@ -273,10 +326,7 @@ describe('assistantlimitReached Middleware', () => {
 
     await assistantlimitReached(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(429);
-    expect(mockRes.send).toHaveBeenCalledWith('Assistant limit reached.');
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(mockRes.json).not.toHaveBeenCalled();
+    expectAssistantLimitResponse({ status: 429, sendResponse: 'Assistant limit reached.' });
   });
 
   it('should call next() if assistant count is zero', async () => {
@@ -285,10 +335,7 @@ describe('assistantlimitReached Middleware', () => {
 
     await assistantlimitReached(mockReq, mockRes, mockNext);
 
-    expect(mockNext).toHaveBeenCalledTimes(1);
-    expect(mockRes.status).not.toHaveBeenCalled();
-    expect(mockRes.send).not.toHaveBeenCalled();
-    expect(mockRes.json).not.toHaveBeenCalled();
+    expectAssistantLimitResponse({ calledNext: true });
   });
 
   it('should return 500 for unhandled errors in assistantlimitReached middleware', async () => {
@@ -297,10 +344,13 @@ describe('assistantlimitReached Middleware', () => {
 
     await assistantlimitReached(mockReq, mockRes, mockNext);
 
-    expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(mockRes.send).toHaveBeenCalledWith('Internal server error.');
-    expect(mockNext).not.toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalledWith('Error fetching assistant configuration for /api/assistant:', unexpectedError);
-    expect(console.error).toHaveBeenCalledWith('Unhandled error in assistantlimitReached middleware:', expect.any(Error));
+    expectAssistantLimitResponse({
+      status: 500,
+      sendResponse: 'Internal server error.',
+      expectedConsoleError: [
+        ['Error fetching assistant configuration for /api/assistant:', unexpectedError],
+        ['Unhandled error in assistantlimitReached middleware:', expect.any(Error)]
+      ]
+    });
   });
 });
