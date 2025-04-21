@@ -8,7 +8,14 @@ import { finalizeControlsByCatalogId } from './control.controller.js';
 
 export const getCatalogs = async (req, res) => {
   try {
-    const catalogs = await models.Catalog.findAll();
+    const { status } = req.query;
+    
+    let where = {};
+    if (status === 'finalized' || status === 'draft') {
+      where = { status };
+    }
+    
+    const catalogs = await models.Catalog.findAll({ where });
     res.status(200).json(catalogs);
   } catch (error) {
     res.status(500).json({ message: `Failed to retrieve catalogs, error: ${error.message}` });
@@ -158,19 +165,6 @@ async function updateOrCreateAgreement(catalog, controls, agreementId) {
 }
 
 // Draft Catalogs
-
-export const getDraftCatalogs = async (req, res) => {
-  try {
-    const catalogs = await models.Catalog.findAll({
-      where: {
-        status: 'draft'
-      }
-    });
-    res.status(200).json(catalogs);
-  } catch (error) {
-    res.status(500).json({ message: `Failed to retrieve draft catalogs, error: ${error.message}` });
-  }
-};
 
 export const createDraftCatalog = async (req, res) => {
   try {
