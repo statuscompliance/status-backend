@@ -6,11 +6,19 @@ import {
   updateCatalog,
   deleteCatalog,
   calculatePoints,
+  getDraftCatalogs,
+  createDraftCatalog,
+  finalizeCatalog,
 } from '../controllers/catalog.controller.js';
 import { getCatalogControls } from '../controllers/control.controller.js';
 
 
 const router = Router();
+
+// Draft Catalogs
+router.get('/drafts', getDraftCatalogs);
+router.post('/drafts', createDraftCatalog);
+router.patch('/:id/finalize', finalizeCatalog);
 
 // Catalogs
 router.get('', getCatalogs);
@@ -20,6 +28,7 @@ router.patch('/:id', updateCatalog);
 router.delete('/:id', deleteCatalog);
 router.get('/:tpaId/points', calculatePoints);
 router.get('/:catalogId/controls', getCatalogControls);
+
 
 export default router;
 
@@ -276,6 +285,126 @@ export default router;
  *                 $ref: '#/components/schemas/Point'
  *       500:
  *         description: Failed to get points
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /catalogs/drafts:
+ *   get:
+ *     summary: Retrieves all draft catalogs
+ *     tags: [Catalogs]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of draft catalogs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Catalog'
+ *       500:
+ *         description: Failed to get draft catalogs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /catalogs/drafts:
+ *   post:
+ *     summary: Creates a new draft catalog
+ *     tags: [Catalogs]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Catalog'
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Draft catalog created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Catalog'
+ *       400:
+ *         description: Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to create draft catalog
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /catalogs/{id}/finalize:
+ *   patch:
+ *     summary: Finalizes a draft catalog
+ *     tags: [Catalogs]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The catalog ID
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Catalog finalized successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Catalog'
+ *       400:
+ *         description: Cannot finalize (missing required fields or already finalized)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Catalog not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to finalize catalog
  *         content:
  *           application/json:
  *             schema:

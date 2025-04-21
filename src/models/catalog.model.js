@@ -24,6 +24,10 @@ export default (sequelize) => sequelize.define('Catalog', {
   tpaId: {
     type: DataTypes.STRING(40),
     allowNull: true
+  },
+  status: {
+    type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('draft', 'finalized'),
+    defaultValue: 'finalized'
   }
 }, {
   tableName: 'catalog',
@@ -57,6 +61,10 @@ export default (sequelize) => sequelize.define('Catalog', {
  *         tpaId:
  *           type: string
  *           description: The ID of the agreement associated with the catalog
+ *         status:
+ *           type: string
+ *           description: The status of the catalog
+ *           enum: [draft, finalized]
  *       required:
  *         - name
  *       example:
@@ -66,4 +74,5 @@ export default (sequelize) => sequelize.define('Catalog', {
  *         endDate: 2024-08-31T23:59:59.000Z
  *         dashboard_id: ae08pn1m04lxcd
  *         tpaId: tpa-aefe3b50-22cb-4a5b-88c5-66f236bfdeca
+ *         status: draft
  */

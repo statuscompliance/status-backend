@@ -1,103 +1,159 @@
 import { models } from '../models/models.js';
 
-export let configurationsCache = null;
-
-export const setConfigurationCache = (newCache) => {
-  configurationsCache = newCache;
-}
-
-export async function updateConfigurationsCache() {
-  try {
-    configurationsCache = await models.Configuration.findAll();
-  } catch (err) {
-    console.error(err);
+class CacheLoadError extends Error {
+  constructor(message, originalError) {
+    super(message);
+    this.name = 'CacheLoadError';
+    this.originalError = originalError;
   }
 }
 
-//Endpoint
-async function loadConfigurations() {
+class ConfigurationNotFoundError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ConfigurationNotFoundError';
+  }
+}
+
+class AssistantFetchError extends Error {
+  constructor(message, originalError) {
+    super(message);
+    this.name = 'AssistantFetchError';
+    this.originalError = originalError;
+  }
+}
+
+const ASSISTANT_ENDPOINT = '/api/assistant';
+const ERROR_MESSAGE_GENERIC = 'Internal server error.';
+
+let configurationsCache = null;
+
+export const setConfigurationCache = (newCache) => {
+  configurationsCache = newCache;
+};
+
+export const getConfigurationsCache = () => configurationsCache;
+
+async function fetchAllConfigurations() {
   try {
-    await updateConfigurationsCache();
-  } catch (error) {
-    console.error('Error updating configurations cache:', error);
-    throw new Error('Error loading configurations.');
+    return await models.Configuration.findAll();
+  } catch (err) {
+    console.error('Error fetching configurations from DB:', err);
+    throw new CacheLoadError('Failed to fetch configurations from database', err);
+  }
+}
+
+export async function ensureConfigurationsLoaded() {
+  if (!configurationsCache) {
+    try {
+      configurationsCache = await fetchAllConfigurations();
+      if (!configurationsCache) {
+        // This case might happen if findAll returns null/undefined unexpectedly
+        // Although less likely for findAll, adding a check is safer.
+        console.error('fetchAllConfigurations returned null or undefined.');
+        throw new CacheLoadError('Configurations cache is still empty after fetching.');
+      }
+      console.log('Configurations cache loaded successfully.');
+    } catch (error) {
+      // Re-throw the custom error caught from fetchAllConfigurations
+      console.error(error);
+      throw error;
+    }
   }
 }
 
 function findMatchingConfiguration(endpoint, cache) {
-  return cache.find(
-    (config) =>
-      endpoint.includes(config.dataValues.endpoint) ||
-      config.dataValues.endpoint.includes(endpoint)
+  const matchingConfig = cache.find(
+    (config) => config.endpoint === endpoint
   );
+
+  if (matchingConfig && typeof matchingConfig.available !== 'undefined') {
+    return matchingConfig;
+  }
+
+  return null;
 }
 
 export async function endpointAvailable(req, res, next) {
-
-  if (!configurationsCache) {
-    try {
-      await loadConfigurations();
-    } catch (error) {
-      return res.status(500).send(error.message);
+  try {
+    await ensureConfigurationsLoaded();
+    
+    if (!configurationsCache) {
+      console.error('Configurations cache is unexpectedly empty.');
+      throw new CacheLoadError('Configurations cache is unavailable.');
     }
-  }
 
-  if (!configurationsCache) {
-    console.error('Configurations cache is still empty after loading.');
-    return res.status(500).send('Error loading configurations.');
-  }
 
-  const endpoint = req.url;
-  const matchingConfig = findMatchingConfiguration(endpoint, configurationsCache);
+    const endpoint = req.url;
+    const matchingConfig = findMatchingConfiguration(endpoint, configurationsCache);
 
-  if (!matchingConfig) {
-    return res.status(404).json({ message: 'Endpoint not found' });
-  }
+    if (!matchingConfig) {
+      return res.status(404).json({ message: 'Endpoint not found' });
+    }
 
-  if (matchingConfig.dataValues.available) {
-    next();
-  } else {
-    res.status(404).send('Endpoint not available');
+    if (matchingConfig.available) {
+      next();
+    } else {
+      res.status(404).send('Endpoint not available');
+    }
+
+  } catch (error) {
+    if (error instanceof CacheLoadError) {
+      console.error('Endpoint Availability Middleware Error:', error);
+      return res.status(500).send('Error loading configurations.');
+    } else {
+      console.error('Unhandled error in endpointAvailable middleware:', error);
+      return res.status(500).send(ERROR_MESSAGE_GENERIC);
+    }
   }
 }
 
-//Assistant
-async function loadAssistantConfiguration(endpoint = '/api/assistant') {
+async function loadAssistantConfiguration(endpoint = ASSISTANT_ENDPOINT) {
+  try {
 
-  const config = await models.Configuration.findOne({ where: { endpoint } });
+    const config = await models.Configuration.findOne({ where: { endpoint } });
 
-  if (!config || !config.dataValues || typeof config.dataValues.limit === 'undefined') {
-    console.warn(`Configuration for ${endpoint} not found or limit not defined.`);
-    throw new Error('Endpoint configuration not found.');
+    if (!config || typeof config.limit === 'undefined') {
+      console.warn(`Configuration for ${endpoint} not found or limit not defined.`);
+      throw new ConfigurationNotFoundError(`Endpoint configuration for ${endpoint} not found or limit not defined.`);
+    }
+
+    return config.limit;
+
+  } catch (error) {
+
+    if (!(error instanceof ConfigurationNotFoundError)) {
+      console.error(`Error fetching assistant configuration for ${endpoint}:`, error);
+    }
+    throw error;
   }
-  return config.dataValues.limit;
 }
 
 async function getAssistantCount() {
   try {
     const assistants = await models.Assistant.findAll();
-    if (assistants) {
+    if (Array.isArray(assistants)) {
       return assistants.length;
     } else {
-      return 0;
+      console.error('models.Assistant.findAll did not return an array.');
+      throw new AssistantFetchError('Failed to get assistant count: unexpected database response.');
     }
   } catch (error) {
-    console.error('Error fetching assistants:', error);
-    throw new Error('Error fetching assistants.');
+    console.error('Error fetching assistants from DB:', error);
+    throw new AssistantFetchError('Failed to fetch assistants from database', error);
   }
 }
 
 export async function assistantlimitReached(req, res, next) {
-  if (!configurationsCache) {
-    try {
-      await updateConfigurationsCache();
-    } catch (error) {
-      console.error('Error updating configurations cache:', error);
-      return res.status(500).send('Error loading configurations.');
-    }
-  }
-
   try {
+    await ensureConfigurationsLoaded();
+
+    if (!configurationsCache) {
+
+      console.error('Configurations cache is unexpectedly empty.');
+      throw new CacheLoadError('Configurations cache is unavailable.');
+    }
+
     const limit = await loadAssistantConfiguration();
     const assistantCount = await getAssistantCount();
 
@@ -108,15 +164,19 @@ export async function assistantlimitReached(req, res, next) {
     next();
 
   } catch (error) {
-    if (error.message === 'Error loading configurations.') {
-      return res.status(500).send(error.message);
-    } else if (error.message === 'Endpoint configuration not found.') {
+
+    if (error instanceof CacheLoadError) {
+      console.error('Assistant Limit Middleware Error (Cache):', error);
+      return res.status(500).send('Error loading configurations.');
+    } else if (error instanceof ConfigurationNotFoundError) {
+      console.warn('Assistant Limit Middleware Error (Config Not Found):', error.message);
       return res.status(404).json({ message: error.message });
-    } else if (error.message === 'Error fetching assistants.') {
+    } else if (error instanceof AssistantFetchError) {
+      console.error('Assistant Limit Middleware Error (Fetch):', error);
       return res.status(500).send('Error checking assistant limits.');
     } else {
-      console.error('Unhandled error in assistantlimitReached:', error);
-      return res.status(500).send('Internal server error.');
+      console.error('Unhandled error in assistantlimitReached middleware:', error);
+      return res.status(500).send(ERROR_MESSAGE_GENERIC);
     }
   }
 }
