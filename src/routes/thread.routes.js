@@ -1,5 +1,4 @@
 import { Router } from 'express';
-
 import { verifyAuthority } from '../middleware/verifyAuth.js';
 import {
   getThreads,
@@ -12,22 +11,23 @@ import {
   changeThreadName,
 } from '../controllers/thread.controller.js';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  router.get('s', verifyAuthority, getThreads);
+  router.get('', verifyAuthority, getThreadsByUserId);
+  router.get(
+    '/:gptId',
+    verifyAuthority,
+    getThreadMessages
+  );
+  router.post('', verifyAuthority, createThread);
+  router.post('/:gptId', verifyAuthority, addNewMessage);
+  router.delete('/:gptId', verifyAuthority, deleteThread);
+  router.delete('', verifyAuthority, deleteUserThreads);
+  router.put('/:gptId', verifyAuthority, changeThreadName);
 
-router.get('s', verifyAuthority, getThreads);
-router.get('', verifyAuthority, getThreadsByUserId);
-router.get(
-  '/:gptId',
-  verifyAuthority,
-  getThreadMessages
-);
-router.post('', verifyAuthority, createThread);
-router.post('/:gptId', verifyAuthority, addNewMessage);
-router.delete('/:gptId', verifyAuthority, deleteThread);
-router.delete('', verifyAuthority, deleteUserThreads);
-router.put('/:gptId', verifyAuthority, changeThreadName);
-
-export default router;
+  return router;
+}
 
 /**
  * Retrieves all threads.

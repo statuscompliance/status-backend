@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { validateUUID} from '../middleware/validation.js';
+import { validateUUID } from '../middleware/validation.js';
 import {
   getComputations,
   getComputationsById,
@@ -8,15 +8,16 @@ import {
   deleteComputations,
 } from '../controllers/computation.controller.js';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  router.get('', getComputations);
+  router.delete('', deleteComputations);
+  router.get('/:id', validateUUID('id'), getComputationsById);
+  router.post('', createComputation);
+  router.post('/bulk', bulkCreateComputations);
 
-router.get('', getComputations);
-router.delete('', deleteComputations);
-router.get('/:id', validateUUID('id'), getComputationsById);
-router.post('', createComputation);
-router.post('/bulk', bulkCreateComputations);
-
-export default router;
+  return router;
+}
 
 /**
  * @swagger

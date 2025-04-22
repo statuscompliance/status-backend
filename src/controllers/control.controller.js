@@ -3,29 +3,70 @@ import { methods } from '../config/grafana.js';
 import { checkRequiredProperties } from '../utils/checkRequiredProperties.js';
 
 export const getControls = async (req, res) => {
-  const rows = await models.Control.findAll();
-  res.json(rows);
+  try {
+    const { status } = req.query;
+    
+    const whereClause = {};
+    if (status === 'finalized' || status === 'draft') {
+      whereClause.status = status;
+    }
+    
+    const rows = await models.Control.findAll({ 
+      where: whereClause 
+    });
+    
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error retrieving controls',
+      error: error.message,
+    });
+  }
 };
 
 export const getControl = async (req, res) => {
-  const row = await models.Control.findByPk(req.params.id);
+  try {
+    const row = await models.Control.findByPk(req.params.id);
 
-  if (!row)
-    return res.status(404).json({
-      message: 'Control not found',
+    if (!row) {
+      return res.status(404).json({
+        message: 'Control not found',
+      });
+    }
+
+    res.status(200).json(row);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error retrieving control',
+      error: error.message,
     });
-
-  res.status(200).json(row);
+  }
 };
 
 export const getCatalogControls = async (req, res) => {
-  const rows = await models.Control.findAll({
-    where: {
-      catalogId: req.params.catalogId,
-    },
-  });
+  try {
+    const { catalogId } = req.params;
+    const { status } = req.query;
+    
+    const whereClause = {
+      catalogId: catalogId,
+    };
+    
+    if (status === 'finalized' || status === 'draft') {
+      whereClause.status = status;
+    }
+    
+    const rows = await models.Control.findAll({
+      where: whereClause,
+    });
 
-  res.json(rows);
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error retrieving catalog controls',
+      error: error.message,
+    });
+  }
 };
 
 export const createControl = async (req, res) => {
@@ -164,10 +205,10 @@ export const deleteControl = async (req, res) => {
       return res.status(404).json({ message: 'Control not found' });
     }
 
-    return res.status(204).send();
+    res.status(204).json();
   } catch (error) {
     console.error('Error deleting control:', error);
-    return res.status(500).json({
+    res.status(500).json({
       message: 'Error deleting control',
       error: error.message,
     });
@@ -176,7 +217,6 @@ export const deleteControl = async (req, res) => {
 
 export async function addPanelToControl(req, res) {
   const { id, panelId } = req.params;
-
   const { dashboardUid } = req.body;
 
   try {
@@ -241,7 +281,7 @@ export async function getPanelsByControlId(req, res) {
         error: error,
       });
     } else {
-      return res.status(500).json({
+      res.status(500).json({
         message:
                     'Failed to get panels from control, error in Grafana API',
         error: error.message,
@@ -272,46 +312,6 @@ export async function deletePanelFromControl(req, res) {
 }
 
 // Draft controls
-
-export const getDraftControls = async (req, res) => {
-  try {
-    const controls = await models.Control.findAll({
-      where: {
-        status: 'draft'
-      }
-    });
-    res.status(200).json(controls);
-  } catch (error) {
-    res.status(500).json({ 
-      message: `Failed to retrieve draft controls, error: ${error.message}` 
-    });
-  }
-};
-
-export const getDraftControlsByCatalogId = async (req, res) => {
-  try {
-    const { catalogId } = req.params;
-    
-    // Check if catalog exists
-    const catalog = await models.Catalog.findByPk(catalogId);
-    if (!catalog) {
-      return res.status(404).json({ message: 'Catalog not found' });
-    }
-    
-    const controls = await models.Control.findAll({
-      where: {
-        catalogId,
-        status: 'draft'
-      }
-    });
-    
-    res.status(200).json(controls);
-  } catch (error) {
-    res.status(500).json({ 
-      message: `Failed to retrieve draft controls, error: ${error.message}` 
-    });
-  }
-};
 
 export const createDraftControl = async (req, res) => {
   const {

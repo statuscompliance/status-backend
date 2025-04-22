@@ -6,31 +6,28 @@ import {
   updateCatalog,
   deleteCatalog,
   calculatePoints,
-  getDraftCatalogs,
   createDraftCatalog,
   finalizeCatalog,
 } from '../controllers/catalog.controller.js';
 import { getCatalogControls } from '../controllers/control.controller.js';
 
+export default function () {
+  const router = Router();
+  // Draft Catalogs
+  router.post('/drafts', createDraftCatalog);
+  router.patch('/:id/finalize', finalizeCatalog);
 
-const router = Router();
+  // Catalogs
+  router.get('', getCatalogs);
+  router.get('/:id', getCatalog);
+  router.post('', createCatalog);
+  router.patch('/:id', updateCatalog);
+  router.delete('/:id', deleteCatalog);
+  router.get('/:tpaId/points', calculatePoints);
+  router.get('/:catalogId/controls', getCatalogControls);
 
-// Draft Catalogs
-router.get('/drafts', getDraftCatalogs);
-router.post('/drafts', createDraftCatalog);
-router.patch('/:id/finalize', finalizeCatalog);
-
-// Catalogs
-router.get('', getCatalogs);
-router.get('/:id', getCatalog);
-router.post('', createCatalog);
-router.patch('/:id', updateCatalog);
-router.delete('/:id', deleteCatalog);
-router.get('/:tpaId/points', calculatePoints);
-router.get('/:catalogId/controls', getCatalogControls);
-
-
-export default router;
+  return router;
+}
 
 /**
  * @swagger
@@ -45,6 +42,14 @@ export default router;
  *   get:
  *     summary: Retrieves all catalogs
  *     tags: [Catalogs]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [finalized, draft]
+ *         required: false
+ *         description: Filter catalogs by status (finalized/draft). If empty, returns all catalogs.
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -285,34 +290,6 @@ export default router;
  *                 $ref: '#/components/schemas/Point'
  *       500:
  *         description: Failed to get points
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- */
-
-/**
- * @swagger
- * /catalogs/drafts:
- *   get:
- *     summary: Retrieves all draft catalogs
- *     tags: [Catalogs]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: A list of draft catalogs
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Catalog'
- *       500:
- *         description: Failed to get draft catalogs
  *         content:
  *           application/json:
  *             schema:
