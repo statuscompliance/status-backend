@@ -1,6 +1,6 @@
-import { beforeAll, afterAll, vi } from 'vitest';
+import { beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import supertest from 'supertest';
-import { connect, clearDatabase, closeDatabase } from './database';
+import { connect, clearDatabase, closeDatabase, mockModelsForUnitTests, isIntegrationTest } from './database';
 import configureApp from '../../src/index.js';
 
 const app = configureApp();
@@ -15,18 +15,27 @@ beforeAll(async () => {
   request = supertest.agent(server);
 });
 
+beforeEach(() => {
+  if (!isIntegrationTest) {
+    mockModelsForUnitTests();
+  }
+});
+
 afterAll(async () => {
-  await clearDatabase();
+  if (isIntegrationTest) {
+    await clearDatabase();
+  }
   if (server) {
     server.close();
   }
-  await closeDatabase();
+  if (isIntegrationTest) {
+    await closeDatabase();
+  }
 });
 
 async function mockRedis() {
-  // Mock Redis
   vi.mock('ioredis', () => {
-    return import('ioredis-mock'); // Dynamically import 'redis-mock' for mocking
+    return import('ioredis-mock');
   });
   console.log('[redis] Redis mocked');
 }
