@@ -1,0 +1,60 @@
+🧪 Tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - tests/**
+
+📝 Documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - README.md
+          - openapi.yaml
+          - grafana-client/**
+
+🐳 Build:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .dockerignore
+          - Dockerfile
+
+⚙️ Configuration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .dockerignore
+          - .env.example
+          - .gitignore
+          - vitest.config.**.js
+          - openapitools.json
+          - commitlint.config.ts
+          - tsconfig.json
+          - .npmrc
+          - eslint.config.js
+          - scripts/**
+
+📦 Dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - package.json
+          - package-lock.json
+
+🚀 CI/CD:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/workflows/**
+          - .github/renovate.json
+          - .github/pr-scope-labeler.yml
+
+🏠 Github Configuration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/ISSUE_TEMPLATE/**
+          - .github/CODEOWNERS
+          - .github/labels.yml
+          - .devcontainer/**
+
+🤓👆 Skill issue:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .env
+          - node_modules/**
+          - CODEOWNERS
+          - LICENSE
