@@ -97,7 +97,7 @@ export async function signIn(req, res) {
         { where: { username } }
       );
       let nodeRedToken = '';
-      if (user.authority === 'DEVELOPER') {
+      if (user.authority === 'DEVELOPER' || user.authority === 'ADMIN') {
         nodeRedToken = await getNodeRedToken(username, password);
       }
 
