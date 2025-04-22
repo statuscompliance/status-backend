@@ -12,23 +12,24 @@ import {
 import { verifyAdmin } from '../middleware/verifyAdmin.js';
 import { assistantlimitReached } from '../middleware/endpoint.js';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  router.get('', getAssistants);
+  router.get('/:id', getAssistantsById);
+  router.get('/:id/instructions', getAssistantInstructions);
+  router.post('', assistantlimitReached, createAssistant);
+  router.post(
+    '/admin',
+    verifyAdmin,
+    assistantlimitReached,
+    createAssistantWithInstructions
+  );
+  router.put('/:id/instructions', updateAssistantInstructions);
+  router.delete('/:id', deleteAssistantById);
+  router.delete('', deleteAllAssistants);
 
-router.get('', getAssistants);
-router.get('/:id', getAssistantsById);
-router.get('/:id/instructions', getAssistantInstructions);
-router.post('', assistantlimitReached, createAssistant);
-router.post(
-  '/admin',
-  verifyAdmin,
-  assistantlimitReached,
-  createAssistantWithInstructions
-);
-router.put('/:id/instructions', updateAssistantInstructions);
-router.delete('/:id', deleteAssistantById);
-router.delete('', deleteAllAssistants);
-
-export default router;
+  return router;
+}
 
 /**
  * @swagger

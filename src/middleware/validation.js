@@ -23,3 +23,4 @@ export const validateUUID = (paramName) => {
 export function isGrafanaUID(uid) {
   return /^[a-zA-Z0-9]{12,24}$/.test(uid);
 }
+

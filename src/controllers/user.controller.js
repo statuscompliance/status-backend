@@ -97,7 +97,7 @@ export async function signIn(req, res) {
         { where: { username } }
       );
       let nodeRedToken = '';
-      if (user.authority === 'DEVELOPER') {
+      if (user.authority === 'DEVELOPER' || user.authority === 'ADMIN') {
         nodeRedToken = await getNodeRedToken(username, password);
       }
 
@@ -152,6 +152,16 @@ export async function signOut(req, res) {
         secure: true,
         sameSite: 'none',
       });
+      res.clearCookie('accessToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+      });
+      res.clearCookie('nodeRedToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+      });
       return res
         .status(404)
         .json({ message: 'No user found for provided refresh token' });
@@ -165,6 +175,16 @@ export async function signOut(req, res) {
     );
 
     res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+    res.clearCookie('nodeRedToken', {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
