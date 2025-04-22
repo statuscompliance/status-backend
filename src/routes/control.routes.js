@@ -8,46 +8,51 @@ import {
   addPanelToControl,
   getPanelsByControlId,
   deletePanelFromControl,
+  createDraftControl,
+  finalizeControl,
 } from '../controllers/control.controller.js';
-
 import { 
   getComputationsByControlId,
   deleteComputationByControlId,
   getComputationsByControlIdAndCreationDate,
   setComputeIntervalBytControlIdAndCreationDate,
 } from '../controllers/computation.controller.js';
-
 import { checkIdParam } from '../middleware/validation.js';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  // Draft Controls
+  router.post('/drafts', createDraftControl);
+  router.patch('/:id/finalize', finalizeControl);
 
-// Controls
-router.get('', getControls);
-router.get('/:id', checkIdParam, getControl);
-router.post('', createControl);
-router.patch('/:id',  checkIdParam, updateControl);
-router.delete('/:id', checkIdParam, deleteControl);
+  // Controls
+  router.get('', getControls);
+  router.get('/:id', checkIdParam, getControl);
+  router.post('', createControl);
+  router.patch('/:id',  checkIdParam, updateControl);
+  router.delete('/:id', checkIdParam, deleteControl);
 
-router.get('/:id/panels', getPanelsByControlId);
-router.post('/:id/panel/:panelId', addPanelToControl);
-router.delete('/:id/panels/:panelId', deletePanelFromControl);
+  router.get('/:id/panels', getPanelsByControlId);
+  router.post('/:id/panel/:panelId', addPanelToControl);
+  router.delete('/:id/panels/:panelId', deletePanelFromControl);
 
-// Controls computations 
-router.get('/controls/:controlId/computations', getComputationsByControlId);
-router.get(
-  '/controls/:controlId/computations/:createdAt',
-  getComputationsByControlIdAndCreationDate
-);
-router.put(
-  '/controls/:controlId/computations',
-  setComputeIntervalBytControlIdAndCreationDate
-);
-router.delete(
-  '/controls/:controlId/computations',
-  deleteComputationByControlId
-);
+  // Controls computations 
+  router.get('/controls/:controlId/computations', getComputationsByControlId);
+  router.get(
+    '/controls/:controlId/computations/:createdAt',
+    getComputationsByControlIdAndCreationDate
+  );
+  router.put(
+    '/controls/:controlId/computations',
+    setComputeIntervalBytControlIdAndCreationDate
+  );
+  router.delete(
+    '/controls/:controlId/computations',
+    deleteComputationByControlId
+  );
 
-export default router;
+  return router;
+}
 
 /**
  * @swagger
@@ -62,6 +67,14 @@ export default router;
  *   get:
  *     summary: Retrieves all controls
  *     tags: [Controls]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [finalized, draft]
+ *         required: false
+ *         description: Filter controls by status. If not provided, returns all controls.
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -274,6 +287,13 @@ export default router;
  *           type: integer
  *         required: true
  *         description: The catalog ID
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [finalized, draft]
+ *         required: false
+ *         description: Filter controls by status. If not provided, returns all controls.
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -442,6 +462,107 @@ export default router;
  *                   type: string
  *       500:
  *         description: Failed to delete panel
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /controls/drafts:
+ *   post:
+ *     summary: Creates a new draft control
+ *     tags: [Controls]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Control'
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Draft control created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Control'
+ *       400:
+ *         description: Invalid input or catalog is not in draft status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       404:
+ *         description: Catalog not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Failed to create draft control
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /controls/{id}/finalize:
+ *   patch:
+ *     summary: Finalizes a draft control
+ *     tags: [Controls]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: The control ID
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Control finalized successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Control'
+ *       400:
+ *         description: Cannot finalize (missing required fields or already finalized)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Control not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to finalize control
  *         content:
  *           application/json:
  *             schema:

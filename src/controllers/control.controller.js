@@ -3,49 +3,98 @@ import { methods } from '../config/grafana.js';
 import { checkRequiredProperties } from '../utils/checkRequiredProperties.js';
 
 export const getControls = async (req, res) => {
-  const rows = await models.Control.findAll();
-  res.json(rows);
+  try {
+    const { status } = req.query;
+    
+    const whereClause = {};
+    if (status === 'finalized' || status === 'draft') {
+      whereClause.status = status;
+    }
+    
+    const rows = await models.Control.findAll({ 
+      where: whereClause 
+    });
+    
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error retrieving controls',
+      error: error.message,
+    });
+  }
 };
 
 export const getControl = async (req, res) => {
-  const row = await models.Control.findByPk(req.params.id);
+  try {
+    const row = await models.Control.findByPk(req.params.id);
 
-  if (!row)
-    return res.status(404).json({
-      message: 'Control not found',
+    if (!row) {
+      return res.status(404).json({
+        message: 'Control not found',
+      });
+    }
+
+    res.status(200).json(row);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error retrieving control',
+      error: error.message,
     });
-
-  res.status(200).json(row);
+  }
 };
 
 export const getCatalogControls = async (req, res) => {
-  const rows = await models.Control.findAll({
-    where: {
-      catalogId: req.params.catalogId,
-    },
-  });
+  try {
+    const { catalogId } = req.params;
+    const { status } = req.query;
+    
+    const whereClause = {
+      catalogId: catalogId,
+    };
+    
+    if (status === 'finalized' || status === 'draft') {
+      whereClause.status = status;
+    }
+    
+    const rows = await models.Control.findAll({
+      where: whereClause,
+    });
 
-  res.json(rows);
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error retrieving catalog controls',
+      error: error.message,
+    });
+  }
 };
 
-
 export const createControl = async (req, res) => {
-  const {
-    name,
-    description,
-    period,
-    startDate,
-    endDate,
-    mashupId,
-    catalogId,
-    params, // Should include endpoint and threshold at least
-  } = req.body;
-  const {validation, textError} = checkRequiredProperties( params, ['endpoint', 'threshold']);
+  try {
+    const {
+      name,
+      description,
+      period,
+      startDate,
+      endDate,
+      mashupId,
+      catalogId,
+      params, // Should include endpoint and threshold at least
+    } = req.body;
+    
+    const {validation, textError} = checkRequiredProperties(params, ['endpoint', 'threshold']);
 
-  if(!validation){
-    res.status(400).json({error: textError});
-  } else {
-    const formattedStartDate = startDate ? new Date(startDate) : null;
+    if(!validation) {
+      return res.status(400).json({error: textError});
+    }
+    
+    let formattedStartDate = null;
+    if (startDate) {
+      formattedStartDate = new Date(startDate);
+      if (isNaN(formattedStartDate.getTime())) {
+        return res.status(400).json({ error: 'Invalid startDate' });
+      }
+    }
     const formattedEndDate = endDate ? new Date(endDate) : null;
 
     const rows = await models.Control.create({
@@ -57,8 +106,9 @@ export const createControl = async (req, res) => {
       mashupId,
       catalogId,
       params,
+      status: 'finalized',
     });
-
+    
     res.status(201).json({
       id: rows.id,
       name,
@@ -68,6 +118,12 @@ export const createControl = async (req, res) => {
       formattedEndDate,
       mashupId,
       catalogId,
+    });
+  } catch (error) {
+    console.error('Error creating control:', error);
+    res.status(500).json({
+      message: 'Error creating control',
+      error: error.message,
     });
   }
 };
@@ -83,42 +139,59 @@ export const updateControl = async (req, res) => {
     mashupId,
     catalogId,
     params,
+    status,
   } = req.body;
   
-  const {validation, textError} = checkRequiredProperties( params, ['endpoint', 'threshold']);
-
-  if(!validation){
-    res.status(400).json({error: textError});
-  }
-
-  const formattedStartDate = startDate ? new Date(startDate) : null;
-  const formattedEndDate = endDate ? new Date(endDate) : null;
-
-  const currentControl = await models.Control.findByPk(id);
-  if (!currentControl) {
-    return res.status(404).json({ message: 'Control not found' });
-  }
-
-  await models.Control.update(
-    {
-      name,
-      description,
-      period,
-      startDate: formattedStartDate,
-      endDate: formattedEndDate,
-      mashupId,
-      catalogId,
-      params,
-    },
-    {
-      where: {
-        id,
-      },
+  try {
+    const currentControl = await models.Control.findByPk(id);
+    if (!currentControl) {
+      return res.status(404).json({ message: 'Control not found' });
     }
-  );
+    
+    // No se permite cambiar un control finalizado a borrador
+    if (currentControl.status === 'finalized' && status === 'draft') {
+      return res.status(400).json({ 
+        message: 'Cannot change status from finalized to draft' 
+      });
+    }
+    
+    // Si es un control finalizado, validar los params
+    if (status === 'finalized' || (!status && currentControl.status === 'finalized')) {
+      const {validation, textError} = checkRequiredProperties(params || currentControl.params, ['endpoint', 'threshold']);
+      if (!validation) {
+        return res.status(400).json({error: textError});
+      }
+    }
+    
+    const formattedStartDate = startDate ? new Date(startDate) : currentControl.startDate;
+    const formattedEndDate = endDate ? new Date(endDate) : currentControl.endDate;
 
-  const row = await models.Control.findByPk(id);
-  res.status(200).json(row);
+    await models.Control.update(
+      {
+        name,
+        description,
+        period,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+        mashupId,
+        catalogId,
+        params,
+        status,
+      },
+      {
+        where: {
+          id,
+        },
+      }
+    );
+
+    const row = await models.Control.findByPk(id);
+    res.status(200).json(row);
+  } catch (error) {
+    res.status(500).json({ 
+      message: `Failed to update control, error: ${error.message}` 
+    });
+  }
 };
 
 export const deleteControl = async (req, res) => {
@@ -132,10 +205,10 @@ export const deleteControl = async (req, res) => {
       return res.status(404).json({ message: 'Control not found' });
     }
 
-    return res.status(204).send();
+    res.status(204).json();
   } catch (error) {
     console.error('Error deleting control:', error);
-    return res.status(500).json({
+    res.status(500).json({
       message: 'Error deleting control',
       error: error.message,
     });
@@ -144,7 +217,6 @@ export const deleteControl = async (req, res) => {
 
 export async function addPanelToControl(req, res) {
   const { id, panelId } = req.params;
-
   const { dashboardUid } = req.body;
 
   try {
@@ -158,7 +230,6 @@ export async function addPanelToControl(req, res) {
       data: panel,
     });
   } catch (error) {
-    console.log(error);
     res.status(500).json({
       message: 'Error adding panel to control',
       error: error.message,
@@ -210,7 +281,7 @@ export async function getPanelsByControlId(req, res) {
         error: error,
       });
     } else {
-      return res.status(500).json({
+      res.status(500).json({
         message:
                     'Failed to get panels from control, error in Grafana API',
         error: error.message,
@@ -239,3 +310,145 @@ export async function deletePanelFromControl(req, res) {
     });
   }
 }
+
+// Draft controls
+
+export const createDraftControl = async (req, res) => {
+  const {
+    name,
+    description,
+    startDate,
+    endDate,
+    period,
+    mashupId,
+    catalogId,
+    params,
+  } = req.body;
+  
+  if (!name || !catalogId) {
+    return res.status(400).json({
+      error: 'Missing required fields for draft control: name and catalogId'
+    });
+  }
+  
+  try {
+    // Check if catalog exists
+    const catalog = await models.Catalog.findByPk(catalogId);
+    if (!catalog) {
+      return res.status(404).json({ error: 'Catalog not found' });
+    }
+    
+    // Check if catalog is a draft
+    if (catalog.status !== 'draft') {
+      return res.status(400).json({
+        error: 'Draft controls can only be added to draft catalogs'
+      });
+    }
+    
+    const rows = await models.Control.create({
+      name,
+      description: description || '',
+      period: period || 'MONTHLY',
+      startDate: startDate ? new Date(startDate) : new Date(),
+      endDate: endDate ? new Date(endDate) : null,
+      mashupId: mashupId || '',
+      catalogId,
+      params: params || {},
+      status: 'draft',
+    });
+    
+    res.status(201).json(rows);
+  } catch (error) {
+    res.status(500).json({
+      message: `Failed to create draft control, error: ${error.message}`
+    });
+  }
+};
+
+export const finalizeControl = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const currentControl = await models.Control.findByPk(id);
+    if (!currentControl) {
+      return res.status(404).json({ message: 'Control not found' });
+    }
+    
+    if (currentControl.status !== 'draft') {
+      return res.status(400).json({ message: 'Only draft controls can be finalized' });
+    }
+    
+    // Check if associated catalog is finalized
+    const catalog = await models.Catalog.findByPk(currentControl.catalogId);
+    if (!catalog) {
+      return res.status(404).json({ message: 'Associated catalog not found' });
+    }
+    
+    if (catalog.status !== 'finalized') {
+      return res.status(400).json({ 
+        message: 'Cannot finalize a control that belongs to a draft catalog' 
+      });
+    }
+    
+    // Check required properties for finalized controls
+    const {validation, textError} = checkRequiredProperties(
+      currentControl.params, 
+      ['endpoint', 'threshold']
+    );
+    
+    if (!validation) {
+      return res.status(400).json({
+        error: `Cannot finalize control: ${textError}`
+      });
+    }
+    
+    const updatedControl = await models.Control.update(
+      {
+        status: 'finalized',
+      },
+      {
+        where: {
+          id,
+        },
+        returning: true,
+      }
+    );
+    
+    res.status(200).json(updatedControl[1][0]);
+  } catch (error) {
+    res.status(500).json({ 
+      message: `Failed to finalize control, error: ${error.message}` 
+    });
+  }
+};
+
+// Method to finalize all draft controls in a catalog
+export const finalizeControlsByCatalogId = async (catalogId) => {
+  try {
+    // Get draft controls
+    const draftControls = await models.Control.findAll({
+      where: {
+        catalogId,
+        status: 'draft'
+      }
+    });
+    
+    // Update valid controls to finalized
+    let updatedControls = {};
+    if (draftControls.length > 0) {
+      updatedControls = await models.Control.update(
+        { status: 'finalized' },
+        {
+          where: {
+            id: draftControls.map(control => control.id)
+          }
+        }
+      );
+    }
+    
+    return updatedControls;
+  } catch (error) {
+    console.error('Error finalizing controls:', error);
+    throw error;
+  }
+};

@@ -6,22 +6,28 @@ import {
   updateCatalog,
   deleteCatalog,
   calculatePoints,
+  createDraftCatalog,
+  finalizeCatalog,
 } from '../controllers/catalog.controller.js';
 import { getCatalogControls } from '../controllers/control.controller.js';
 
+export default function () {
+  const router = Router();
+  // Draft Catalogs
+  router.post('/drafts', createDraftCatalog);
+  router.patch('/:id/finalize', finalizeCatalog);
 
-const router = Router();
+  // Catalogs
+  router.get('', getCatalogs);
+  router.get('/:id', getCatalog);
+  router.post('', createCatalog);
+  router.patch('/:id', updateCatalog);
+  router.delete('/:id', deleteCatalog);
+  router.get('/:tpaId/points', calculatePoints);
+  router.get('/:catalogId/controls', getCatalogControls);
 
-// Catalogs
-router.get('', getCatalogs);
-router.get('/:id', getCatalog);
-router.post('', createCatalog);
-router.patch('/:id', updateCatalog);
-router.delete('/:id', deleteCatalog);
-router.get('/:tpaId/points', calculatePoints);
-router.get('/:catalogId/controls', getCatalogControls);
-
-export default router;
+  return router;
+}
 
 /**
  * @swagger
@@ -36,6 +42,14 @@ export default router;
  *   get:
  *     summary: Retrieves all catalogs
  *     tags: [Catalogs]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [finalized, draft]
+ *         required: false
+ *         description: Filter catalogs by status (finalized/draft). If empty, returns all catalogs.
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -276,6 +290,98 @@ export default router;
  *                 $ref: '#/components/schemas/Point'
  *       500:
  *         description: Failed to get points
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /catalogs/drafts:
+ *   post:
+ *     summary: Creates a new draft catalog
+ *     tags: [Catalogs]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Catalog'
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Draft catalog created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Catalog'
+ *       400:
+ *         description: Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to create draft catalog
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /catalogs/{id}/finalize:
+ *   patch:
+ *     summary: Finalizes a draft catalog
+ *     tags: [Catalogs]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The catalog ID
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Catalog finalized successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Catalog'
+ *       400:
+ *         description: Cannot finalize (missing required fields or already finalized)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Catalog not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to finalize catalog
  *         content:
  *           application/json:
  *             schema:

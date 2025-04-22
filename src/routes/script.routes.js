@@ -1,5 +1,4 @@
-import { Router } from 'express';
-import express from 'express';
+import { Router, text } from 'express';
 import {
   createScript,
   getAllScripts,
@@ -9,20 +8,20 @@ import {
   deleteAllScripts,
   parseScript,
 } from '../controllers/script.controller.js';
-
 import { verifyAuthority } from '../middleware/verifyAuth.js';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  router.post('', verifyAuthority, createScript);
+  router.get('', verifyAuthority, getAllScripts);
+  router.delete('', verifyAuthority, deleteAllScripts);
+  router.post('/parse', text(), parseScript);
+  router.get('/:id', getScriptById);
+  router.put('/:id', verifyAuthority, updateScript);
+  router.delete('/:id', verifyAuthority, deleteScript);
 
-router.post('', verifyAuthority, createScript);
-router.get('', verifyAuthority, getAllScripts);
-router.delete('', verifyAuthority, deleteAllScripts);
-router.post('/parse', express.text(), parseScript);
-router.get('/:id', getScriptById);
-router.put('/:id', verifyAuthority, updateScript);
-router.delete('/:id', verifyAuthority, deleteScript);
-
-export default router;
+  return router;
+}
 
 /**
  * @swagger

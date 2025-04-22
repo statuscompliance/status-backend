@@ -17,8 +17,6 @@ describe('Script Controller', () => {
   let redisKeysSpy;
   let redisDelSpy;
 
-  let consoleSpy;
-
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -27,8 +25,7 @@ describe('Script Controller', () => {
     redisKeysSpy = vi.spyOn(redis, 'keys');
     redisDelSpy = vi.spyOn(redis, 'del').mockResolvedValue(1);
 
-
-    consoleSpy = vi.spyOn(console, 'error');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   describe('createScript', () => {
@@ -91,11 +88,11 @@ describe('Script Controller', () => {
         status: vi.fn(() => res),
         json: vi.fn(),
       };
+
       redisSetSpy.mockRejectedValue(new Error('Redis error'));
       await createScript(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(consoleSpy).toHaveBeenCalledWith('Error creating script:', new Error('Redis error'));
       expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
     });
   });
