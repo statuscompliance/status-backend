@@ -16,6 +16,7 @@ import scopeRoutes from './routes/scope.routes.js';
 import cors from 'cors';
 import { verifyAuthority } from './middleware/verifyAuth.js';
 import { endpointAvailable } from './middleware/endpoint.js';
+import { errorHandler } from './middleware/errorHandler.js';
 import cookieParser from 'cookie-parser';
 import { models } from './models/models.js';
 import { sequelize } from './db/database.js';
@@ -85,6 +86,9 @@ const configureApp = () => {
   app.use(`${API_PREFIX}/thread`, threadRoutes());
   app.use(verifyAdmin);
   app.use(`${API_PREFIX}/config`, configRoutes());
+  
+  // Error handling middleware
+  app.use(errorHandler);
 
   return app;
 };
