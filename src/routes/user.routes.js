@@ -7,24 +7,24 @@ import {
   getAuthority,
   deleteUserById,
 } from '../controllers/user.controller.js';
-const router = Router();
 import { verifyAdmin } from '../middleware/verifyAdmin.js';
 import { verifyAuthority } from '../middleware/verifyAuth.js';
 
-router.get('', getUsers);
+export default function () {
+  const router = Router();
+  router.get('', getUsers);
 
-router.post('/signIn', signIn);
-router.get('/signOut', signOut);
+  router.post('/signIn', signIn);
+  router.get('/signOut', signOut);
 
-router.post('/signUp', verifyAdmin, signUp);
-router.get('/auth', verifyAuthority, getAuthority);
+  router.post('/signUp', verifyAdmin, signUp);
+  router.get('/auth', verifyAuthority, getAuthority);
 
-router.delete('/:id', deleteUserById); //TODO: add auth middleware
+  router.delete('/:id', deleteUserById); //TODO: add auth middleware
 
+  return router;
+}
 
-
-
-export default router;
 /**
  * @swagger
  * /users/signUp:
