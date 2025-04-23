@@ -135,11 +135,15 @@ export default function () {
  * @swagger
  * /users/signOut:
  *   post:
- *     summary: Logs out a user by clearing the refresh token
+ *     summary: Logs out a user by clearing all cookies (accessToken, refreshToken, nodeRedToken)
  *     tags: [Auth]
  *     responses:
  *       204:
  *         description: User logged out successfully
+ *       404:
+ *         description: No user found for provided refresh token
+ *       400:
+ *         description: No refresh token provided
  *       500:
  *         description: Internal server error
  *         content:
