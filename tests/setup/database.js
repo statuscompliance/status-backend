@@ -4,91 +4,25 @@ import { Sequelize } from 'sequelize';
 import { newDb } from 'pg-mem';
 import { registerDB } from '../../src/db/database';
 import { models } from '../../src/models/models.js';
-import { vi } from 'vitest';
 
+// moment is imported from pg-mem to avoid deprecation warnings
 import moment from 'moment';
+// Suppress deprecation warnings
 moment.suppressDeprecationWarnings = true;
 
 let mongoServer;
 export let sequelize;
 
-export const isIntegrationTest = process.env.VITE_TEST_TYPE !== 'unit';
-
 export const connect = async () => {
-  if (isIntegrationTest) {
-    await registerDB(await initPostgres());
-    await sequelize.sync({ force: true });
-    await initMongoDB();
-    await setupEndpointConfigurations();
-  } else {
-    console.log('[database] Using mocks for unit tests');
-    mockModelsForUnitTests();
-  }
+  await registerDB(await initPostgres());
+  await sequelize.sync({ force: true });
+  await initMongoDB();
+
+  await setupEndpointConfigurations();
 };
 
-export function mockModelsForUnitTests() {
-  const requiredModels = [
-    'Configuration', 
-    'Scope',
-    'User',
-    'Script',
-    'Control',
-    'Point',
-    'Computation',
-    'Assistant',
-    'Thread',
-    'Catalog'
-  ];
-  
-  requiredModels.forEach(modelName => {
-    models[modelName] = createMockModel(modelName);
-  });
-  
-  console.log('[database] Models mocked for unit tests');
-}
-
-function createMockModel(modelName) {
-  const mockInstance = { 
-    id: 'mock-id', 
-    ...mockData(modelName),
-    dataValues: { id: 'mock-id', ...mockData(modelName) }
-  };
-
-  return {
-    findAll: vi.fn().mockResolvedValue([mockInstance]),
-    findOne: vi.fn().mockResolvedValue(mockInstance),
-    findByPk: vi.fn().mockResolvedValue(mockInstance),
-    create: vi.fn().mockResolvedValue(mockInstance),
-    update: vi.fn().mockResolvedValue([1]),
-    destroy: vi.fn().mockResolvedValue(1),
-    bulkCreate: vi.fn().mockResolvedValue([mockInstance]),
-    count: vi.fn().mockResolvedValue(1),
-    findAndCountAll: vi.fn().mockResolvedValue({ 
-      count: 1, 
-      rows: [mockInstance] 
-    }),
-  };
-}
-
-function mockData(modelName) {
-  const defaultData = { name: 'Mock Name', createdAt: new Date(), updatedAt: new Date() };
-  
-  const modelSpecificData = {
-    Configuration: { endpoint: '/mock', available: true, limit: 100 },
-    Scope: { name: 'mock_scope', description: 'Mock scope', type: 'mock', default: false },
-    User: { username: 'mockuser', email: 'mock@example.com', passwordHash: 'hash' },
-    Script: { name: 'Mock Script', content: 'console.log("hello")' },
-    Control: { name: 'Mock Control', status: 'active' },
-    Point: { name: 'Mock Point', value: 42 },
-    Computation: { name: 'Mock Computation', formula: 'x + y' }
-  };
-  
-  return modelSpecificData[modelName] || defaultData;
-}
 
 export const closeDatabase = async () => {
-  if (!isIntegrationTest) return;
-
   if (mongoose.connection.readyState) {
     await mongoose.connection.dropDatabase();
     await mongoose.connection.close();
@@ -103,8 +37,6 @@ export const closeDatabase = async () => {
 };
 
 export const clearDatabase = async () => {
-  if (!isIntegrationTest) return;
-
   const collections = mongoose.connection.collections;
   await Promise.all(
     Object.values(collections).map(async (collection) => {
