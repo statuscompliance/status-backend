@@ -165,6 +165,43 @@ describe('Scope Controller Tests', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ error: 'Name must be a string' });
     });
+
+    it('should convert array scopes to object in createScopeSet', async () => {
+      const req = {
+        body: {
+          controlId: 123,
+          scopes: ['value1', 'value2']
+        }
+      };
+      const res = createRes();
+
+      // Mock the save method to return the saved scope set with Map
+      const mockSavedScopeSet = {
+        _id: 'anyId',
+        controlId: 123,
+        scopes: new Map([
+          ['0', 'value1'],
+          ['1', 'value2']
+        ])
+      };
+      
+      vi.spyOn(ScopeSet.prototype, 'save').mockResolvedValue(mockSavedScopeSet);
+
+      await scopeController.createScopeSet(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      
+      expect(res.json).toHaveBeenCalledOnce();
+      const responseBody = res.json.mock.calls[0][0];
+      expect(responseBody).toHaveProperty('_id'); // Verificamos que tiene un _id
+      expect(responseBody).toHaveProperty('controlId', 123);
+      
+      expect(responseBody.scopes).toBeInstanceOf(Map);
+      
+      expect(responseBody.scopes.get('0')).toBe('value1');
+      expect(responseBody.scopes.get('1')).toBe('value2');
+      expect(responseBody.scopes.size).toBe(2);
+    });
   });
 
   describe('updateScope', () => {
@@ -232,6 +269,41 @@ describe('Scope Controller Tests', () => {
       expect(res.json).toHaveBeenCalledWith({ error: 'Scope not found after update' });
     });
 
+    it('should normalize the name correctly when updating a scope', async () => {
+      const mockScope = { 
+        id: 1, 
+        name: 'updated_scope', 
+        description: 'updated', 
+        type: 'test', 
+        default: true 
+      };
+      
+      vi.spyOn(models.Scope, 'update').mockResolvedValue([1]);
+      vi.spyOn(models.Scope, 'findByPk').mockResolvedValue(mockScope);
+      
+      const req = { 
+        params: { id: 1 }, 
+        body: { 
+          name: 'Updated Scope', 
+          description: 'updated', 
+          type: 'test', 
+          default: true 
+        } 
+      };
+      const res = createRes();
+
+      await scopeController.updateScope(req, res);
+
+      expect(models.Scope.update).toHaveBeenCalledWith(
+        {
+          name: 'updated_scope',
+          description: 'updated',
+          type: 'test',
+          default: true
+        },
+        { where: { id: 1 } }
+      );
+    });
   });
 
   describe('deleteScope', () => {
@@ -433,7 +505,7 @@ describe('Scope Controller Tests', () => {
   });
   describe('updateScopeSetById', () => {
     it('should update a scope set by ID with status 200', async () => {
-      const mockId = 'someId';
+      const mockId = '6808a0895267b6cb760668ff';
       const mockUpdateData = {
         controlId: 456,
         scopes: new Map([['key3', 'value3']]),
@@ -447,13 +519,15 @@ describe('Scope Controller Tests', () => {
       const res = createRes();
 
       await scopeController.updateScopeSetById(req, res);
-
+      
+      //Print the response
+      console.log(res.json.mock.calls[0][0]);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(mockUpdatedScopeSet);
     });
 
     it('should return 404 if scope set to update is not found', async () => {
-      const mockId = 'someId';
+      const mockId = '6808a0895267b6cb760668ff';
       const mockUpdateData = { controlId: 456, scopes: new Map() };
       vi.spyOn(ScopeSet, 'findByIdAndUpdate').mockResolvedValue(null);
 
@@ -465,25 +539,85 @@ describe('Scope Controller Tests', () => {
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({ error: 'ScopeSet not found' });
     });
+
+    it('should return 400 for invalid ID format', async () => {
+      const invalidId = 'invalid-id';
+      const req = { 
+        params: { id: invalidId },
+        body: { controlId: 456, scopes: {} }
+      };
+      const res = createRes();
+
+      await scopeController.updateScopeSetById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid ScopeSet ID format' });
+    });
+
+    it('should convert array scopes to object when updating scope set', async () => {
+      const validId = '6808a0895267b6cb760668ff';
+      const mockUpdateData = {
+        controlId: 456,
+        scopes: ['value1', 'value2'] // Array de scopes
+      };
+      const mockUpdatedScopeSet = { 
+        _id: validId, 
+        controlId: 456, 
+        scopes: { '0': 'value1', '1': 'value2' } 
+      };
+      
+      vi.spyOn(ScopeSet, 'findByIdAndUpdate').mockResolvedValue(mockUpdatedScopeSet);
+
+      const req = { params: { id: validId }, body: mockUpdateData };
+      const res = createRes();
+
+      await scopeController.updateScopeSetById(req, res);
+
+      expect(ScopeSet.findByIdAndUpdate).toHaveBeenCalledWith(
+        validId,
+        { controlId: 456, scopes: { '0': 'value1', '1': 'value2' } },
+        { new: true }
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(mockUpdatedScopeSet);
+    });
+
+    it('should handle CastError separately', async () => {
+      const validId = '6808a0895267b6cb760668ff';
+      const castError = new Error('Cast Error');
+      castError.name = 'CastError';
+      
+      vi.spyOn(ScopeSet, 'findByIdAndUpdate').mockRejectedValue(castError);
+
+      const req = { params: { id: validId }, body: { controlId: 456, scopes: {} } };
+      const res = createRes();
+
+      await scopeController.updateScopeSetById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid data format' });
+    });
+
+    it('should handle errors gracefully in updateScopeSetById', async () => {
+      const mockId = '6808a0895267b6cb760668ff';
+      const mockUpdateData = { controlId: 456, scopes: {} };
+      
+      const error = new Error('Database error');
+      vi.spyOn(ScopeSet, 'findByIdAndUpdate').mockRejectedValue(error);
+
+      const req = { params: { id: mockId }, body: mockUpdateData };
+      const res = createRes();
+
+      await scopeController.updateScopeSetById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to update scope set by ID' });
+    });
   });
-  it('should handle errors gracefully in updateScopeSetById', async () => {
-    const mockId = 'someId';
-    const mockUpdateData = { controlId: 456, scopes: new Map() };
-    vi.spyOn(ScopeSet, 'findByIdAndUpdate').mockRejectedValue(
-      new Error('Database error')
-    );
 
-    const req = { params: { id: mockId }, body: mockUpdateData };
-    const res = createRes();
-
-    await scopeController.updateScopeSetById(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Failed to update scope set by ID' });
-  });
   describe('getScopeSetById', () => {
     it('should return a scope set by ID with status 200', async () => {
-      const mockId = 'someId';
+      const mockId = '6808a0895267b6cb760668ff';
       const mockScopeSet = {
         _id: mockId,
         controlId: 123,
@@ -501,7 +635,7 @@ describe('Scope Controller Tests', () => {
     });
 
     it('should return 404 if scope set is not found', async () => {
-      const mockId = 'someId';
+      const mockId = '6808a0895267b6cb760668ff';
       vi.spyOn(ScopeSet, 'findById').mockResolvedValue(null);
 
       const req = { params: { id: mockId } };
@@ -514,7 +648,7 @@ describe('Scope Controller Tests', () => {
     });
 
     it('should handle errors gracefully in getScopeSetById', async () => {
-      const mockId = 'someId';
+      const mockId = '6808a0895267b6cb760668ff';
       vi.spyOn(ScopeSet, 'findById').mockRejectedValue(
         new Error('Database error')
       );
@@ -526,6 +660,68 @@ describe('Scope Controller Tests', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Failed to retrieve scope set by ID' });
+    });
+
+    it('should return 400 for invalid ID format', async () => {
+      const invalidId = 'invalid-id';
+      const req = { params: { id: invalidId } };
+      const res = createRes();
+
+      await scopeController.getScopeSetById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid ScopeSet ID format' });
+    });
+
+    it('should handle CastError in getScopeSetById', async () => {
+      const validId = '6808a0895267b6cb760668ff';
+      const castError = new Error('Cast Error');
+      castError.name = 'CastError';
+      
+      vi.spyOn(ScopeSet, 'findById').mockRejectedValue(castError);
+
+      const req = { params: { id: validId } };
+      const res = createRes();
+
+      await scopeController.getScopeSetById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid ScopeSet ID format' });
+    });
+  });
+
+  describe('Additional error cases', () => {
+    it('should handle errors when creating a scope with non-string name', async () => {
+      const req = { body: { name: 123 } };
+      const res = createRes();
+
+      await scopeController.createScope(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Name must be a string' });
+    });
+
+    it('should normalize the name correctly when creating a scope', async () => {
+      const mockScope = { 
+        name: 'test_scope', 
+        description: 'test', 
+        type: 'test', 
+        default: false 
+      };
+      
+      vi.spyOn(models.Scope, 'create').mockResolvedValue(mockScope);
+      
+      const req = { body: { name: 'Test Scope', description: 'test', type: 'test', default: false } };
+      const res = createRes();
+
+      await scopeController.createScope(req, res);
+
+      expect(models.Scope.create).toHaveBeenCalledWith({
+        name: 'test_scope',
+        description: 'test',
+        type: 'test',
+        default: false
+      });
     });
   });
 });
