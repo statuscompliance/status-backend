@@ -11,6 +11,7 @@ import {
   getDatasources,
   importDashboard,
   createDashboard,
+  createDashboardTemplate,
   addDashboardPanel,
   createQuery,
   parseQuery,
@@ -26,49 +27,51 @@ import {
   deleteFolder
 } from '../controllers/grafana.controller.js';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  //SEARCH
+  router.get('/search', searchItems);
 
-//SEARCH
-router.get('/search', searchItems);
+  //SERVICE ACCOUNT
+  router.post('/serviceaccount', createServiceAccount);
+  router.get('/serviceaccount/:id', getServiceAccountById);
+  router.post('/serviceaccount/:id/token', createServiceAccountToken);
 
-//SERVICE ACCOUNT
-router.post('/serviceaccount', createServiceAccount);
-router.get('/serviceaccount/:id', getServiceAccountById);
-router.post('/serviceaccount/:id/token', createServiceAccountToken);
+  //FOLDER
+  router.get('/folder', getFolders);
+  router.post('/folder', createFolder);
+  router.get('/folder/:uid', validateUUID('uid'), getFolderByUID);
+  router.delete('/folder/:uid', validateUUID('uid'),deleteFolder);
+  router.get('/folder/:uid/dashboard', getFolderDashboardsByUID);
 
-//FOLDER
-router.get('/folder', getFolders);
-router.post('/folder', createFolder);
-router.get('/folder/:uid', validateUUID('uid'), getFolderByUID);
-router.delete('/folder/:uid', validateUUID('uid'),deleteFolder);
-router.get('/folder/:uid/dashboard', getFolderDashboardsByUID);
+  //DASHBOARD
+  router.post('/dashboard', createDashboard);
+  router.post('/dashboard/template', createDashboardTemplate);
+  router.post('/dashboard/import', importDashboard);
+  router.get('/dashboard/:uid', validateUUID('uid'), getDashboardByUID);
+  router.delete('/dashboard/:uid', validateUUID('uid'), deleteDashboardByUID);
+  router.get('/dashboard/:uid/panel', validateUUID('uid'), getPanelsByDashboardUID);
+  router.post('/dashboard/:uid/panel', validateUUID('uid'), addDashboardPanel);
+  router.patch('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, updatePanelByID);
+  router.delete('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, deletePanelByID);
+  router.get(
+    '/dashboard/:uid/panel/query',
+    validateUUID('uid'), 
+    checkIdParam, 
+    getDashboardPanelQueriesByUID
+  );
+  router.get('/dashboard/:uid/panel/:id/query', validateUUID('uid'), checkIdParam, getPanelQueryByID);
 
-//DASHBOARD
-router.post('/dashboard', createDashboard);
-router.post('/dashboard/import', importDashboard);
-router.get('/dashboard/:uid', validateUUID('uid'), getDashboardByUID);
-router.delete('/dashboard/:uid', validateUUID('uid'), deleteDashboardByUID);
-router.get('/dashboard/:uid/panel', validateUUID('uid'), getPanelsByDashboardUID);
-router.post('/dashboard/:uid/panel', validateUUID('uid'), addDashboardPanel);
-router.patch('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, updatePanelByID);
-router.delete('/dashboard/:uid/panel/:id', validateUUID('uid'), checkIdParam, deletePanelByID);
-router.get(
-  '/dashboard/:uid/panel/query',
-  validateUUID('uid'), 
-  checkIdParam, 
-  getDashboardPanelQueriesByUID
-);
-router.get('/dashboard/:uid/panel/:id/query', validateUUID('uid'), checkIdParam, getPanelQueryByID);
+  //DATASOURCE
+  router.get('/datasource', getDatasources);
+  router.post('/datasource', addDatasource);
 
-//DATASOURCE
-router.get('/datasource', getDatasources);
-router.post('/datasource', addDatasource);
+  //ENDPOINT FOR TESTING SQL QUERY BUILDER
+  router.post('/sql/parse', parseQuery);
+  router.post('/sql/build', createQuery);
 
-//ENDPOINT FOR TESTING SQL QUERY BUILDER
-router.post('/sql/parse', parseQuery);
-router.post('/sql/build', createQuery);
-
-export default router;
+  return router;
+}
 
 /**
  * @swagger
@@ -2299,6 +2302,100 @@ export default router;
  *                 message:
  *                   type: string
  *                   example: "Failed to retrieve dashboard in Grafana due to server error"
+ *                 error:
+ *                   type: string
+ *                   example: "Internal Server Error"
+ */
+
+/**
+ * @swagger
+ * /grafana/dashboard/template:
+ *   post:
+ *     summary: Creates an empty dashboard from template
+ *     tags: [Grafana Dashboards]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Name of the new dashboard
+ *                 example: "My Dashboard Template"
+ *               folderId:
+ *                 type: string
+ *                 description: ID of the folder where the dashboard will be saved
+ *                 example: "1"
+ *               startDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Start date for the dashboard time range
+ *                 example: "2025-04-17T16:10:44.000Z"
+ *               endDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: End date for the dashboard time range (optional)
+ *                 example: null
+ *     responses:
+ *       201:
+ *         description: Dashboard template created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Dashboard template created successfully"
+ *                 dashboard:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 123
+ *                     uid:
+ *                       type: string
+ *                       example: "abcd1234"
+ *                     url:
+ *                       type: string
+ *                       example: "/d/abcd1234/my-dashboard-template"
+ *                     status:
+ *                       type: string
+ *                       example: "success"
+ *       400:
+ *         description: Bad Request - Invalid dashboard data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid dashboard data"
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       500:
+ *         description: Failed to create dashboard template due to server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to create dashboard template in Grafana due to server error"
  *                 error:
  *                   type: string
  *                   example: "Internal Server Error"
