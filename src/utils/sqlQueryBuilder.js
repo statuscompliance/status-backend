@@ -144,47 +144,83 @@ function parseFromClause(fromPart, result) {
 
 function parseWhereClause(whereContentPart, result) {
   result.whereConditions = [];
-  result.whereLogic = 'AND';
+  result.whereLogic = 'AND'; // Default logic
 
   if (!whereContentPart || whereContentPart.trim() === '') {
-    console.warn('WARNING: WHERE content empty.');
     return;
   }
 
   const conditionsString = whereContentPart.trim();
 
-  const conditionPartsAndLogic = conditionsString.split(/\s+(AND|OR)\s+/i);
+  const tokens = conditionsString.split(/\s+/);
 
-  const logicOperatorsFound = conditionPartsAndLogic.filter((_, index) => index % 2 !== 0);
+  const currentConditionTokens = [];
+  const conditionsAndLogicTokens = []; 
 
-  if (logicOperatorsFound.length > 0) result.whereLogic = logicOperatorsFound[0].toUpperCase();
-
-
-  const conditionStringsOnly = conditionPartsAndLogic.filter((_, index) => index % 2 === 0);
-
-  conditionStringsOnly.forEach(condition => {
-    const conditionTrimmed = condition.trim();
-    if (!conditionTrimmed) return;
-
-    const parts = conditionTrimmed.split(/\s*(>=|<=|!=|=|>|<|LIKE)\s*/i);
-
-    if (parts.length >= 2) {
-      const key = parts[0].trim();
-      const operator = parts[1].trim();
-      const valueParts = parts.slice(2);
-      const valueString = valueParts.join(' ').trim();
-
-      if (key && operator && valueString !== '') {
-        result.whereConditions.push({
-          key: key,
-          operator: operator.toUpperCase(),
-          value: parseWhereValue(valueString),
-        });
-      } else {
-        console.warn(`WARNING: Malformed condition part: "${conditionTrimmed}"`);
+  for (const token of tokens) {
+    const upperToken = token.toUpperCase();
+    if (upperToken === 'AND' || upperToken === 'OR') {
+      if (currentConditionTokens.length > 0) {
+        conditionsAndLogicTokens.push(currentConditionTokens.join(' '));
+        currentConditionTokens.length = 0;
       }
-    } else {
-      console.warn(`WARNING: Malformed condition part (operator missing?): "${conditionTrimmed}"`);
+      conditionsAndLogicTokens.push(upperToken);
+    } else if (token) {
+      currentConditionTokens.push(token);
+    }
+  }
+  if (currentConditionTokens.length > 0) {
+    conditionsAndLogicTokens.push(currentConditionTokens.join(' '));
+  }
+
+  if (conditionsAndLogicTokens.length === 0) {
+    return;
+  }
+
+  const firstLogicToken = conditionsAndLogicTokens.find((_, index) => index % 2 !== 0);
+  if (firstLogicToken) {
+    result.whereLogic = firstLogicToken;
+  }
+
+  conditionsAndLogicTokens.forEach((part, index) => {
+    if (index % 2 === 0) {
+      const conditionString = part;
+
+      const conditionTrimmed = conditionString.trim();
+
+      if (!conditionTrimmed) return; // Skip empty strings
+
+      const operatorRegex = /\s*(>=|<=|!=|=|>|<|LIKE)\s*/i;
+
+      const operatorMatch = operatorRegex.exec(conditionTrimmed);
+
+      if (operatorMatch) {
+
+        const fullMatch = operatorMatch[0];
+        const operator = operatorMatch[1];
+        const matchIndex = operatorMatch.index;
+
+        const key = conditionTrimmed.substring(0, matchIndex).trim();
+        const valueString = conditionTrimmed.substring(matchIndex + fullMatch.length).trim();
+
+        const rawOperatorFound = operator.toUpperCase();
+        const isValidOperator = ['>=', '<=', '!=', '=', '>', '<', 'LIKE'].includes(rawOperatorFound);
+
+
+        if (key && isValidOperator && valueString !== '') {
+          result.whereConditions.push({
+            key: key,
+            operator: rawOperatorFound,
+            value: parseWhereValue(valueString),
+          });
+        } else {
+          console.warn(`WARNING: Malformed condition part after finding operator "${operator}": "${conditionTrimmed}"`);
+        }
+
+      } else {
+        console.warn(`WARNING: No valid operator found in condition part: "${conditionTrimmed}"`);
+      }
+
     }
   });
 }
@@ -216,7 +252,7 @@ function parseOrderByClause(orderByPart, result) {
 
   const orderByPartTrimmed = orderByPart.trim();
 
-  const orderByMatch = orderByPartTrimmed.match(/^([a-zA-Z0-9_.]+)\s*(ASC|DESC)?$/i); // Usar $ para asegurar que es el fin de la parte
+  const orderByMatch = orderByPartTrimmed.match(/^([a-zA-Z0-9_.]+)\s*(ASC|DESC)?$/i);
 
   if (orderByMatch && orderByMatch[1]) {
     result.orderByAttr = orderByMatch[1];
