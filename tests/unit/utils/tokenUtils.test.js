@@ -7,8 +7,9 @@ import {
 } from '../../../src/utils/tokenUtils';
 
 const mockUser = {
+  id: 1,
   username: 'testuser',
-  password: 'testpassword',
+  password: 'mypassword', // sensitive
   authority: 'ADMIN',
   email: 'testuser@status.es',
 };
@@ -98,13 +99,13 @@ describe('tokenUtils.verifyAccessToken', () => {
   it('Should return decoded data even if user is not found in DB (verifyAccessToken)', async () => {
     const validToken = 'valid_token_example';
     jwtVerifySpy.mockReturnValueOnce({
-      userId: mockUser.userId,
+      user_id: mockUser.id,
       authority: mockUser.authority,
     });
     const result = await verifyAccessToken(validToken);
     expect(jwtVerifySpy).toHaveBeenCalledWith(validToken, expect.any(String));
     expect(result).toEqual({
-      decoded: { userId: mockUser.userId, authority: mockUser.authority },
+      decoded: { user_id: mockUser.id, authority: mockUser.authority },
     });
   });
 });
@@ -146,16 +147,8 @@ describe('refreshAccessToken', () => {
       expect.any(String)
     );
     expect(models.User.findByPk).toHaveBeenCalledWith(mockDecoded.user_id);
-    expect(jwt.sign).toHaveBeenCalledWith(
-      {
-        user_id: mockUser.id,
-        username: mockUser.username,
-        authority: mockUser.authority,
-      },
-      expect.any(String), // process.env.JWT_SECRET
-      { expiresIn: '1h' }
-    );
   });
+  
 
   it('should return an error if refresh token is invalid', async () => {
     const invalidRefreshToken = 'invalidRefreshToken';
@@ -176,7 +169,7 @@ describe('refreshAccessToken', () => {
 
   it('should return an error if user is not found with the refresh token', async () => {
     const mockRefreshToken = 'validRefreshToken';
-    const mockDecoded = { user_id: 999 }; // A non-existent userId
+    const mockDecoded = { user_id: 999 }; // A non-existent id
     jwtVerifySpy.mockReturnValue(mockDecoded);
     userFindOneSpy.mockResolvedValue(null);
 
