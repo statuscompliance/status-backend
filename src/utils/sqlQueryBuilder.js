@@ -144,18 +144,17 @@ function parseFromClause(fromPart, result) {
 
 function parseWhereClause(whereContentPart, result) {
   result.whereConditions = [];
-  result.whereLogic = 'AND'; // Default logic
+  result.whereLogic = 'AND';
 
   if (!whereContentPart || whereContentPart.trim() === '') {
     return;
   }
 
   const conditionsString = whereContentPart.trim();
-
   const tokens = conditionsString.split(/\s+/);
 
   const currentConditionTokens = [];
-  const conditionsAndLogicTokens = []; 
+  const conditionsAndLogicTokens = [];
 
   for (const token of tokens) {
     const upperToken = token.toUpperCase();
@@ -187,34 +186,41 @@ function parseWhereClause(whereContentPart, result) {
       const conditionString = part;
 
       const conditionTrimmed = conditionString.trim();
+      if (!conditionTrimmed) return;
 
-      if (!conditionTrimmed) return; // Skip empty strings
+      const operators = ['>=', '<=', '!=', '=', '>', '<', 'LIKE'];
+      let foundOperator = null;
+      let operatorIndex = -1;
 
-      const operatorRegex = /\s*(>=|<=|!=|=|>|<|LIKE)\s*/i;
+      const conditionTrimmedUpper = conditionTrimmed.toUpperCase();
 
-      const operatorMatch = operatorRegex.exec(conditionTrimmed);
+      for (const op of operators) {
+        const index = conditionTrimmedUpper.indexOf(op);
+        if (index !== -1 && (operatorIndex === -1 || index < operatorIndex)) {
+          operatorIndex = index;
+          foundOperator = op.toUpperCase();
+        }
+      }
 
-      if (operatorMatch) {
+      if (foundOperator !== null && operatorIndex !== -1) {
+        const key = conditionTrimmed.substring(0, operatorIndex).trim();
 
-        const fullMatch = operatorMatch[0];
-        const operator = operatorMatch[1];
-        const matchIndex = operatorMatch.index;
+        const operatorEndIndexInTrimmed = operatorIndex + foundOperator.length;
 
-        const key = conditionTrimmed.substring(0, matchIndex).trim();
-        const valueString = conditionTrimmed.substring(matchIndex + fullMatch.length).trim();
+        let valueStartIndex = operatorEndIndexInTrimmed;
+        while (valueStartIndex < conditionTrimmed.length && /\s/.test(conditionTrimmed[valueStartIndex])) {
+          valueStartIndex++;
+        }
+        const valueString = conditionTrimmed.substring(valueStartIndex).trim();
 
-        const rawOperatorFound = operator.toUpperCase();
-        const isValidOperator = ['>=', '<=', '!=', '=', '>', '<', 'LIKE'].includes(rawOperatorFound);
-
-
-        if (key && isValidOperator && valueString !== '') {
+        if (key && valueString !== '') {
           result.whereConditions.push({
             key: key,
-            operator: rawOperatorFound,
+            operator: foundOperator,
             value: parseWhereValue(valueString),
           });
         } else {
-          console.warn(`WARNING: Malformed condition part after finding operator "${operator}": "${conditionTrimmed}"`);
+          console.warn(`WARNING: Malformed condition part after finding operator "${foundOperator}": "${conditionTrimmed}"`);
         }
 
       } else {
