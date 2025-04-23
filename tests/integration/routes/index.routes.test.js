@@ -1,22 +1,9 @@
 import { expect, describe, it, beforeAll } from 'vitest';
 import { request } from '../../setup/setup.js';
-import jwt from 'jsonwebtoken';
-import { adminUser } from '../../utils/sampleUserData.js';
 
-describe('Scope API Routes', () => {
-  let token;
+describe('API Main Route', () => {
 
   beforeAll(async () => {
-    token = jwt.sign(
-      {
-        userId: adminUser._id,
-        username: adminUser.username,
-        authority: adminUser.authority,
-      },
-      'test-secret-key'
-    );
-
-    request.set('Cookie', `accessToken=${token}`);
   });
 
   describe('Index GET /', () => {
