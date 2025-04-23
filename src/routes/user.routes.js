@@ -7,24 +7,24 @@ import {
   getAuthority,
   deleteUserById,
 } from '../controllers/user.controller.js';
-const router = Router();
 import { verifyAdmin } from '../middleware/verifyAdmin.js';
 import { verifyAuthority } from '../middleware/verifyAuth.js';
 
-router.get('', getUsers);
+export default function () {
+  const router = Router();
+  router.get('', getUsers);
 
-router.post('/signIn', signIn);
-router.get('/signOut', signOut);
+  router.post('/signIn', signIn);
+  router.get('/signOut', signOut);
 
-router.post('/signUp', verifyAdmin, signUp);
-router.get('/auth', verifyAuthority, getAuthority);
+  router.post('/signUp', verifyAdmin, signUp);
+  router.get('/auth', verifyAuthority, getAuthority);
 
-router.delete('/:id', deleteUserById); //TODO: add auth middleware
+  router.delete('/:id', deleteUserById); //TODO: add auth middleware
 
+  return router;
+}
 
-
-
-export default router;
 /**
  * @swagger
  * /users/signUp:
@@ -135,11 +135,15 @@ export default router;
  * @swagger
  * /users/signOut:
  *   post:
- *     summary: Logs out a user by clearing the refresh token
+ *     summary: Logs out a user by clearing all cookies (accessToken, refreshToken, nodeRedToken)
  *     tags: [Auth]
  *     responses:
  *       204:
  *         description: User logged out successfully
+ *       404:
+ *         description: No user found for provided refresh token
+ *       400:
+ *         description: No refresh token provided
  *       500:
  *         description: Internal server error
  *         content:

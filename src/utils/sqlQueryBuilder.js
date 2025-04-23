@@ -41,14 +41,6 @@ function createSQLQuery(params = {}) {
   ].filter(clause => clause !== '').join(' ');
 }
 
-/**
- * Construye la cláusula SELECT de la consulta.
- *
- * @param {Array<{func: string, attr: string}>} aggregations - Lista de agregaciones.
- * @param {Array<string>} columns - Lista de columnas.
- *
- * @returns {string} - La cláusula SELECT.
- */
 function buildSelectClause(aggregations, columns) {
   let selectClause = 'SELECT ';
   const aggs = Array.isArray(aggregations) ? aggregations : [];
@@ -70,25 +62,10 @@ function buildSelectClause(aggregations, columns) {
   return selectClause;
 }
 
-/**
- * Construye la cláusula FROM de la consulta.
- *
- * @param {string} table - Nombre de la tabla.
- *
- * @returns {string} - La cláusula FROM.
- */
 function buildFromClause(table) {
   return `FROM statusdb.${sanitizeIdentifier(table)}`;
 }
 
-/**
- * Construye la cláusula WHERE de la consulta.
- *
- * @param {Array<{key: string, operator: string, value: any}>} conditions - Lista de condiciones.
- * @param {string} logic - Operador lógico ('AND' o 'OR').
- *
- * @returns {string} - La cláusula WHERE.
- */
 function buildWhereClause(conditions, logic) {
   if (conditions.length === 0) {
     return '';
@@ -99,16 +76,11 @@ function buildWhereClause(conditions, logic) {
     const key = sanitizeIdentifier(condition.key);
     return `${key} ${operator} ${value}`;
   });
-  return `WHERE (${whereClauses.join(` ${logic} `)})`;
+  const separator = ` ${logic} `;
+
+  return `WHERE (${whereClauses.join(separator)})`;
 }
 
-/**
- * Construye la cláusula GROUP BY de la consulta.
- *
- * @param {string} groupBy - Columna para agrupar.
- *
- * @returns {string} - La cláusula GROUP BY.
- */
 function buildGroupByClause(groupBy) {
   if (!groupBy) {
     return '';
@@ -116,14 +88,6 @@ function buildGroupByClause(groupBy) {
   return `GROUP BY ${sanitizeIdentifier(groupBy)}`;
 }
 
-/**
- * Construye la cláusula ORDER BY de la consulta.
- *
- * @param {string} attr - Columna para ordenar.
- * @param {string} direction - Dirección de orden ('ASC' o 'DESC').
- *
- * @returns {string} - La cláusula ORDER BY.
- */
 function buildOrderByClause(attr, direction = 'ASC') {
   if (!attr) {
     return '';
@@ -132,7 +96,138 @@ function buildOrderByClause(attr, direction = 'ASC') {
   return `ORDER BY ${sanitizeIdentifier(attr)} ${orderDirection}`;
 }
 
+function parseSelectClause(selectPart, result) {
+  result.aggregations = [];
+  result.columns = [];
+
+  if (!selectPart || selectPart.trim() === '' || selectPart.trim() === '*') {
+    return;
+  }
+
+  const selectFields = selectPart.split(',');
+
+  selectFields.forEach(field => {
+    field = field.trim();
+    const aggMatch = field.match(/^(\w+)\(([^)]+)\)$/i);
+
+    if (aggMatch && aggMatch[1] && aggMatch[2] !== undefined) {
+      const funcName = aggMatch[1].toUpperCase();
+      const attrName = aggMatch[2].trim();
+      if (funcName === 'COUNT' && attrName === '*') {
+        result.aggregations.push({ func: 'COUNT', attr: '*' });
+      } else {
+        result.aggregations.push({ func: funcName, attr: attrName });
+      }
+    } else if (field) {
+      result.columns.push(field);
+    }
+  });
+}
+
+function parseFromClause(fromPart, result) {
+  result.table = 'computation';
+
+  if (!fromPart || fromPart.trim() === '') {
+    console.warn('WARNING: FROM part empty, using default table.');
+    return;
+  }
+
+  const fromPartTrimmed = fromPart.trim();
+
+  const tableMatch = fromPartTrimmed.match(/^statusdb\.(\w+)$/i);
+  if (tableMatch && tableMatch[1]) {
+    result.table = tableMatch[1];
+  } else {
+    console.warn(`WARNING: Unexpected FROM format: "${fromPartTrimmed}", using default table.`);
+  }
+}
+
+function parseWhereClause(whereContentPart, result) {
+  result.whereConditions = [];
+  result.whereLogic = 'AND';
+
+  if (!whereContentPart || whereContentPart.trim() === '') {
+    console.warn('WARNING: WHERE content empty.');
+    return;
+  }
+
+  const conditionsString = whereContentPart.trim();
+
+  const conditionPartsAndLogic = conditionsString.split(/\s+(AND|OR)\s+/i);
+
+  const logicOperatorsFound = conditionPartsAndLogic.filter((_, index) => index % 2 !== 0);
+
+  if (logicOperatorsFound.length > 0) result.whereLogic = logicOperatorsFound[0].toUpperCase();
+
+
+  const conditionStringsOnly = conditionPartsAndLogic.filter((_, index) => index % 2 === 0);
+
+  conditionStringsOnly.forEach(condition => {
+    const conditionTrimmed = condition.trim();
+    if (!conditionTrimmed) return;
+
+    const parts = conditionTrimmed.split(/\s*(>=|<=|!=|=|>|<|LIKE)\s*/i);
+
+    if (parts.length >= 2) {
+      const key = parts[0].trim();
+      const operator = parts[1].trim();
+      const valueParts = parts.slice(2);
+      const valueString = valueParts.join(' ').trim();
+
+      if (key && operator && valueString !== '') {
+        result.whereConditions.push({
+          key: key,
+          operator: operator.toUpperCase(),
+          value: parseWhereValue(valueString),
+        });
+      } else {
+        console.warn(`WARNING: Malformed condition part: "${conditionTrimmed}"`);
+      }
+    } else {
+      console.warn(`WARNING: Malformed condition part (operator missing?): "${conditionTrimmed}"`);
+    }
+  });
+}
+
+function parseGroupByClause(groupByPart, result) {
+  result.groupBy = null;
+
+  if (!groupByPart || groupByPart.trim() === '') {
+    return;
+  }
+
+  const groupByPartTrimmed = groupByPart.trim();
+
+  const columnMatch = groupByPartTrimmed.match(/^(\w+)$/);
+  if (columnMatch && columnMatch[1]) {
+    result.groupBy = columnMatch[1];
+  } else {
+    console.warn(`WARNING: Unexpected GROUP BY format: "${groupByPartTrimmed}", expecting single identifier.`);
+  }
+}
+
+function parseOrderByClause(orderByPart, result) {
+  result.orderByAttr = null;
+  result.orderDirection = null;
+
+  if (!orderByPart || orderByPart.trim() === '') {
+    return;
+  }
+
+  const orderByPartTrimmed = orderByPart.trim();
+
+  const orderByMatch = orderByPartTrimmed.match(/^([a-zA-Z0-9_.]+)\s*(ASC|DESC)?$/i); // Usar $ para asegurar que es el fin de la parte
+
+  if (orderByMatch && orderByMatch[1]) {
+    result.orderByAttr = orderByMatch[1];
+    result.orderDirection = orderByMatch[2]?.toUpperCase() || 'ASC';
+  } else {
+    console.warn(`WARNING: Unexpected ORDER BY format: "${orderByPartTrimmed}", expecting identifier [ASC|DESC].`);
+  }
+}
+
 function parseSQLQuery(query) {
+
   const result = {
     aggregations: [],
     columns: [],
@@ -144,69 +239,63 @@ function parseSQLQuery(query) {
     table: 'computation',
   };
 
-  // Table
-  const tableMatch = query.match(/FROM\s+statusdb\.(\w+)/i);
-  if (tableMatch) {
-    result.table = tableMatch[1];
+  if (!query || typeof query !== 'string') {
+    return result;
   }
 
-  // Columns and Aggregations
-  const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i); // Modificado
-  if (selectMatch) {
-    const selectFieldsString = selectMatch[1].trim();
-    const selectFields = selectFieldsString.split(',');
-    selectFields.forEach(field => {
-      field = field.trim();
-      const aggMatch = field.match(/(\w+)\(([^)]+)\)/);
-      if (aggMatch) {
-        result.aggregations.push({ func: aggMatch[1], attr: aggMatch[2] });
-      } else if (field !== '*') {
-        result.columns.push(field);
-      }
-    });
-  }
+  const upperQuery = query.toUpperCase();
 
-  // WHERE
-  const whereMatch = query.match(/WHERE\s+\((.+?)\)/i); // Modificado
-  if (whereMatch) {
-    const conditionsString = whereMatch[1];
-    const conditionParts = conditionsString.split(/\s+(AND|OR)\s+/i);
-    if (conditionParts.length === 1) {
-      const [key, operator, ...valueParts] = conditionParts[0].split(/\s+(=|>|<|>=|<=|!=|LIKE)\s+/i);
-      if (key && operator && valueParts.length > 0) {
-        result.whereConditions.push({
-          key: key.trim(),
-          operator: operator.trim(),
-          value: parseWhereValue(valueParts.join(' ').trim()),
-        });
-      }
+  const keywords = ['SELECT ', ' FROM ', ' WHERE ', ' GROUP BY ', ' ORDER BY '];
+  const indices = {};
+  let currentPos = 0;
+
+  for (const keyword of keywords) {
+    const keywordUpper = keyword.toUpperCase();
+    const index = upperQuery.indexOf(keywordUpper, currentPos);
+
+    if (index !== -1) {
+      indices[keyword.trim()] = index;
+      currentPos = index + keyword.length;
     } else {
-      result.whereLogic = conditionParts[1]?.toUpperCase() || 'AND';
-      for (let i = 0; i < conditionParts.length; i += 2) {
-        const condition = conditionParts[i];
-        const [key, operator, ...valueParts] = condition.split(/\s+(=|>|<|>=|<=|!=|LIKE)\s+/i);
-        if (key && operator && valueParts.length > 0) {
-          result.whereConditions.push({
-            key: key.trim(),
-            operator: operator.trim(),
-            value: parseWhereValue(valueParts.join(' ').trim()),
-          });
-        }
-      }
+      console.warn(`WARNING: Keyword "${keyword.trim()}" not found after position ${currentPos}`);
+      break;
     }
   }
 
-  // GROUP BY
-  const groupByMatch = query.match(/GROUP\s+BY\s+(\w+)/i);
-  if (groupByMatch) {
-    result.groupBy = groupByMatch[1];
+  if (indices['SELECT'] === 0) {
+    const endSelect = indices['FROM'] !== undefined ? indices['FROM'] : query.length;
+    const selectPart = query.substring(indices['SELECT'] + keywords[0].length, endSelect).trim();
+    parseSelectClause(selectPart, result);
   }
 
-  // ORDER BY
-  const orderByMatch = query.match(/ORDER\s+BY\s+([a-zA-Z0-9_.]+)\s*(?:(ASC|DESC))?/i); // Modificado
-  if (orderByMatch) {
-    result.orderByAttr = orderByMatch[1];
-    result.orderDirection = orderByMatch[2]?.toUpperCase() || 'ASC';
+  if (indices['FROM'] !== undefined) {
+    const endFrom = indices['WHERE'] !== undefined ? indices['WHERE'] : indices['GROUP BY'] !== undefined ? indices['GROUP BY'] : indices['ORDER BY'] !== undefined ? indices['ORDER BY'] : query.length;
+    const fromPart = query.substring(indices['FROM'] + keywords[1].length, endFrom).trim();
+    parseFromClause(fromPart, result);
+  }
+
+  if (indices['WHERE'] !== undefined) {
+    const endWhere = indices['GROUP BY'] !== undefined ? indices['GROUP BY'] : indices['ORDER BY'] !== undefined ? indices['ORDER BY'] : query.length;
+    const wherePartWithParens = query.substring(indices['WHERE'] + keywords[2].length, endWhere).trim();
+
+    const whereContentMatch = wherePartWithParens.match(/^\s*\((.+?)\)$/);
+    if (whereContentMatch && whereContentMatch[1]) {
+      const whereContent = whereContentMatch[1].trim();
+      parseWhereClause(whereContent, result);
+    } else {
+      console.warn(`WARNING: WHERE clause format unexpected (missing or malformed parentheses): "${wherePartWithParens}"`);
+    }
+  }
+
+  if (indices['GROUP BY'] !== undefined) {
+    const endGroupBy = indices['ORDER BY'] !== undefined ? indices['ORDER BY'] : query.length;
+    const groupByPart = query.substring(indices['GROUP BY'] + keywords[3].length, endGroupBy).trim();
+    parseGroupByClause(groupByPart, result);
+  }
+
+  if (indices['ORDER BY'] !== undefined) {
+    const orderByPart = query.substring(indices['ORDER BY'] + keywords[4].length).trim(); // Hasta el final
+    parseOrderByClause(orderByPart, result);
   }
 
   return result;
@@ -223,6 +312,7 @@ function parseWhereValue(value) {
   return quotedMatch ? quotedMatch[1] : value;
 }
 
+//Helpers
 function sanitizeIdentifier(identifier) {
   return identifier.replace(/[^a-zA-Z0-9_]/g, '');
 }

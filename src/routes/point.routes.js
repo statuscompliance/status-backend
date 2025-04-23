@@ -7,17 +7,16 @@ import {
   deleteAllPoints
 } from '../controllers/point.controller';
 
-const router = Router();
+export default function () {
+  const router = Router();
+  router.get('', getPoints);
+  router.delete('', deleteAllPoints);
+  router.get('/:id', getPointById);
+  router.delete('/:id', deletePointById);
+  router.get('/catalog/:tpaId', getPointsByAgreementId);
 
-router.get('', getPoints);
-router.delete('', deleteAllPoints);
-router.get('/:id', getPointById);
-router.delete('/:id', deletePointById);
-router.get('/catalog/:tpaId', getPointsByAgreementId);
-
-export default router;
-
-
+  return router;
+}
 
 /**
  * @swagger

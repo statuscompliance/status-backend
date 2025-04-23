@@ -1,5 +1,6 @@
 import { models } from '../models/models.js';
 import ScopeSet from '../models/scopeSet.model.js';
+import mongoose from 'mongoose';
 
 export async function getAllScopes(req, res) {
   try {
@@ -60,21 +61,18 @@ export async function updateScope(req, res) {
     if (!name || typeof name !== 'string') {
       return res.status(400).json({ error: 'Name must be a string' });
     }
-
-    // Normalize the name to lowercase and replace spaces with underscores.
     const updatedData = {
       name: name.toLowerCase().replace(/\s+/g, '_'),
       description,
       type,
       default: defaultValue,
     };
-    // Check if the scope exists before updating.
+
     const [updated] = await models.Scope.update(updatedData, { where: { id } });
     if (!updated) {
       return res.status(404).json({ error: 'Scope not found' });
     }
 
-    // Fetch the updated scope to return it in the response.
     const updatedScope = await models.Scope.findByPk(id);
     if (!updatedScope) {
       return res.status(404).json({ error: 'Scope not found after update' });
@@ -107,7 +105,21 @@ export async function deleteScope(req, res) {
 export async function createScopeSet(req, res) {
   try {
     const { controlId, scopes } = req.body;
-    const newScopeSet = new ScopeSet({ controlId, scopes });
+    
+    let scopesForDB = scopes;
+    
+    if (Array.isArray(scopes)) {
+      scopesForDB = {};
+      scopes.forEach((value, index) => {
+        scopesForDB[index.toString()] = value;
+      });
+    }
+    
+    const newScopeSet = new ScopeSet({ 
+      controlId, 
+      scopes: scopesForDB 
+    });
+    
     await newScopeSet.save();
     res.status(201).json(newScopeSet);
   } catch (error) {
@@ -129,7 +141,7 @@ export async function getAllScopeSets(req, res) {
 export async function getScopeSetsByControlId(req, res) {
   try {
     const { controlId } = req.params;
-    const scopeSets = await ScopeSet.find({ controlId });
+    const scopeSets = await ScopeSet.find({ controlId: Number(controlId) });
     res.status(200).json(scopeSets);
   } catch (error) {
     console.error('Failed to retrieve scope sets by control ID', error);
@@ -140,30 +152,66 @@ export async function getScopeSetsByControlId(req, res) {
 export async function updateScopeSetById(req, res) {
   try {
     const { id } = req.params;
-    const { controlId, scopes } = req.body;
-    const updatedScopeSet = await ScopeSet.findByIdAndUpdate(id, { controlId, scopes }, { new: true });
-    if (updatedScopeSet) {
-      res.status(200).json(updatedScopeSet);
-    } else {
-      res.status(404).json({ error: 'ScopeSet not found' });
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid ScopeSet ID format' });
     }
+    
+    const { controlId, scopes } = req.body;
+    
+    let scopesForDB = scopes;
+    
+    if (Array.isArray(scopes)) {
+      scopesForDB = {};
+      scopes.forEach((value, index) => {
+        scopesForDB[index.toString()] = value;
+      });
+    }
+    
+    const updatedScopeSet = await ScopeSet.findByIdAndUpdate(
+      id, 
+      { controlId, scopes: scopesForDB }, 
+      { new: true }
+    );
+    
+    if (!updatedScopeSet) {
+      return res.status(404).json({ error: 'ScopeSet not found' });
+    }
+    
+    return res.status(200).json(updatedScopeSet);
   } catch (error) {
     console.error('Failed to update scope set by ID', error);
-    res.status(500).json({ error: 'Failed to update scope set by ID' });
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({ error: 'Invalid data format' });
+    }
+    
+    return res.status(500).json({ error: 'Failed to update scope set by ID' });
   }
 }
 
 export async function getScopeSetById(req, res) {
   try {
     const { id } = req.params;
-    const scopeSet = await ScopeSet.findById(id);
-    if (scopeSet) {
-      res.status(200).json(scopeSet);
-    } else {
-      res.status(404).json({ error: 'ScopeSet not found' });
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid ScopeSet ID format' });
     }
+    
+    const scopeSet = await ScopeSet.findById(id);
+    
+    if (!scopeSet) {
+      return res.status(404).json({ error: 'ScopeSet not found' });
+    }
+    
+    return res.status(200).json(scopeSet);
   } catch (error) {
     console.error('Failed to retrieve scope set by ID', error);
-    res.status(500).json({ error: 'Failed to retrieve scope set by ID' });
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({ error: 'Invalid ScopeSet ID format' });
+    }
+    
+    return res.status(500).json({ error: 'Failed to retrieve scope set by ID' });
   }
 }
