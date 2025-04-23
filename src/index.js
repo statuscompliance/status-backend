@@ -26,7 +26,7 @@ import swaggerUi from 'swagger-ui-express';
 // Check if we are in a test environment
 const isTestEnvironment = !!import.meta.env?.VITEST;
 
-const API_PREFIX = isTestEnvironment ? '' : process.env.API_PREFIX || '';
+const API_PREFIX = (!isTestEnvironment && process.env.API_PREFIX) || '';
 
 const swaggerOptions = {
   swaggerDefinition: {
