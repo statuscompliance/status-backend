@@ -4,15 +4,10 @@ import { models } from '../../../../src/models/models.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import * as nodeRedTokenModule from '../../../../src/utils/nodeRedToken.js';
+import { DEFAULT_USER } from '../../../../tests/utils/sampleUserData.js';
 
 // Constants for reuse
 const MOCK_TOKEN = 'mockToken';
-const DEFAULT_USER = {
-  username: 'existingUser',
-  password: 'hashedPassword',
-  email: 'user@example.com',
-  authority: 'USER',
-};
 
 // Helper to create simple mock req/res objects
 function createRes() {

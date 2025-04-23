@@ -24,7 +24,6 @@ afterAll(async () => {
 });
 
 async function mockRedis() {
-  // Mock Redis
   vi.mock('ioredis', () => {
     return import('ioredis-mock'); // Dynamically import 'redis-mock' for mocking
   });
