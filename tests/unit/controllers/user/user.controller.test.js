@@ -4,7 +4,11 @@ import { models } from '../../../../src/models/models.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import * as nodeRedTokenModule from '../../../../src/utils/nodeRedToken.js';
-import { DEFAULT_USER } from '../../../../tests/utils/sampleUserData.js';
+import { 
+  DEFAULT_USER, 
+  adminUser,
+  newUserData 
+} from '../../../../tests/utils/sampleUserData.js';
 
 // Constants for reuse
 const MOCK_TOKEN = 'mockToken';
@@ -92,12 +96,7 @@ describe('User Controller Tests', () => {
 
   // Test singUp
   describe('signUp', () => {
-    const signUpReqBody = {
-      username: 'existingUser',
-      password: 'password123',
-      email: 'test@example.com',
-      authority: 'USER',
-    };
+    const signUpReqBody = { ...newUserData, username: 'existingUser' };
 
     function createSignUpReq(overrides = {}) {
       return { body: { ...signUpReqBody, ...overrides } };
@@ -179,7 +178,7 @@ describe('User Controller Tests', () => {
         username: 'newUser',
         password: 'hashedPassword',
         authority: 'USER',
-        email: 'test@example.com',
+        email: 'new@example.com',
       });
     });
 
@@ -224,7 +223,7 @@ describe('User Controller Tests', () => {
 
   // Test singIn
   describe('signIn', () => {
-    function createSignInReq(username = 'existingUser', password = 'correctPassword') {
+    function createSignInReq(username = DEFAULT_USER.username, password = 'correctPassword') {
       return { body: { username, password } };
     }
 
@@ -253,12 +252,12 @@ describe('User Controller Tests', () => {
         findOneValue: DEFAULT_USER 
       });
       
-      const req = createSignInReq('existingUser', 'wrongPassword');
+      const req = createSignInReq(DEFAULT_USER.username, 'wrongPassword');
       const res = createRes();
 
       await userController.signIn(req, res);
 
-      expect(bcrypt.compare).toHaveBeenCalledWith('wrongPassword', 'hashedPassword');
+      expect(bcrypt.compare).toHaveBeenCalledWith('wrongPassword', DEFAULT_USER.password);
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({ message: 'Invalid password' });
     });
@@ -271,21 +270,21 @@ describe('User Controller Tests', () => {
 
       await userController.signIn(req, res);
 
-      expect(bcrypt.compare).toHaveBeenCalledWith('correctPassword', 'hashedPassword');
+      expect(bcrypt.compare).toHaveBeenCalledWith('correctPassword', DEFAULT_USER.password);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           accessToken: MOCK_TOKEN,
           refreshToken: MOCK_TOKEN,
-          username: 'existingUser',
-          email: 'user@example.com',
-          authority: 'USER',
+          username: DEFAULT_USER.username,
+          email: DEFAULT_USER.email,
+          authority: DEFAULT_USER.authority,
         })
       );
 
       expect(models.User.update).toHaveBeenCalledWith(
         { refresh_token: MOCK_TOKEN },
-        { where: { username: 'existingUser' } }
+        { where: { username: DEFAULT_USER.username } }
       );
     });
 
@@ -386,10 +385,9 @@ describe('User Controller Tests', () => {
 
     it('should call getNodeRedToken and include it in the response for DEVELOPER', async () => {
       const developerUser = {
+        ...DEFAULT_USER,
         id: 123,
         username: 'developerUser',
-        password: 'hashedDeveloperPassword',
-        email: 'developer@example.com',
         authority: 'DEVELOPER',
       };
       
@@ -606,9 +604,9 @@ describe('User Controller Tests', () => {
   // Test refreshToken
   describe('refreshToken', () => {
     const mockDecodedToken = {
-      user_id: 1,
-      username: 'testUser',
-      authority: 'USER'
+      user_id: DEFAULT_USER._id || 1,
+      username: DEFAULT_USER.username,
+      authority: DEFAULT_USER.authority
     };
 
     function setupRefreshTokenTest(mockUser = null, verifyError = null) {
@@ -667,10 +665,10 @@ describe('User Controller Tests', () => {
 
     it('should return 200 and new accessToken for regular user', async () => {
       const mockUser = {
-        id: 1,
-        username: 'testUser',
-        email: 'test@example.com',
-        authority: 'USER',
+        id: DEFAULT_USER._id || 1,
+        username: DEFAULT_USER.username,
+        email: DEFAULT_USER.email,
+        authority: DEFAULT_USER.authority,
         refresh_token: 'valid-refresh-token'
       };
       
@@ -718,15 +716,15 @@ describe('User Controller Tests', () => {
     });
 
     it('should refresh token for admin and developer roles', async () => {
-      const adminUser = {
-        id: 2,
-        username: 'adminUser',
-        email: 'admin@example.com',
-        authority: 'ADMIN',
+      const mockAdminUser = {
+        id: adminUser._id || 2,
+        username: adminUser.username,
+        email: adminUser.email,
+        authority: adminUser.authority,
         refresh_token: 'valid-refresh-token'
       };
       
-      const { req, res } = setupRefreshTokenTest(adminUser);
+      const { req, res } = setupRefreshTokenTest(mockAdminUser);
 
       await userController.refreshToken(req, res);
       
