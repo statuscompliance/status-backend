@@ -602,4 +602,140 @@ describe('User Controller Tests', () => {
       expect(res.json).toHaveBeenCalledWith({ authority: 'ADMIN' });
     });
   });
+
+  // Test refreshToken
+  describe('refreshToken', () => {
+    const mockDecodedToken = {
+      user_id: 1,
+      username: 'testUser',
+      authority: 'USER'
+    };
+
+    function setupRefreshTokenTest(mockUser = null, verifyError = null) {
+      const req = { cookies: { refreshToken: 'valid-refresh-token' } };
+      const res = createRes();
+      
+      if (verifyError) {
+        vi.spyOn(jwt, 'verify').mockImplementation((token, secret, callback) => {
+          callback(verifyError, null);
+        });
+      } else {
+        vi.spyOn(jwt, 'verify').mockImplementation((token, secret, callback) => {
+          callback(null, mockDecodedToken);
+        });
+      }
+      
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(mockUser);
+      vi.spyOn(jwt, 'sign').mockReturnValue(MOCK_TOKEN);
+      
+      return { req, res };
+    }
+
+    it('should return 400 if no refresh token provided', async () => {
+      const req = { cookies: {} };
+      const res = createRes();
+
+      await userController.refreshToken(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Refresh token is required' });
+    });
+
+    it('should return 403 if refresh token is invalid', async () => {
+      const { req, res } = setupRefreshTokenTest(null, new Error('Invalid token'));
+
+      await userController.refreshToken(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid or expired refresh token' });
+    });
+
+    it('should return 403 if user not found with the token', async () => {
+      const { req, res } = setupRefreshTokenTest(null);
+
+      await userController.refreshToken(req, res);
+
+      expect(models.User.findOne).toHaveBeenCalledWith({
+        where: {
+          id: mockDecodedToken.user_id,
+          refresh_token: 'valid-refresh-token'
+        }
+      });
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid refresh token' });
+    });
+
+    it('should return 200 and new accessToken for regular user', async () => {
+      const mockUser = {
+        id: 1,
+        username: 'testUser',
+        email: 'test@example.com',
+        authority: 'USER',
+        refresh_token: 'valid-refresh-token'
+      };
+      
+      const { req, res } = setupRefreshTokenTest(mockUser);
+
+      await userController.refreshToken(req, res);
+
+      expect(jwt.sign).toHaveBeenCalledWith(
+        {
+          user_id: mockUser.id,
+          username: mockUser.username,
+          authority: mockUser.authority
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+      
+      expect(res.cookie).toHaveBeenCalledWith(
+        'accessToken',
+        MOCK_TOKEN,
+        expect.objectContaining({
+          httpOnly: true,
+          path: '/',
+        })
+      );
+      
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        accessToken: MOCK_TOKEN
+      });
+    });
+
+    it('should handle internal server error during refresh', async () => {
+      vi.spyOn(jwt, 'verify').mockImplementation(() => {
+        throw new Error('Unexpected error');
+      });
+      
+      const req = { cookies: { refreshToken: 'valid-refresh-token' } };
+      const res = createRes();
+
+      await userController.refreshToken(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error' });
+    });
+
+    it('should refresh token for admin and developer roles', async () => {
+      const adminUser = {
+        id: 2,
+        username: 'adminUser',
+        email: 'admin@example.com',
+        authority: 'ADMIN',
+        refresh_token: 'valid-refresh-token'
+      };
+      
+      const { req, res } = setupRefreshTokenTest(adminUser);
+
+      await userController.refreshToken(req, res);
+      
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accessToken: MOCK_TOKEN,
+        })
+      );
+    });
+  });
 });

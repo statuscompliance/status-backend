@@ -6,7 +6,7 @@ import { getNodeRedToken } from '../utils/nodeRedToken.js';
 
 const token_expiration = parseInt(process.env.JWT_EXPIRATION) || 3600;
 const refreshToken_expiration =
-  parseInt(process.env.JWT_REFRESH_EXPIRATION) || 3600 * 24 * 7;
+  parseInt(process.env.JWT_REFRESH_EXPIRATION) || 3600 * 24 * 30;
 
 export async function signUp(req, res) {
   const { username, authority = 'USER', password, email } = req.body;
@@ -224,6 +224,57 @@ export async function getAuthority(req, res) {
   }
 
   return res.status(200).json({ authority: decoded.authority });
+}
+
+export async function refreshToken(req, res) {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(400).json({ message: 'Refresh token is required' });
+    }
+
+    jwt.verify(refreshToken, process.env.REFRESH_JWT_SECRET, async (err, decoded) => {
+      if (err) {
+        console.error('Error verifying refresh token:', err);
+        return res.status(403).json({ message: 'Invalid or expired refresh token' });
+      }
+      
+      const user = await models.User.findOne({
+        where: {
+          id: decoded.user_id,
+          refresh_token: refreshToken
+        }
+      });
+
+      if (!user) {
+        return res.status(403).json({ message: 'Invalid refresh token' });
+      }
+
+      const accessToken = jwt.sign(
+        {
+          user_id: user.id,
+          username: user.username,
+          authority: user.authority
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        path: '/',
+        maxAge: token_expiration * 1000,
+      });
+
+      return res.status(200).json({
+        accessToken
+      });
+    });
+  } catch (error) {
+    console.error('Error in refreshToken:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 }
 
 export async function deleteUserById(req, res) {
