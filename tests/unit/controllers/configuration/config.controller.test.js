@@ -5,6 +5,8 @@ import * as endpointModule from '../../../../src/middleware/endpoint.js';
 
 vi.mock('../../../../src/middleware/endpoint.js');
 
+const API_PREFIX = process.env.API_PREFIX; 
+
 const createRes = () => {
   const res = {};
   res.status = vi.fn(() => res);
@@ -35,7 +37,7 @@ describe('Configuration Controller', () => {
   describe('getConfiguration', () => {
 
     it('should return 200 and all configurations on success', async () => {
-      const mockConfigurations = [{ id: 1, endpoint: '/api/users' }, { id: 2, endpoint: '/api/products' }];
+      const mockConfigurations = [{ id: 1, endpoint: '/users' }, { id: 2, endpoint: '/products' }];
       vi.spyOn(models.Configuration, 'findAll').mockResolvedValue(mockConfigurations);
 
       await configurationController.getConfiguration(mockReq, mockRes);
@@ -65,13 +67,13 @@ describe('Configuration Controller', () => {
   describe('getConfigurationByEndpoint', () => {
 
     it('should return 200 and the configuration if found', async () => {
-      mockReq.body = { endpoint: '/api/test' };
-      const mockConfiguration = { id: 3, endpoint: '/api/test', available: true };
+      mockReq.body = { endpoint: '/test' };
+      const mockConfiguration = { id: 3, endpoint: '/test', available: true };
       vi.spyOn(models.Configuration, 'findOne').mockResolvedValue(mockConfiguration);
 
       await configurationController.getConfigurationByEndpoint(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/test' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/test' } });
       expectStatusAndJson(mockRes, 200, mockConfiguration);
     });
 
@@ -86,13 +88,13 @@ describe('Configuration Controller', () => {
     });
 
     it('should return 500 with an error message on failure', async () => {
-      mockReq.body = { endpoint: '/api/error' };
+      mockReq.body = { endpoint: '/error' };
       const errorMessage = 'Database error';
       vi.spyOn(models.Configuration, 'findOne').mockRejectedValue(new Error(errorMessage));
 
       await configurationController.getConfigurationByEndpoint(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/error' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/error' } });
       expectStatusAndJson(mockRes, 500, { message: `Failed to get configuration, error: ${errorMessage}` });
     });
   });
@@ -130,45 +132,46 @@ describe('Configuration Controller', () => {
     });
 
     it('should return 500 with an error message on database findOne failure', async () => {
-      mockReq.body = { endpoint: '/api/error', available: true };
+      mockReq.body = { endpoint: '/error', available: true };
       vi.spyOn(models.Configuration, 'findOne').mockRejectedValue(new Error('Database error'));
 
 
       await configurationController.updateConfiguration(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/error' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/error' } });
       expectStatusAndJson(mockRes, 500, { message: 'Failed to update configuration, error: Database error' });
       expect(endpointModule.updateConfigurationsCache).not.toHaveBeenCalled();
     });
 
     it('should return 500 with an error message on database update failure', async () => {
-      mockReq.body = { endpoint: '/api/old', available: false };
-      const mockConfiguration = { dataValues: { id: 4, endpoint: '/api/old', available: true } };
+      mockReq.body = { endpoint: '/old', available: false };
+      const mockConfiguration = { dataValues: { id: 4, endpoint: '/old', available: true } };
 
       vi.spyOn(models.Configuration, 'findOne').mockResolvedValue(mockConfiguration)
       vi.spyOn(models.Configuration, 'findOne').mockRejectedValue(new Error('Database update error'));
 
       await configurationController.updateConfiguration(mockReq, mockRes);
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/old' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/old' } });
       expect(endpointModule.updateConfigurationsCache).not.toHaveBeenCalled();
       expectStatusAndJson(mockRes, 500, { message: 'Failed to update configuration, error: Database update error' });
     });
-
+    
     it('should return 200 even if update affects zero rows', async () => {
-      mockReq.body = { endpoint: '/api/old', available: false };
-      const mockConfiguration = { dataValues: { id: 4, endpoint: '/api/old', available: true } };
+      mockReq.body = { endpoint: '/old', available: false };
+      const mockConfiguration = { dataValues: { id: 4, endpoint: '/old', available: true } };
       vi.spyOn(models.Configuration, 'findOne').mockResolvedValue(mockConfiguration)
       vi.spyOn(models.Configuration, 'update').mockResolvedValue([0]);
 
       await configurationController.updateConfiguration(mockReq, mockRes);
-
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/old' } });
+      
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/old' } });
       expect(models.Configuration.update).toHaveBeenCalledWith(
         { available: false },
         { where: { id: 4 } }
       );
       expectStatusAndJson(mockRes, 200, { message: 'No changes were applied to the configuration' });
     });
+    
 
   });
 
@@ -176,21 +179,22 @@ describe('Configuration Controller', () => {
 
     it('should return 200 and the limit if configuration is found', async () => {
       const mockConfiguration = { dataValues: { limit: 5 } };
+      
       vi.spyOn(models.Configuration, 'findOne').mockResolvedValue(mockConfiguration);
 
       await configurationController.getAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/assistant' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: '/assistant' } });
       expectStatusAndJson(mockRes, 200, { limit: 5 });
     });
 
-    it('should return 404 if the configuration for /api/assistant is not found', async () => {
+    it('should return 404 if the configuration for /assistant is not found', async () => {
       vi.spyOn(models.Configuration, 'findOne').mockResolvedValue(null);
 
       await configurationController.getAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/assistant' } });
-      expectStatusAndJson(mockRes, 404, { message: 'Configuration /api/assistant not found' });
+      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: `${API_PREFIX}/assistant`  } });
+      expectStatusAndJson(mockRes, 404, { message: `Configuration ${API_PREFIX}/assistant not found` });
     });
 
     it('should return 500 with an error message on failure', async () => {
@@ -199,7 +203,7 @@ describe('Configuration Controller', () => {
 
       await configurationController.getAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/assistant' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: `${API_PREFIX}/assistant`  } });
       expectStatusAndJson(mockRes, 500, { message: `Failed to get configuration, error: ${errorMessage}` } );
     });
 
@@ -208,7 +212,7 @@ describe('Configuration Controller', () => {
 
       await configurationController.getAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/assistant' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: `${API_PREFIX}/assistant`  } });
       expectStatusAndJson(mockRes, 400, { message: 'Assistant limit is not set' });
     });
 
@@ -217,9 +221,10 @@ describe('Configuration Controller', () => {
 
       await configurationController.getAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/assistant' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: `${API_PREFIX}/assistant`  } });
       expectStatusAndJson(mockRes, 400, { message: 'Assistant limit is not set' });
     });
+    
   });
 
   describe('updateAssistantLimit', () => {
@@ -234,22 +239,22 @@ describe('Configuration Controller', () => {
 
       await configurationController.updateAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/assistant' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: `${API_PREFIX}/assistant` } });
       expect(models.Assistant.findAll).toHaveBeenCalledTimes(1);
       expect(models.Configuration.update).toHaveBeenCalledWith(
-        { 'endpoint': '/api/assistant', 'limit': 3 },
+        { 'endpoint': `${API_PREFIX}/assistant`, 'limit': 3 },
         { 'where': { 'id': 5 }, }
       );
       expectStatusAndJson(mockRes, 200, { message: 'Limit updated successfully' });
     });
 
-    it('should return 404 if the configuration for /api/assistant is not found', async () => {
+    it('should return 404 if the configuration for /assistant is not found', async () => {
       mockReq.params = { limit: '3' };
       vi.spyOn(models.Configuration, 'findOne').mockResolvedValue(null);
 
       await configurationController.updateAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/assistant' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: `${API_PREFIX}/assistant` } });
       expect(models.Assistant.findAll).not.toHaveBeenCalled();
       expect(models.Configuration.update).not.toHaveBeenCalled();
       expectStatusAndJson(mockRes, 404, { message: 'Configuration undefined not found' });
@@ -286,14 +291,14 @@ describe('Configuration Controller', () => {
     });
 
     it('should return 200 and the success message with the configuration ID when updated', async () => {
-      mockReq.body = { endpoint: '/api/existing', available: true };
-      const mockExistingConfiguration = { dataValues: { id: 10, endpoint: '/api/existing', available: false } };
+      mockReq.body = { endpoint: '/existing', available: true };
+      const mockExistingConfiguration = { dataValues: { id: 10, endpoint: '/existing', available: false } };
       vi.spyOn(models.Configuration, 'findOne').mockResolvedValue(mockExistingConfiguration);
       vi.spyOn(models.Configuration, 'update').mockResolvedValue([1]);
 
       await configurationController.updateConfiguration(mockReq, mockRes, models);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/existing' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/existing' } });
       expect(models.Configuration.update).toHaveBeenCalledWith(
         { available: true },
         { where: { id: 10 } }
@@ -318,8 +323,9 @@ describe('Configuration Controller', () => {
 
       await configurationController.updateAssistantLimit(mockReq, mockRes, models);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/api/assistant' } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: `${API_PREFIX}/assistant` } });
       expect(mockRes.status).toHaveBeenCalledWith(500);
     });
   });
+  
 });

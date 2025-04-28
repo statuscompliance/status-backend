@@ -1,5 +1,6 @@
 import { models } from '../models/models.js';
 
+const API_PREFIX = process.env.API_PREFIX;
 let configurationsCache = null;
 
 export async function updateConfigurationsCache() {
@@ -34,7 +35,7 @@ export async function assistantlimitReached(req, res, next) {
     await updateConfigurationsCache();
   }
   const matchingConfig = await models.Configuration.findOne({
-    where: { endpoint: '/api/assistant' },
+    where: { endpoint: `${API_PREFIX}/assistant` },
   });
   if (matchingConfig === undefined) {
     return res.status(404).json({ message: 'Endpoint not found' });
