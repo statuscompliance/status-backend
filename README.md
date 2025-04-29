@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/426f7e01-c065-4251-a0a1-b3fa16a55615" width = 256px>
+  <img src="https://avatars.githubusercontent.com/u/151918147?s=200&v=4" width = 256px>
   <h3>A Business Process Compliance Management System</h3>
 
 [![Coverage Status](https://coveralls.io/repos/github/statuscompliance/status-backend/badge.svg)](https://coveralls.io/github/statuscompliance/status-backend)
@@ -113,7 +113,3 @@ npm run coverage
 ```bash
 npm run coverage 'filepath'
 ```
-
-___
-
-© 2025 Status Compliance System
