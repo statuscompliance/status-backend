@@ -1,6 +1,6 @@
-<center>
+<div style="display: flex; justify-content: center;">
   <img src="https://github.com/user-attachments/assets/426f7e01-c065-4251-a0a1-b3fa16a55615" width="512" height="512" alt="Status Compliance Logo">
-</center>
+</div>
 
 ## Quick Introduction
 
