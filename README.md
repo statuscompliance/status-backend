@@ -9,6 +9,7 @@
 
 </div>
 
+
 ## Quick Introduction
 
 This repository is the **backend** of  [Status Compliance Proyect](https://github.com/statuscompliance). Its primary function is to provide the business logic, data management, and APIs necessary for the system's various functionalities, such as compliance automation, controls catalog management, and design-time & run-time compliance checking, providing a straight-foward automation experience.
@@ -19,19 +20,19 @@ This backend integrates with other parts of the system, including web interfaces
   <img src="https://github.com/user-attachments/assets/9f63de02-6e30-4126-a0ea-36186b1b2537" width = 720px>
 </div>
 
+*Status Compliance Infrastructure*
+
+*Important Annotation: For more information about the proyect infrastructure, you can check the [Infrastructure](https://github.com/statuscompliance/infrastructure) repository.*
 ##  📚 Tech Stack
-We've developed the **MERN** stack exclusively for this backend, which is built using the following technologies:
 
->
->**MERN STACK**
->
->- **MongoDB:** NoSQL document database for flexible data storage.
->- **Express:** Minimalist and flexible Node.js web application framework. 
->- **React**: Open Source Javascript library for flexible UI design.
->- **Node.js:** JavaScript runtime environment for server-side execution.
->
+We are using the **MERN** stack exclusively for this backend, which is built using the following technologies:
 
-By follwoing this tech-stack, wea can easily implement the following features:
+- **MongoDB:** NoSQL document database for flexible data storage.
+- **Express:** Minimalist and flexible Node.js web application framework. 
+- **React**: Open Source Javascript library for flexible UI design.
+- **Node.js:** JavaScript runtime environment for server-side execution.
+
+By follwoing this tech-stack, we deliver the following features:
 
 * **API Management:** Provides RESTful APIs for interaction with the user interface and other services.
 * **Business Logic:** Implements the rules and logic for compliance verification and management.
@@ -40,17 +41,14 @@ By follwoing this tech-stack, wea can easily implement the following features:
 * **Registry Integration:** Enables the management and access of compliance catalog computations. Using `bluejay-registry`.
 * **Node-RED Integration Support:** Offers the necessary endpoints for interaction with compliance workflows defined in Node-RED.
 * **Potential Blockchain Integration:** Lays the groundwork for immutable verification of compliance checks.
-## 🔧Installation
+## 🔧Installing the Backend
 
 Let's setup your enviroment, so you can easily install this repository locally on your machine:
 
-> 
-> **Requirements**
-> 
+> [!NOTE]
 > - Be sure you have **[Node.js](https://nodejs.org/es)** installed (v.22.12.0).
 > - Be sure to have **[Docker](https://www.docker.com/)** installed on your machine.
 > - Be sure to install the main [Infrastructure](https://github.com/statuscompliance/infrastructure) of Status Compliance Proyect via Docker. 
-> 
 
 **Clone the Repository:**
 ```bash
@@ -70,37 +68,55 @@ git clone https://github.com/statuscompliance/status-backend.git
 
 After finishing installing the backend and the infrastructure, you can finally run the backend:
 
+**Running the backend for development**
 ```bash
 npm run dev
 ```
 
-*Important Annotation: Be sure you **stop** the **status-backend container** on your docker-compose infrastructure. 
-Be sure to also configure your ``.env`` file with all the other containers ports, and other configuration, so you have succesfully connected the backend with the infrastructure*
+**Running the backend for production**
+```bash
+npm run prod
+```
 
-## 🧪 Testing the backend
+*Important Annotation: Be sure you **stop** the **status-backend container** on your docker-compose infrastructure. 
+
+*Be sure to also configure your ``.env`` file with all the other containers ports, and other configuration, so you have succesfully connected the backend with the infrastructure*
+
+## 🧪 Testing the Backend
 
 *Important Annotation: Be sure you first run `npm ci` or `npm install` so you have correctly installed all the node modules used on the backend.*
+
+Developer [alvarobernal2412](https://github.com/alvarobernal2412) have implemented the [Vitest](https://vitest.dev/) framework for testing the backend.
 
 After you succesfully installed the backend and the infrastructure, we'll give you a quick guide about how to run some tests:
 
 1. Open your backend folder on VS Code, and install the official **Vitest extension.**
 2. Pop up a terminal and let's start testing.
-### Running the tests
 
-Developer [alvarobernal2412](https://github.com/alvarobernal2412) have implemented the [Vitest](https://vitest.dev/) framework for testing the backend,
+### Testing with Vitest's web ui
 
-**Running all the tests**
+Vitests has a great testing UI, wich you can easily deploy right on your web browser with:
+
+**Run tests with the UI**
+```bash
+npm run test:ui
+```
+
+___
+### Testing With the Terminal
+
+**Run all the tests**
 ```bash
 npm run test
 ```
 
-**Running only a test file**
+**Run only a test file**
 ``` bash
 npm test 'filepath'
 ```
 
 ___
-### Running coverage
+### Running Tests with Coverage
 
 We've also added [istanbul](https://istanbul.js.org/) to integrate code coverage.
  
