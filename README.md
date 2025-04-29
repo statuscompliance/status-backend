@@ -9,8 +9,7 @@
 
 </div>
 
-
-## Quick Introduction
+## Introduction
 
 This repository is the **backend** of  [Status Compliance Proyect](https://github.com/statuscompliance). Its primary function is to provide the business logic, data management, and APIs necessary for the system's various functionalities, such as compliance automation, controls catalog management, and design-time & run-time compliance checking, providing a straight-foward automation experience.
 
@@ -104,6 +103,20 @@ npm run test:ui
 
 ___
 ### Testing With the Terminal
+
+We currently have unitary and integration tests on this backend, and you can easily run them with:
+
+**Run all the unitary tests**
+```bash
+npm run test:unit
+```
+
+**Run all the integration tests**
+```bash
+npm run test:integration
+```
+
+You can also test with:
 
 **Run all the tests**
 ```bash
