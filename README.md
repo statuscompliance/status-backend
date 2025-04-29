@@ -1,3 +1,7 @@
+<center>
+  <img src="https://github.com/user-attachments/assets/426f7e01-c065-4251-a0a1-b3fa16a55615" width="512" height="512" alt="Status Compliance Logo">
+</center>
+
 ## Quick Introduction
 
 This repository is the **backend** of  [Status Compliance Proyect](https://github.com/statuscompliance). Its primary function is to provide the business logic, data management, and APIs necessary for the system's various functionalities, such as compliance automation, controls catalog management, and design-time & run-time compliance checking, providing a straight-foward automation experience.
@@ -7,6 +11,7 @@ This backend integrates with other parts of the system, including web interfaces
 ## 📋Repository Overview
 
 Here is a **deep overview** of the backend, so you can get a good idea of the concepts and features here, and how they are implemented.
+
 ### Controllers
 These are the modules responsible for handling incoming requests and orchestrating the application's logic. They interact with models and services to process data and return responses.
 
@@ -59,6 +64,7 @@ These are the modules responsible for handling incoming requests and orchestrati
     </li>
   </ul>
 </details>
+
 ### Middlewares
 These are functions that execute during the lifecycle of a request/response cycle. They can perform various tasks like authentication, validation, and logging.
 
@@ -83,6 +89,7 @@ These are functions that execute during the lifecycle of a request/response cycl
     </li>
   </ul>
 </details>
+
 ### Sequelize DB Models.
 These are the definitions of the data structures used by Sequelize to interact with the relational database. They represent tables and their relationships.
 
@@ -139,7 +146,8 @@ These are the definitions of the data structures used by Sequelize to interact w
     </li>
   </ul>
 </details>
-### ROUTES
+
+### Routes
 These are the definitions of the API endpoints, specifying the URL paths and the corresponding controller functions that handle requests to those paths.
 
 <details>
@@ -200,7 +208,7 @@ These are the definitions of the API endpoints, specifying the URL paths and the
   </ul>
 </details>
 
-### UTILS
+### Utilities
 These are helper functions and modules that provide reusable logic and functionalities used across different parts of the backend.
 
 <details>
