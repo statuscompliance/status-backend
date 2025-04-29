@@ -18,6 +18,7 @@ These are the modules responsible for handling incoming requests and orchestrati
 
 <details>
   <summary><em>View all the controllers details</em></summary>
+  <p></p>
   <ul>
     <li>
       <strong>Assistant Controller</strong> <code>assistant.controller.js</code>
@@ -71,6 +72,7 @@ These are functions that execute during the lifecycle of a request/response cycl
 
 <details>
   <summary><em>View all the middleware details</em></summary>
+  <p></p>
   <ul>
     <li>
       <strong>Endpoint</strong> <code>endpoint.js</code>
@@ -96,6 +98,7 @@ These are the definitions of the data structures used by Sequelize to interact w
 
 <details>
   <summary><em>View all the models details</em></summary>
+  <p></p>
   <ul>
     <li>
       <strong>Models</strong> <code>models.js</code>
@@ -153,6 +156,7 @@ These are the definitions of the API endpoints, specifying the URL paths and the
 
 <details>
   <summary><em>View all the express.js routes details</em></summary>
+  <p></p>
   <ul>
     <li>
       <strong>Assistant Routes</strong> <code>assistant.routes.js</code>
@@ -214,6 +218,7 @@ These are helper functions and modules that provide reusable logic and functiona
 
 <details>
   <summary><em>View all the utilities details</em></summary>
+  <p></p>
   <ul>
     <li>
       <strong>Agreement Builder</strong> <code>agreementBuilder.js</code>
@@ -275,11 +280,14 @@ You can find on `tests/`,  the proper tests for all the source code on `src/`, b
 We've developed the **MERN** stack exclusively for this backend, which is built using the following technologies:
 
 
-> [!NOTE] MERN STACK
-> * **MongoDB:** NoSQL document database for flexible data storage.
-> * **Express:** Minimalist and flexible Node.js web application framework. 
-> * **React**: Open Source Javascript library for flexible UI design.
-> * **Node.js:** JavaScript runtime environment for server-side execution.
+>
+>**MERN STACK**
+>
+>- **MongoDB:** NoSQL document database for flexible data storage.
+>- **Express:** Minimalist and flexible Node.js web application framework. 
+>- **React**: Open Source Javascript library for flexible UI design.
+>- **Node.js:** JavaScript runtime environment for server-side execution.
+>
 
 By follwoing this tech-stack, wea can easily implement the following features:
 
@@ -294,10 +302,13 @@ By follwoing this tech-stack, wea can easily implement the following features:
 
 Let's setup your enviroment, so you can easily install this repository locally on your machine:
 
-> [!NOTE] **Requirements**
-> * Be sure you have **[Node.js](https://nodejs.org/es)** installed (v.22.12.0).
-> * Be sure to have **[Docker](https://www.docker.com/)** installed on your machine.
-> * Be sure to install the main [Infrastructure](https://github.com/statuscompliance/infrastructure) of Status Compliance Proyect via Docker. 
+> 
+> **Requirements**
+> 
+> - Be sure you have **[Node.js](https://nodejs.org/es)** installed (v.22.12.0).
+> - Be sure to have **[Docker](https://www.docker.com/)** installed on your machine.
+> - Be sure to install the main [Infrastructure](https://github.com/statuscompliance/infrastructure) of Status Compliance Proyect via Docker. 
+> 
 
 **Clone the Repository:**
 ```bash
@@ -362,3 +373,5 @@ npm run coverage 'filepath'
 ```
 
 ___
+
+© 2025 Status Compliance System
