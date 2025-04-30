@@ -26,7 +26,7 @@ import swaggerUi from 'swagger-ui-express';
 // Check if we are in a test environment
 const isTestEnvironment = !!import.meta.env?.VITEST;
 
-const API_PREFIX = isTestEnvironment ? '' : process.env.API_PREFIX || '';
+const API_PREFIX = (!isTestEnvironment && process.env.API_PREFIX) || '';
 
 const swaggerOptions = {
   swaggerDefinition: {
@@ -100,8 +100,8 @@ async function insertEndpointsToConfig() {
     `${API_PREFIX}/thread`,
     `${API_PREFIX}/catalogs`,
     `${API_PREFIX}/assistant`,
-    `${API_PREFIX}/ghAccessToken`,
-    `${API_PREFIX}/getAuth`,
+    `${API_PREFIX}/github/auth`,
+    `${API_PREFIX}/header`,
     `${API_PREFIX}/computations`,
     `${API_PREFIX}/points`,
     `${API_PREFIX}/scopes`,
