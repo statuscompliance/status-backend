@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://avatars.githubusercontent.com/u/151918147?s=200&v=4" width = 256px>
+  <img src = "https://avatars.githubusercontent.com/u/151918147?s=200&v=4" width = 175px></picture>
   <h3>A Business Process Compliance Management System</h3>
 
 [![Coverage Status](https://coveralls.io/repos/github/statuscompliance/status-backend/badge.svg)](https://coveralls.io/github/statuscompliance/status-backend)
@@ -11,7 +11,7 @@
 
 ## Introduction
 
-This repository is the **backend** of  [Status Compliance Proyect](https://github.com/statuscompliance). Its primary function is to provide the business logic, data management, and APIs necessary for the system's various functionalities, such as compliance automation, controls catalog management, and design-time & run-time compliance checking, providing a straight-foward automation experience.
+This repository is the **backend** of  [Status Compliance Project](https://github.com/statuscompliance). Its primary function is to provide the business logic, data management, and APIs necessary for the system's various functionalities, such as compliance automation, controls catalog management, and design-time & run-time compliance checking, providing a straight-foward automation experience.
 
 This backend integrates with other parts of the system, including web interfaces and specific services like the registry (`bluejay-registry`) and Node-RED workflows.
 
@@ -74,10 +74,10 @@ npm run dev
 
 **Running the backend for production**
 ```bash
-npm run prod
+npm start
 ```
 
-*Important Annotation: Be sure you **stop** the **status-backend container** on your docker-compose infrastructure. 
+*Important Annotation: Be sure you **stop** the **status-backend container** on your docker-compose infrastructure.*
 
 *Be sure to also configure your ``.env`` file with all the other containers ports, and other configuration, so you have succesfully connected the backend with the infrastructure*
 
