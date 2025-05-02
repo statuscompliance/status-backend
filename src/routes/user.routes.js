@@ -6,6 +6,7 @@ import {
   getUsers,
   getAuthority,
   deleteUserById,
+  refreshToken,
 } from '../controllers/user.controller.js';
 import { verifyAdmin } from '../middleware/verifyAdmin.js';
 import { verifyAuthority } from '../middleware/verifyAuth.js';
@@ -19,6 +20,7 @@ export default function () {
 
   router.post('/signUp', verifyAdmin, signUp);
   router.get('/auth', verifyAuthority, getAuthority);
+  router.get('/auth/refresh', refreshToken);
 
   router.delete('/:id', deleteUserById); //TODO: add auth middleware
 
@@ -172,6 +174,51 @@ export default function () {
  *               type: object
  *               properties:
  *                 authority:
+ *                   type: string
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /users/auth/refresh:
+ *   get:
+ *     summary: Refreshes the access token using a valid refresh token
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Access token refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *       400:
+ *         description: No refresh token provided
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       403:
+ *         description: Invalid or expired refresh token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
  *                   type: string
  *       500:
  *         description: Internal server error

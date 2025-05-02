@@ -4,7 +4,11 @@ import { models } from '../../../../src/models/models.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import * as nodeRedTokenModule from '../../../../src/utils/nodeRedToken.js';
-import { DEFAULT_USER } from '../../../../tests/utils/sampleUserData.js';
+import { 
+  DEFAULT_USER, 
+  adminUser,
+  newUserData 
+} from '../../../../tests/utils/sampleUserData.js';
 
 // Constants for reuse
 const MOCK_TOKEN = 'mockToken';
@@ -92,12 +96,7 @@ describe('User Controller Tests', () => {
 
   // Test singUp
   describe('signUp', () => {
-    const signUpReqBody = {
-      username: 'existingUser',
-      password: 'password123',
-      email: 'test@example.com',
-      authority: 'USER',
-    };
+    const signUpReqBody = { ...newUserData, username: 'existingUser' };
 
     function createSignUpReq(overrides = {}) {
       return { body: { ...signUpReqBody, ...overrides } };
@@ -179,7 +178,7 @@ describe('User Controller Tests', () => {
         username: 'newUser',
         password: 'hashedPassword',
         authority: 'USER',
-        email: 'test@example.com',
+        email: 'new@example.com',
       });
     });
 
@@ -224,7 +223,7 @@ describe('User Controller Tests', () => {
 
   // Test singIn
   describe('signIn', () => {
-    function createSignInReq(username = 'existingUser', password = 'correctPassword') {
+    function createSignInReq(username = DEFAULT_USER.username, password = 'correctPassword') {
       return { body: { username, password } };
     }
 
@@ -253,12 +252,12 @@ describe('User Controller Tests', () => {
         findOneValue: DEFAULT_USER 
       });
       
-      const req = createSignInReq('existingUser', 'wrongPassword');
+      const req = createSignInReq(DEFAULT_USER.username, 'wrongPassword');
       const res = createRes();
 
       await userController.signIn(req, res);
 
-      expect(bcrypt.compare).toHaveBeenCalledWith('wrongPassword', 'hashedPassword');
+      expect(bcrypt.compare).toHaveBeenCalledWith('wrongPassword', DEFAULT_USER.password);
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({ message: 'Invalid password' });
     });
@@ -271,21 +270,21 @@ describe('User Controller Tests', () => {
 
       await userController.signIn(req, res);
 
-      expect(bcrypt.compare).toHaveBeenCalledWith('correctPassword', 'hashedPassword');
+      expect(bcrypt.compare).toHaveBeenCalledWith('correctPassword', DEFAULT_USER.password);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           accessToken: MOCK_TOKEN,
           refreshToken: MOCK_TOKEN,
-          username: 'existingUser',
-          email: 'user@example.com',
-          authority: 'USER',
+          username: DEFAULT_USER.username,
+          email: DEFAULT_USER.email,
+          authority: DEFAULT_USER.authority,
         })
       );
 
       expect(models.User.update).toHaveBeenCalledWith(
         { refresh_token: MOCK_TOKEN },
-        { where: { username: 'existingUser' } }
+        { where: { username: DEFAULT_USER.username } }
       );
     });
 
@@ -386,10 +385,9 @@ describe('User Controller Tests', () => {
 
     it('should call getNodeRedToken and include it in the response for DEVELOPER', async () => {
       const developerUser = {
+        ...DEFAULT_USER,
         id: 123,
         username: 'developerUser',
-        password: 'hashedDeveloperPassword',
-        email: 'developer@example.com',
         authority: 'DEVELOPER',
       };
       
@@ -600,6 +598,142 @@ describe('User Controller Tests', () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ authority: 'ADMIN' });
+    });
+  });
+
+  // Test refreshToken
+  describe('refreshToken', () => {
+    const mockDecodedToken = {
+      user_id: DEFAULT_USER._id || 1,
+      username: DEFAULT_USER.username,
+      authority: DEFAULT_USER.authority
+    };
+
+    function setupRefreshTokenTest(mockUser = null, verifyError = null) {
+      const req = { cookies: { refreshToken: 'valid-refresh-token' } };
+      const res = createRes();
+      
+      if (verifyError) {
+        vi.spyOn(jwt, 'verify').mockImplementation((token, secret, callback) => {
+          callback(verifyError, null);
+        });
+      } else {
+        vi.spyOn(jwt, 'verify').mockImplementation((token, secret, callback) => {
+          callback(null, mockDecodedToken);
+        });
+      }
+      
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(mockUser);
+      vi.spyOn(jwt, 'sign').mockReturnValue(MOCK_TOKEN);
+      
+      return { req, res };
+    }
+
+    it('should return 400 if no refresh token provided', async () => {
+      const req = { cookies: {} };
+      const res = createRes();
+
+      await userController.refreshToken(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Refresh token is required' });
+    });
+
+    it('should return 403 if refresh token is invalid', async () => {
+      const { req, res } = setupRefreshTokenTest(null, new Error('Invalid token'));
+
+      await userController.refreshToken(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid or expired refresh token' });
+    });
+
+    it('should return 403 if user not found with the token', async () => {
+      const { req, res } = setupRefreshTokenTest(null);
+
+      await userController.refreshToken(req, res);
+
+      expect(models.User.findOne).toHaveBeenCalledWith({
+        where: {
+          id: mockDecodedToken.user_id,
+          refresh_token: 'valid-refresh-token'
+        }
+      });
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid refresh token' });
+    });
+
+    it('should return 200 and new accessToken for regular user', async () => {
+      const mockUser = {
+        id: DEFAULT_USER._id || 1,
+        username: DEFAULT_USER.username,
+        email: DEFAULT_USER.email,
+        authority: DEFAULT_USER.authority,
+        refresh_token: 'valid-refresh-token'
+      };
+      
+      const { req, res } = setupRefreshTokenTest(mockUser);
+
+      await userController.refreshToken(req, res);
+
+      expect(jwt.sign).toHaveBeenCalledWith(
+        {
+          user_id: mockUser.id,
+          username: mockUser.username,
+          authority: mockUser.authority
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+      
+      expect(res.cookie).toHaveBeenCalledWith(
+        'accessToken',
+        MOCK_TOKEN,
+        expect.objectContaining({
+          httpOnly: true,
+          path: '/',
+        })
+      );
+      
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        accessToken: MOCK_TOKEN
+      });
+    });
+
+    it('should handle internal server error during refresh', async () => {
+      vi.spyOn(jwt, 'verify').mockImplementation(() => {
+        throw new Error('Unexpected error');
+      });
+      
+      const req = { cookies: { refreshToken: 'valid-refresh-token' } };
+      const res = createRes();
+
+      await userController.refreshToken(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error' });
+    });
+
+    it('should refresh token for admin and developer roles', async () => {
+      const mockAdminUser = {
+        id: adminUser._id || 2,
+        username: adminUser.username,
+        email: adminUser.email,
+        authority: adminUser.authority,
+        refresh_token: 'valid-refresh-token'
+      };
+      
+      const { req, res } = setupRefreshTokenTest(mockAdminUser);
+
+      await userController.refreshToken(req, res);
+      
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accessToken: MOCK_TOKEN,
+        })
+      );
     });
   });
 });
