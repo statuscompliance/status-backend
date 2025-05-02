@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { models } from '../../../src/models/models.js'
-import { updateConfigurationsCache, endpointAvailable, assistantlimitReached } from '../../../src/middleware/endpoint.js';
+import { 
+  updateConfigurationsCache, 
+  endpointAvailable, 
+  assistantlimitReached,
+  getConfigurationsCache,
+  setConfigurationsCache
+} from '../../../src/middleware/endpoint.js';
 
 const mockReq = {
   url: '',
@@ -41,6 +47,7 @@ describe('Endpoint middleware tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setConfigurationsCache(null);
   });
 
   afterEach(() => {
@@ -51,8 +58,8 @@ describe('Endpoint middleware tests', () => {
 
     it('should call models.Configuration.findAll and update the cache', async () => {
       const mockConfigs = [
-        { dataValues: { id: 1, endpoint: '/api/test1', available: true } },
-        { dataValues: { id: 2, endpoint: '/api/test2', available: false } },
+        { dataValues: { id: 1, endpoint: '/test1', available: true } },
+        { dataValues: { id: 2, endpoint: '/test2', available: false } },
       ];
       vi.spyOn(models.Configuration, 'findAll').mockResolvedValue(mockConfigs);
 
@@ -80,9 +87,9 @@ describe('Endpoint middleware tests', () => {
       vi.clearAllMocks();
 
       mockConfigs = [
-        { dataValues: { id: 1, endpoint: '/api/public', available: true } },
-        { dataValues: { id: 2, endpoint: '/api/private', available: false } },
-        { dataValues: { id: 3, endpoint: '/api/partial', available: true } },
+        { dataValues: { id: 1, endpoint: '/public', available: true } },
+        { dataValues: { id: 2, endpoint: '/private', available: false } },
+        { dataValues: { id: 3, endpoint: '/partial', available: true } },
         { dataValues: { id: 4, endpoint: 'nested/path', available: true } },
       ];
 
@@ -96,20 +103,20 @@ describe('Endpoint middleware tests', () => {
     });
 
     it('should call updateConfigurationsCache if configurationsCache is empty', async () => {
-      mockReq.url = '/api/public';
+      mockReq.url = '/public';
       await endpointAvailable(mockReq, mockRes, mockNext);
       expect(models.Configuration.findAll).toHaveBeenCalledOnce();
       expectNextCalled();
     });
 
     it('should call next() if the endpoint matches an available configuration', async () => {
-      mockReq.url = '/api/public';
+      mockReq.url = '/public';
       await endpointAvailable(mockReq, mockRes, mockNext);
       expectNextCalled();
     });
 
     it('should call next() if the endpoint includes a configured endpoint', async () => {
-      mockReq.url = '/api/partial/resource/123';
+      mockReq.url = '/partial/resource/123';
 
       await endpointAvailable(mockReq, mockRes, mockNext);
       expectNextCalled();
@@ -128,13 +135,13 @@ describe('Endpoint middleware tests', () => {
     });
 
     it('should return 404 and "Endpoint not available" if the endpoint matches an unavailable configuration', async () => {
-      mockReq.url = '/api/private';
+      mockReq.url = '/private';
       await endpointAvailable(mockReq, mockRes, mockNext);
       expectResponseSent(404, 'Endpoint not available');
     });
 
     it('should return 404 and "Endpoint not found" if the endpoint does not match any configuration', async () => {
-      mockReq.url = '/api/nonexistent';
+      mockReq.url = '/nonexistent';
       await endpointAvailable(mockReq, mockRes, mockNext);
       expectResponseSent(404, { message: 'Endpoint not found' });
     });
@@ -143,21 +150,21 @@ describe('Endpoint middleware tests', () => {
 
   describe('assistantlimitReached middleware', () => {
     let mockAssistantConfig;
-    mockAssistantConfig = { dataValues: { id: 10, endpoint: '/api/assistant', limit: 5 } };
 
     beforeEach(() => {
       vi.clearAllMocks();
 
-      mockAssistantConfig = { dataValues: { id: 10, endpoint: '/api/assistant', limit: 5 } };
+      mockAssistantConfig = { dataValues: { id: 10, endpoint: '/assistant', limit: 5 } };
 
       vi.spyOn(models.Configuration, 'findOne').mockResolvedValue(mockAssistantConfig);
       vi.spyOn(models.Configuration, 'findAll').mockResolvedValue([]);
       vi.spyOn(models.Assistant, 'findAll').mockResolvedValue([]);
 
-      mockReq.url = '/api/assistant';
+      mockReq.url = '/assistant';
       mockRes.status.mockClear();
       mockRes.json.mockClear();
       mockRes.send.mockClear();
+      mockNext.mockClear();
     });
 
     it('should call updateConfigurationsCache if configurationsCache is empty (first run)', async () => {
@@ -166,7 +173,16 @@ describe('Endpoint middleware tests', () => {
       expect(models.Configuration.findOne).toHaveBeenCalledOnce();
     });
 
-    it('should return 404 "Endpoint not found" if the /api/assistant configuration is not found', async () => {
+    it('should call updateConfigurationsCache (via Configuration.findAll) when configurationsCache is empty', async () => {
+      const findAllSpy = vi.spyOn(models.Configuration, 'findAll').mockResolvedValue([]);
+      setConfigurationsCache(null);
+    
+      await assistantlimitReached(mockReq, mockRes, mockNext);
+    
+      expect(findAllSpy).toHaveBeenCalledOnce();
+    });
+
+    it('should return 404 "Endpoint not found" if the /assistant configuration is not found', async () => {
       vi.spyOn(models.Configuration, 'findOne').mockResolvedValue(undefined)
 
       await assistantlimitReached(mockReq, mockRes, mockNext);
@@ -227,4 +243,22 @@ describe('Endpoint middleware tests', () => {
     });
   });
 
+  describe('cache getter and setter functions', () => {
+    it('getConfigurationsCache should return the current cache value', () => {
+      const testValue = [{ test: 'data' }];
+      setConfigurationsCache(testValue);
+      expect(getConfigurationsCache()).toBe(testValue);
+    });
+
+    it('setConfigurationsCache should update the cache value', () => {
+      const initialValue = null;
+      const newValue = [{ test: 'new data' }];
+      
+      setConfigurationsCache(initialValue);
+      expect(getConfigurationsCache()).toBe(initialValue);
+      
+      setConfigurationsCache(newValue);
+      expect(getConfigurationsCache()).toBe(newValue);
+    });
+  });
 });
