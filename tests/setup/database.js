@@ -80,7 +80,7 @@ async function initPostgres() {
 async function setupEndpointConfigurations() {
   const endpoints = [
     '/config', '/users', '/scripts', '/controls', '/grafana',
-    '/thread', '/catalogs', '/assistant', '/ghAccessToken', '/getAuth',
+    '/thread', '/catalogs', '/assistant', '/github/auth', '/header',
     '/computations', '/points', '/scopes', 'docs', 'api-docs',
   ];
 

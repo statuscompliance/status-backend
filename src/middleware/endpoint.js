@@ -1,6 +1,6 @@
 import { models } from '../models/models.js';
 
-const API_PREFIX = process.env.API_PREFIX;
+const API_PREFIX = process.env.API_PREFIX || '';
 let configurationsCache = null;
 
 export async function updateConfigurationsCache() {
