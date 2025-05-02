@@ -1,10 +1,9 @@
-import { expect, describe, it, beforeAll } from 'vitest';
+import { expect, describe, vi, it, beforeAll } from 'vitest';
 import { request } from '../../setup/setup.js';
 import jwt from 'jsonwebtoken';
 import { adminUser, sampleUser } from '../../utils/sampleUserData.js';
 import { models } from '../../../src/models/models.js';
 
-const API_PREFIX = process.env.API_PREFIX;
 
 const getResponse = (path, token) => {
   return request
@@ -36,6 +35,7 @@ describe('Configuration API Routes', () => {
     );
     const getAllEndpoints = await models.Configuration.findAll();
     endpointExists = getAllEndpoints[5].dataValues;
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   describe('Index GET /', () => {
@@ -169,18 +169,10 @@ describe('Configuration API Routes', () => {
   describe('GET /config/assistant/limit', () => {
     const getPath = '/config/assistant/limit';
     it('should return 200 and the assistant limit for admin user', async () => {
-      await models.Configuration.create({
-        endpoint: `${API_PREFIX}/assistant`,
-        limit: 7,
-      });
       const response = await getResponse(getPath, adminToken);
 
       expect(response.status).toBe(200);
-      expect(response.body.limit).toBe(7);
-
-      await models.Configuration.destroy({
-        where: { endpoint: `${API_PREFIX}/assistant` },
-      });
+      expect(response.body.limit).toBe(100);
     });
 
     it('should return 403 for regular user', async () => {
@@ -213,20 +205,19 @@ describe('Configuration API Routes', () => {
     const newLimit = 5;
 
     it('should return 200 and success message for admin user', async () => {
-      await models.Configuration.create({
-        endpoint: `${API_PREFIX}/assistant`,
-        limit: 7,
-      });
       const response = await putResponse(newLimit, adminToken);
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Limit updated successfully');
-      await models.Configuration.destroy({
-        where: { endpoint: `${API_PREFIX}/assistant` },
-      });
     });
 
     it('should return 404 if configuration not found for admin user', async () => {
+      await models.Configuration.destroy({
+        where: {
+          endpoint: '/assistant',
+        },
+      });
+
       const nonExistentLimit = 999;
       const response = await putResponse(nonExistentLimit, adminToken);
 

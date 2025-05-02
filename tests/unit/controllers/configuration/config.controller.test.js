@@ -5,7 +5,7 @@ import * as endpointModule from '../../../../src/middleware/endpoint.js';
 
 vi.mock('../../../../src/middleware/endpoint.js');
 
-const API_PREFIX = process.env.API_PREFIX; 
+const API_PREFIX = process.env.API_PREFIX || ''; 
 
 const createRes = () => {
   const res = {};

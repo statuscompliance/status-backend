@@ -1,7 +1,7 @@
 import { models } from '../models/models.js';
 import { updateConfigurationsCache } from '../middleware/endpoint.js';
 
-const API_PREFIX = process.env.API_PREFIX;
+const API_PREFIX = process.env.API_PREFIX || '';
 
 export async function getConfiguration(req, res) {
   try {
@@ -78,7 +78,6 @@ export async function getAssistantLimit(req, res) {
         endpoint: `${API_PREFIX}/assistant`,
       },
     });
-    console.log('Configuration:', configuration);
 
     if (!configuration) {
       return res
