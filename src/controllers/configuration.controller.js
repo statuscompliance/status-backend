@@ -1,6 +1,8 @@
 import { models } from '../models/models.js';
 import { updateConfigurationsCache } from '../middleware/endpoint.js';
 
+const API_PREFIX = process.env.API_PREFIX || '';
+
 export async function getConfiguration(req, res) {
   try {
     const configuration = await models.Configuration.findAll();
@@ -73,15 +75,14 @@ export async function getAssistantLimit(req, res) {
   try {
     const configuration = await models.Configuration.findOne({
       where: {
-        endpoint: '/api/assistant',
+        endpoint: `${API_PREFIX}/assistant`,
       },
     });
-    console.log('Configuration:', configuration);
 
     if (!configuration) {
       return res
         .status(404)
-        .json({ message: 'Configuration /api/assistant not found' });
+        .json({ message: `Configuration ${API_PREFIX}/assistant not found` });
     }
 
     const limit = configuration.dataValues.limit;
@@ -112,7 +113,7 @@ export async function updateAssistantLimit(req, res) {
     }
 
     const configuration = await models.Configuration.findOne({
-      where: { endpoint: '/api/assistant' },
+      where: { endpoint: `${API_PREFIX}/assistant` },
     });
 
     if (!configuration) {
@@ -127,7 +128,7 @@ export async function updateAssistantLimit(req, res) {
     }
 
     await models.Configuration.update(
-      { endpoint: '/api/assistant', limit: limit },
+      { endpoint: `${API_PREFIX}/assistant`, limit: limit },
       { where: { id: configId } }
     );
 

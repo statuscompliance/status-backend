@@ -1,4 +1,9 @@
-import 'dotenv/config';
+// Check if we are in a test environment
+const isTestEnvironment = !!import.meta.env?.VITEST;
+
+if (!isTestEnvironment) {
+  await import('dotenv/config');
+}
 import express from 'express';
 import catalogRoutes from './routes/catalog.routes.js';
 import controlRoutes from './routes/control.routes.js';
@@ -22,9 +27,6 @@ import { sequelize } from './db/database.js';
 import { verifyAdmin } from './middleware/verifyAdmin.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
-
-// Check if we are in a test environment
-const isTestEnvironment = !!import.meta.env?.VITEST;
 
 const API_PREFIX = isTestEnvironment ? '' : process.env.API_PREFIX || '';
 
@@ -100,8 +102,8 @@ async function insertEndpointsToConfig() {
     `${API_PREFIX}/thread`,
     `${API_PREFIX}/catalogs`,
     `${API_PREFIX}/assistant`,
-    `${API_PREFIX}/ghAccessToken`,
-    `${API_PREFIX}/getAuth`,
+    `${API_PREFIX}/github/auth`,
+    `${API_PREFIX}/header`,
     `${API_PREFIX}/computations`,
     `${API_PREFIX}/points`,
     `${API_PREFIX}/scopes`,
