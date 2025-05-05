@@ -11,7 +11,7 @@ const buildControlWhereClause = (query) => {
     whereClause.status = status;
   } else if (status) {
     throw new Error(
-      `Invalid status filter: ${status}. Allowed values are 'finalized' or 'draft'.`
+      `Invalid status filter: ${status}. Allowed values are "finalized" or "draft".`
     );
   }
 
@@ -38,7 +38,7 @@ export const getControls = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     res.status(500).json({
-      message: 'Failed to retrieving controls',
+      message: 'Failed to retrieve controls',
       error: error.message,
     });
   }
@@ -56,7 +56,7 @@ export const getControl = async (req, res) => {
     res.status(200).json(control);
   } catch (error) {
     res.status(500).json({
-      message: 'Failed to retrieving control',
+      message: 'Failed to retrieve control',
       error: error.message,
     });
   }
@@ -75,7 +75,7 @@ export const getCatalogControls = async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     res.status(500).json({
-      message: 'Failed to retrieving catalog controls',
+      message: 'Failed to retrieve catalog controls',
       error: error.message,
     });
   }
@@ -129,7 +129,7 @@ export const createControl = async (req, res) => {
   } catch (error) {
     console.error('Error creating control:', error);
     res.status(500).json({
-      message: 'Failed to creating control',
+      message: 'Failed to create control',
       error: error.message,
     });
   }
@@ -230,7 +230,7 @@ export const deleteControl = async (req, res) => {
     res.status(204).send(); // No content for successful deletion
   } catch (error) {
     res.status(500).json({
-      message: 'Failed to deleting control',
+      message: 'Failed to delete control',
       error: error.message,
     });
   }

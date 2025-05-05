@@ -1,40 +1,41 @@
-import { methods } from '../config/grafana.js';
 
-// In-memory cache for dashboard responses
-const dashboardCache = new Map();
-const DASHBOARD_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+import { methods } from '../config/grafana.js';
+import redis from '../config/redis.js';
+
+// TTL for Redis cache entries: 1 week in seconds
+const REDIS_PANEL_TTL = 7 * 24 * 60 * 60;
 
 /**
- * Fetches dashboard data by UID, using in-memory cache to reduce API calls.
- * @param {string} uid - Grafana dashboard UID
- * @returns {Promise<object>} - The dashboard object
+ * Retrieves a panel object from Redis cache by its panel ID.
+ * @param {number|string} panelId - The unique panel identifier
+ * @returns {Promise<object|null>} - Parsed panel data from Redis, or null if not cached
  */
-async function getDashboardWithCache(uid) {
-  const now = Date.now();
-  const cached = dashboardCache.get(uid);
-
-  // Check if the dashboard exists in the cache and if it hasn't expired
-  if (cached && now - cached.fetchedAt < DASHBOARD_CACHE_TTL) {
-    return cached.dashboard;
-  }
-
-  // If not in cache or expired, fetch the dashboard data from Grafana
-  const response = await methods.dashboard.getDashboardByUID(uid);
-  const dashboard = response.data.dashboard;
-
-  // Store the fetched dashboard data in the cache along with the current timestamp
-  dashboardCache.set(uid, { dashboard, fetchedAt: now });
-  return dashboard;
+async function getPanelFromRedis(panelId) {
+  const json = await redis.get(`grafana:panel:${panelId}`);
+  return json ? JSON.parse(json) : null;
 }
 
 /**
- * Transforms a list of Panel model instances into DTOs by fetching
- * the full panel metadata from Grafana and merging it.
+ * Caches a panel object in Redis with a TTL.
+ * @param {number|string} panelId - The unique panel identifier
+ * @param {object} data - The panel metadata to cache
+ */
+async function cachePanelInRedis(panelId, data) {
+  await redis.set(
+    `grafana:panel:${panelId}`,
+    JSON.stringify(data),
+    'EX',
+    REDIS_PANEL_TTL
+  );
+}
+
+/**
+ * Maps an array of panel records to DTOs by enriching them
+ * with metadata fetched from Grafana or Redis cache.
  *
- * @param {Array<object>} panels - Array of panel records with dataValues
+ * @param {Array<object>} panels - Array of panel records (Sequelize models or plain objects)
  * @returns {Promise<Array<object>>} - Array of enriched panel DTOs
  */
-
 export async function mapPanelsToDTO(panels) {
   const result = [];
 
@@ -47,8 +48,19 @@ export async function mapPanelsToDTO(panels) {
       continue;
     }
 
+    // Check Redis cache for the panel metadata
+    const cached = await getPanelFromRedis(panelId);
+    if (cached) {
+      result.push({ ...panel, ...cached });
+      continue;
+    }
+
     try {
-      const dashboard = await getDashboardWithCache(dashboardUid);
+      // Fetch full dashboard from Grafana
+      const response = await methods.dashboard.getDashboardByUID(dashboardUid);
+      const dashboard = response.data.dashboard;
+
+      // Find the specific panel by its ID
       const panelElement = dashboard.panels.find((e) => e.id === panelId);
 
       if (!panelElement) {
@@ -56,20 +68,25 @@ export async function mapPanelsToDTO(panels) {
         continue;
       }
 
-      // Extract the target from the panel element
+      // Extract relevant target metadata
       const target = (panelElement.targets && panelElement.targets[0]) || {};
 
-      result.push({
-        ...panel,
+      const dto = {
         title: panelElement.title,
         type: panelElement.type,
         sqlQuery: target.rawSql,
         table: target.table,
         displayName: target.alias,
         gridPos: panelElement.gridPos,
-      });
+      };
+
+      // Enrich the result and cache the panel
+      result.push({ ...panel, ...dto });
+
+      await cachePanelInRedis(panelId, dto);
+
     } catch (error) {
-      // Log and skip failures for individual dashboards/panels
+      // Log and skip failed panel mappings
       console.error(
         `Error mapping panel ${panelId} for dashboard ${dashboardUid}:`,
         error
