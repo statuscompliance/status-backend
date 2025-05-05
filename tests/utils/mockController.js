@@ -1,0 +1,19 @@
+import { vi } from 'vitest';
+
+/**
+ * Mocks a method on a given model using Vitest's spy functionality.
+ * It can be configured to resolve with a specific value or reject with an error.
+ *
+ * @param {object} model - The object containing the method to be mocked (e.g., a Sequelize model or service).
+ * @param {string} action - The name of the method to spy on (as a string).
+ * @param {*} returnValue - The value to resolve if the method is called (used when `error` is not provided).
+ * @param {Error|null} [error=null] - Optional error to reject with, instead of resolving.
+ * @returns {import('vitest').MockInstance} - The spy instance created by Vitest.
+ */
+
+export function mockController(model, action, returnValue, error = null) {
+  const spy = vi.spyOn(model, action);
+  if (error) spy.mockRejectedValueOnce(error);
+  else spy.mockResolvedValueOnce(returnValue);
+  return spy;
+}
