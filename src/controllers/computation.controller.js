@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 import redis from '../config/redis.js';
 import { calculateCompliance } from '../utils/calculateCompliance.js';
 
+const API_PREFIX = process.env.API_PREFIX;
+
 export async function getComputations(req, res) {
   try {
     const computations = await models.Computation.findAll();
@@ -20,27 +22,21 @@ export async function getComputations(req, res) {
 export async function getComputationsById(req, res) {
   try {
     const { id } = req.params;
-    const computations = await models.Computation.findAll({ where: { computationGroup: id } });
+    const computations = await models.Computation.findAll({
+      where: { computationGroup: id },
+    });
     const ready = await redis.get(id);
-    if (ready === 'true' && computations.length > 0) {
-      res.status(200).json({
-        code: 200,
-        message: 'OK',
-        computations: calculateCompliance(computations)
-      });
-    } else if (ready === 'false' && computations.length > 0) {
-      res.status(202).json({ message: 'Not ready yet' });
-    } else {
-      if(computations.length === 0){
-        res.status(404).json({ message: 'Not found' });
-      } else {
-        res.status(200).json({
-          code: 200,
-          message: 'OK',
-          computations: calculateCompliance(computations)
-        });
-      }
+    if (computations.length === 0) {
+      return res.status(404).json({ message: 'Computations not found' });
     }
+    if (ready !== 'true') {
+      return res.status(202).json({ message: 'Not ready yet' });
+    }
+    return res.status(200).json({
+      code: 200,
+      message: 'OK',
+      computations: calculateCompliance(computations),
+    });
   } catch (error) {
     res.status(500).json({
       message: `Failed to get computation, error: ${error.message}`,
@@ -89,21 +85,43 @@ export async function getComputationsByControlIdAndCreationDate(req, res) {
   }
 }
 
-// TODO: Update this endpoint to handle period from to instead of start_compute and end_compute
-
 export async function setComputeIntervalBytControlIdAndCreationDate(req, res) {
   try {
     const { start_compute, end_compute } = req.body;
-    const { controlId, createdAt } = req.params;
+    const { controlId } = req.params;
+    const { from, to } = req.query;
 
-    const computation = await models.Computation.update(
+    if (!from || !to) {
+      return res
+        .status(400)
+        .json({ message: 'Missing from or to query parameters' });
+    }
+
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+
+    const [updatedCount] = await models.Computation.update(
       { start_compute, end_compute },
-      { where: { controlId, createdAt } }
+      {
+        where: {
+          controlId,
+          createdAt: {
+            [Op.between]: [fromDate, toDate],
+          },
+        },
+      }
     );
-    res.status(204).json(computation);
+
+    if (updatedCount === 0) {
+      return res
+        .status(404)
+        .json({ message: 'No computations found to update' });
+    }
+
+    res.status(204).end();
   } catch (error) {
     res.status(500).json({
-      message: `Failed to update computation, error: ${error.message}`,
+      message: `Failed to update computations, error: ${error.message}`,
     });
   }
 }
@@ -111,11 +129,15 @@ export async function setComputeIntervalBytControlIdAndCreationDate(req, res) {
 export async function createComputation(req, res) {
   try {
     const { metric, config } = req.body;
-    const {validation, textError} = checkRequiredProperties(metric, ['endpoint', 'params']);
-    if(!validation){
-      res.status(400).json({error: textError});
+    const { validation, textError } = checkRequiredProperties(metric, [
+      'endpoint',
+      'params',
+    ]);
+    if (!validation) {
+      return res.status(400).json({ error: textError });
     }
-    const endpoint = `/api/v1${metric.endpoint}`;
+    const endpoint = `/${API_PREFIX}${metric.endpoint}`;
+
     const computationId = uuidv4();
     const { end: to, ...restWindow } = metric.window;
     const params = {
@@ -124,19 +146,21 @@ export async function createComputation(req, res) {
       ...metric.params,
       scope: metric.scope,
       to,
-      ...restWindow
+      ...restWindow,
     };
     const headers = {
-      'x-access-token': req.cookies.accessToken
+      'x-access-token': req.cookies.accessToken,
     };
     const response = await nodered.post(endpoint, params, { headers });
-    if (response.status !== 200) {
-      res.status(400).json({ message: 'Something went wrong when calling Node-RED' });
+    if (!(response.status >= 200 && response.status < 300)) {
+      return res
+        .status(400)
+        .json({ message: 'Something went wrong when calling Node-RED' });
     }
     res.status(201).json({
       code: 201,
       message: 'OK',
-      computation: '/api/v1/computations/' + computationId
+      computation: `${API_PREFIX}/computations/${computationId}`,
     });
   } catch (error) {
     res.status(500).json({
@@ -147,22 +171,21 @@ export async function createComputation(req, res) {
 
 export async function bulkCreateComputations(req, res) {
   try {
-    const { computations , done} = req.body;
+    const { computations, done } = req.body;
     if (!Array.isArray(computations) || computations.length === 0) {
       return res.status(400).json({ error: 'Invalid computations' });
     }
-    const { validation, textError } = checkRequiredProperties(computations[0], ['computationGroup']);
+    const { validation, textError } = checkRequiredProperties(computations[0], [
+      'computationGroup',
+    ]);
     if (!validation) {
       return res.status(400).json({ error: textError });
     }
-    const newComputations = await models.Computation.bulkCreate(
-      computations
-    );
-    if(done){
+    const newComputations = await models.Computation.bulkCreate(computations);
+    if (done) {
       const computationGroup = computations[0].computationGroup;
       await redis.set(computationGroup, true);
     }
-    
     res.status(201).json(newComputations);
   } catch (error) {
     res.status(500).json({
