@@ -1,191 +1,7 @@
 import { methods } from '../config/grafana.js';
 import { models } from '../models/models.js';
 import createPanelTemplate from '../utils/panelStructures.js';
-import { getSQLFromSequelize, parseSQLQuery } from '../utils/sqlQueryBuilder.js';
-
-export async function createServiceAccount(req, res) {
-  try {
-    const { name, role } = req.body;
-    const serviceAccountData = {
-      isDisabled: false,
-      name: name,
-      role: role,
-    };
-
-    const response = await methods.serviceAccount.createServiceAccount(
-      serviceAccountData
-    );
-
-    return res.status(201).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to create service account in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
-
-export async function getServiceAccountById(req, res) {
-  try {
-    const response = await methods.serviceAccount.retrieveServiceAccount(
-      req.params.id
-    );
-    return res.status(200).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve service account in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
-
-export async function createServiceAccountToken(req, res) {
-  try {
-    const tokenData = {
-      name: req.body.name,
-      secondsToLive: req.body.secondsToLive,
-    };
-    const response = await methods.serviceAccount.createToken(
-      req.params.id,
-      tokenData
-    );
-    return res.status(201).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      const errorData = error.response.data ? error.response.data : error;
-      return res.status(status).json(errorData);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to create service account token in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
-
-export async function getFolders(req, res) {
-  try {
-    const response = await methods.folder.getFolders();
-    return res.status(200).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve folders in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
-
-export async function getFolderDashboardsByUID(req, res) {
-  try {
-    const folderUid = req.params.uid === '{uid}' ? '' : req.params.uid;
-    const response = await methods.search.search(
-      undefined,
-      undefined,
-      'dash-db',
-      undefined,
-      undefined,
-      undefined,
-      folderUid,
-      undefined,
-      undefined
-    );
-    const dashboards = response.data.filter((dashboard) =>
-      folderUid === '' ? !dashboard.folderUid : true
-    );
-    return res.status(200).json(dashboards);
-  } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve dashboards in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
-
-export async function createFolder(req, res) {
-  try {
-    const newUID = crypto.randomUUID();
-    const {title, parentUid , description } = req.body;
-    const response = await methods.folder.createFolder({
-      newUID,
-      title,
-      parentUid,
-      description
-    });
-    return res.status(201).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status, data } = error.response;
-      return res.status(status).json(data);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to create folder in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
-
-export async function deleteFolder(req, res) {
-  try {
-    const response = await methods.folder.deleteFolder(req.params.uid);
-    return res.status(200).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status, data } = error.response;
-      return res.status(status).json(data);
-    } else {
-      return res.status(500).json({
-        message: 'Failed to delete folder in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
-
-export async function getFolderByUID(req, res) {
-  try {
-    const response = await methods.folder.getFolderByUID(req.params.uid);
-    return res.status(200).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve folder in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
+import { getSQLFromSequelize } from '../utils/sqlQueryBuilder.js';
 
 export async function createDashboard(req, res) {
   try {
@@ -284,39 +100,23 @@ export async function importDashboard(req, res) {
   }
 }
 
-export async function createQuery(req, res) {
-  const { model, operation, options } = req.body;
+export async function getDashboardByUID(req, res) {
   try {
-    const response = await getSQLFromSequelize(
-      models[model],
-      operation,
-      options
+    const response = await methods.dashboard.getDashboardByUID(
+      req.params.uid
     );
-    console.log('SQL Query:', response);
-    return res.status(200).json({
-      message: 'SQL query created successfully',
-      query: response,
-    });
+    return res.status(200).json(response.data);
   } catch (error) {
-    return res.status(500).json({
-      message: 'Failed to create SQL query',
-      error: error.message,
-    });
-  }
-}
-
-export async function parseQuery(req, res) {
-  try {
-    const response = parseSQLQuery(req.body.rawSql);
-    return res.status(200).json({
-      message: 'SQL query parsed successfully',
-      sql: response,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: 'Failed to parse SQL query',
-      error: error.message,
-    });
+    if (error.response) {
+      const { status } = error.response;
+      return res.status(status).json(error);
+    } else {
+      return res.status(500).json({
+        message:
+                    'Failed to retrieve dashboard in Grafana due to server error',
+        error: error.message,
+      });
+    }
   }
 }
 
@@ -395,79 +195,6 @@ export async function addDashboardPanel(req, res) {
   }
 }
 
-export async function searchItems(req, res) {
-  try {
-    const {
-      query = '',
-      tag,
-      type,
-      dashboardUIDs,
-      folderUIDs,
-      starred,
-      limit = 1000,
-      page = 1,
-    } = req.query;
-
-    // Utility to parse comma-separated values into an array, or return undefined for empty values.
-    const parseList = (val) =>
-      val ? (Array.isArray(val) ? val : val.split(',')) : undefined;
-
-    const tags = parseList(tag);
-    const dashUIDs = parseList(dashboardUIDs);
-    const folderUIDsParsed = parseList(folderUIDs);
-
-    const starredFlag = starred === 'true' ? true : starred === 'false' ? false : undefined;
-
-    const limitNum = Math.min(Number(limit), 5000) || 1000;
-    const pageNum = Number(page) || 1;
-
-    const response = await methods.search.search(
-      query || undefined,
-      tags,
-      type || undefined,
-      undefined,            // dashboardIds (deprecated)
-      dashUIDs,
-      undefined,            // folderIds (deprecated)
-      folderUIDsParsed,
-      starredFlag,
-      limitNum,
-      pageNum
-    );
-
-    return res.status(200).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status, data } = error.response;
-      return res.status(status).json(data);
-    }
-    return res.status(500).json({
-      message: 'Failed to search in Grafana due to server error',
-      error: error.message,
-    });
-  }
-}
-
-
-export async function getDashboardByUID(req, res) {
-  try {
-    const response = await methods.dashboard.getDashboardByUID(
-      req.params.uid
-    );
-    return res.status(200).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve dashboard in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
-
 export async function getDashboardPanelQueriesByUID(req, res) {
   try {
     const response = await methods.dashboard.getDashboardByUID(
@@ -531,58 +258,6 @@ export async function getPanelQueryByID(req, res) {
       return res.status(500).json({
         message:
                     'Failed to retrieve dashboard in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
-
-export async function getDatasources(req, res) {
-  try {
-    const response = await methods.datasource.getDataSources();
-    return res.status(200).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve datasources in Grafana due to server error',
-        error: error.message,
-      });
-    }
-  }
-}
-
-export async function addDatasource(req, res) {
-  try {
-    const response = await methods.datasource.addDataSource({
-      access: req.body.access,
-      basicAuth: req.body.basicAuth,
-      basicAuthUser: process.env.GRAFANA_USER,
-      database: req.body.database,
-      isDefault: req.body.isDefault,
-      jsonData: req.body.jsonData,
-      name: req.body.datasourceName,
-      type: req.body.type,
-      uid: crypto.randomUUID(),
-      url: req.body.url,
-      user: req.body.user,
-      withCredentials: true,
-    });
-    return res.status(201).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      const { status, statusText, data } = error.response;
-      return res.status(status).json({
-        message: `Failed to create datasource in Grafana: ${statusText}`,
-        error: data.message || error.message,
-      });
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to create datasource in Grafana due to server error',
         error: error.message,
       });
     }
@@ -894,16 +569,16 @@ export async function createTemporaryDashboard(req, res) {
           newPanel.targets = panelConfig.targets;
         } else if (panelConfig.sqlQuery && newPanel.targets && newPanel.targets.length > 0) {
           const { model, operation, options } = panelConfig.sqlQuery;
+          const generatedSQLquery = await getSQLFromSequelize(
+            models[model],
+            operation,
+            options
+          );
           newPanel.targets[0].rawSql = typeof panelConfig.sqlQuery === 'string'
             ? panelConfig.sqlQuery
-            : await getSQLFromSequelize(
-              models[model],
-              operation,
-              options
-            );
+            : generatedSQLquery;
           newPanel.targets[0].table = panelConfig.table || 'Points';
         }
-        newPanel.targets[0].rawSql = 'SELECT "timestamp", id, "guaranteeValue" FROM "Points" LIMIT 50 '; // REMOVE THIS LINE
         dashboardTemplate.panels.push(newPanel);
       } catch (error) {
         return res.status(400).json({
