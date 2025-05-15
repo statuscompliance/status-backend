@@ -30,6 +30,9 @@ export default (sequelize) => sequelize.define('Scope', {
     type: DataTypes.STRING,
     allowNull: false
   }
+},{
+  tableName: 'scopes',
+  freezeTableName: true
 });
 
 /**

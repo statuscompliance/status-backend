@@ -5,6 +5,9 @@ export default (sequelize) => sequelize.define('Message', {
     type: DataTypes.TEXT,
     allowNull: false,
   },
+},{
+  tableName: 'messages',
+  freezeTableName: true
 });
 
 /**
