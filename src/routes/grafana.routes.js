@@ -3,6 +3,7 @@ import searchRoutes from './search.routes.js';
 import serviceAccountRoutes from './serviceAccount.routes.js';
 import folderRoutes from './folder.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
+import panelRoutes from './panel.routes.js';
 import datasourceRoutes from './datasource.routes.js';
 import queryRoutes from './query.routes.js';
 
@@ -14,6 +15,7 @@ export default function () {
   router.use('', serviceAccountRoutes);
   router.use('', folderRoutes);
   router.use('', dashboardRoutes);
+  router.use('', panelRoutes);
   router.use('', datasourceRoutes);
   router.use('', queryRoutes);
 
