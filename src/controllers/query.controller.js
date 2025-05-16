@@ -10,7 +10,6 @@ export async function createQuery(req, res) {
       operation,
       options
     );
-    console.log('SQL Query:', response);
     return res.status(200).json({
       message: 'SQL query created successfully',
       query: response,

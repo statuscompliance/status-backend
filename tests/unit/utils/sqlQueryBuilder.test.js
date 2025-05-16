@@ -280,7 +280,6 @@ describe('getSQLFromSequelize', () => {
   
   it('should handle a primitive parameter by pushing it into callParams', async () => {
     const sql = await getSQLFromSequelize(models.Point, 'findByPk', '123e4567-e89b-12d3-a456-426614174000');
-    console.log(sql);
     expect(sql).toBe('SELECT "id", "agreementId", "guaranteeId", "guaranteeValue", "guaranteeResult", "timestamp", "metrics", "scope", "computationGroup", "createdAt", "updatedAt" FROM "points" AS "Point" WHERE "Point"."id" = \'123e4567-e89b-12d3-a456-426614174000\';');
   });
 
