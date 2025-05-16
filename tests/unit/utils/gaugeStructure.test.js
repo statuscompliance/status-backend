@@ -9,8 +9,7 @@ describe('gaugeStructure object', () => {
 
   it('should have the correct datasource', () => {
     expect(gaugeStructure.datasource).toEqual({
-      default: true,
-      type: 'postgres',
+      type: 'grafana-postgresql-datasource',
       uid: 'P5E4ECD82955BB660',
     });
   });

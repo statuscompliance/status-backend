@@ -1,9 +1,12 @@
+import { createBasePanelConfig } from './basePanelConfig.js';
+
 const gaugeStructure = {
-  datasource: {
-    default: true,
-    type: 'postgres',
-    uid: 'P5E4ECD82955BB660',
-  },
+  ...createBasePanelConfig({
+    title: 'Panel Title',
+    type: 'gauge',
+    displayName: 'Control name',
+    colorMode: 'thresholds'
+  }),
   description: '',
   fieldConfig: {
     defaults: {
@@ -41,12 +44,6 @@ const gaugeStructure = {
       },
     },
     overrides: [],
-  },
-  gridPos: {
-    h: 8,
-    w: 12,
-    x: 0,
-    y: 0,
   },
   id: 1,
   options: {
@@ -109,9 +106,7 @@ const gaugeStructure = {
       },
       table: '"Points"',
     },
-  ],
-  title: 'Panel Title',
-  type: 'gauge',
+  ]
 };
 
 export default gaugeStructure;
