@@ -1,4 +1,5 @@
 import { methods } from '../config/grafana.js';
+import { handleControllerError } from '../utils/errorHandler.js';
 
 export async function createServiceAccount(req, res) {
   try {
@@ -15,16 +16,7 @@ export async function createServiceAccount(req, res) {
 
     return res.status(201).json(response.data);
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to create service account in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to create service account in Grafana');
   }
 }
 
@@ -35,16 +27,7 @@ export async function getServiceAccountById(req, res) {
     );
     return res.status(200).json(response.data);
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve service account in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to retrieve service account in Grafana');
   }
 }
 
@@ -60,16 +43,6 @@ export async function createServiceAccountToken(req, res) {
     );
     return res.status(201).json(response.data);
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      const errorData = error.response.data ? error.response.data : error;
-      return res.status(status).json(errorData);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to create service account token in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to create service account token in Grafana');
   }
 }

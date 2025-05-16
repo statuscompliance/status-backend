@@ -2,6 +2,7 @@ import { methods } from '../config/grafana.js';
 import { models } from '../models/models.js';
 import createPanelTemplate from '../utils/panelStructures.js';
 import { getSQLFromSequelize } from '../utils/sqlQueryBuilder.js';
+import { handleControllerError } from '../utils/errorHandler.js';
 
 export async function createDashboard(req, res) {
   try {
@@ -39,16 +40,7 @@ export async function createDashboard(req, res) {
     });
     return res.status(201).json(response.data);
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to create dashboard in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to create dashboard in Grafana');
   }
 }
 
@@ -87,16 +79,7 @@ export async function importDashboard(req, res) {
     });
     return res.status(201).json(response.data);
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-          'Failed to import dashboard in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to import dashboard in Grafana');
   }
 }
 
@@ -107,16 +90,7 @@ export async function getDashboardByUID(req, res) {
     );
     return res.status(200).json(response.data);
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve dashboard in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to retrieve dashboard in Grafana');
   }
 }
 
@@ -127,19 +101,7 @@ export async function deleteDashboardByUID(req, res) {
     );
     return res.status(200).json(response.data);
   } catch (error) {
-    if (error.response) {
-      const { status, statusText, data } = error.response;
-      return res.status(status).json({
-        message: `Failed to delete dashboard in Grafana: ${statusText}`,
-        error: data.message || error.message,
-      });
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to delete dashboard in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to delete dashboard in Grafana');
   }
 }
 
@@ -195,15 +157,7 @@ export async function createDashboardTemplate(req, res) {
       dashboard: response.data
     });
   } catch (error) {
-    if (error.response) {
-      const { status, data } = error.response;
-      return res.status(status).json(data);
-    } else {
-      return res.status(500).json({
-        message: 'Failed to create dashboard template in Grafana due to server error',
-        error: error.message
-      });
-    }
+    return handleControllerError(res, error, 'Failed to create dashboard template in Grafana');
   }
 }
 
@@ -295,14 +249,6 @@ export async function createTemporaryDashboard(req, res) {
       autoCleanup: autoCleanup !== false
     });
   } catch (error) {
-    if (error.response) {
-      const { status, data } = error.response;
-      return res.status(status).json(data);
-    } else {
-      return res.status(500).json({
-        message: 'Error creating temporary dashboard in Grafana',
-        error: error.message
-      });
-    }
+    return handleControllerError(res, error, 'Error creating temporary dashboard in Grafana');
   }
 }

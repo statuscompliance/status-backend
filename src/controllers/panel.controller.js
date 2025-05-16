@@ -2,6 +2,7 @@ import { methods } from '../config/grafana.js';
 import { models } from '../models/models.js';
 import createPanelTemplate from '../utils/panelStructures.js';
 import { getSQLFromSequelize } from '../utils/sqlQueryBuilder.js';
+import { handleControllerError } from '../utils/errorHandler.js';
 
 export async function addDashboardPanel(req, res) {
   try {
@@ -65,16 +66,7 @@ export async function addDashboardPanel(req, res) {
       ...response.data,
     });
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-          'Failed to add panel to dashboard in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to add panel to dashboard in Grafana');
   }
 }
 
@@ -100,16 +92,7 @@ export async function getPanelsByDashboardUID(req, res) {
       message: 'No panels found in dashboard',
     });
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve dashboard in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to retrieve dashboard in Grafana');
   }
 }
 
@@ -135,16 +118,7 @@ export async function getPanelQueryByID(req, res) {
       message: 'Panel not found in dashboard',
     });
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve dashboard in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to retrieve dashboard in Grafana');
   }
 }
 
@@ -169,16 +143,7 @@ export async function getDashboardPanelQueriesByUID(req, res) {
       message: 'No panels found in dashboard',
     });
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-          'Failed to retrieve dashboard in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to retrieve dashboard in Grafana');
   }
 }
 
@@ -209,19 +174,7 @@ export async function deletePanelByID(req, res) {
       message: 'No panels found in dashboard',
     });
   } catch (error) {
-    if (error.response) {
-      const { status, statusText, data } = error.response;
-      return res.status(status).json({
-        message: `Failed to delete panel in Grafana: ${statusText}`,
-        error: data.message || error.message,
-      });
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to delete panel in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to delete panel in Grafana');
   }
 }
 
@@ -296,18 +249,6 @@ export async function updatePanelByID(req, res) {
       message: 'No panels found in dashboard',
     });
   } catch (error) {
-    if (error.response) {
-      const { status, statusText, data } = error.response;
-      return res.status(status).json({
-        message: `Failed to update panel in Grafana: ${statusText}`,
-        error: data.message || error.message,
-      });
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to update panel in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to update panel in Grafana');
   }
 }
