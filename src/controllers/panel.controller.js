@@ -33,7 +33,7 @@ export async function addDashboardPanel(req, res) {
     newPanel.title = title;
     newPanel.fieldConfig.defaults.displayName = displayName;
     newPanel.gridPos = gridPos;
-    // Si se proporciona targets personalizado, usarlo en lugar del predeterminado
+
     if (targets) {
       newPanel.targets = targets;
     } else {
@@ -71,7 +71,7 @@ export async function addDashboardPanel(req, res) {
     } else {
       return res.status(500).json({
         message:
-                    'Failed to add panel to dashboard in Grafana due to server error',
+          'Failed to add panel to dashboard in Grafana due to server error',
         error: error.message,
       });
     }
@@ -175,7 +175,7 @@ export async function getDashboardPanelQueriesByUID(req, res) {
     } else {
       return res.status(500).json({
         message:
-                    'Failed to retrieve dashboard in Grafana due to server error',
+          'Failed to retrieve dashboard in Grafana due to server error',
         error: error.message,
       });
     }

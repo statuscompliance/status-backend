@@ -20,17 +20,21 @@ export async function getSQLFromSequelize(model, action, ...params) {
   const callParams = [];
   const options = {
     logging: (sql) => {
-      const [, query] = sql.split(':');
-      if (query) sqlString = query.trim();
+      const match = sql.match(/:\s*(SELECT[\s\S]*?)$/i);
+      if (match) {
+        sqlString = match[1].trim();
+      } else {
+        sqlString = sql.trim();
+      }
     },
     transaction: t
   };
 
   for (const param of params) {
-    if (Array.isArray(param)) {
-      callParams.push(param);
-    } else if (typeof param === 'object' && param !== null) {
+    if (typeof param === 'object' && param !== null) {
       Object.assign(options, param);
+    } else {
+      callParams.push(param);
     }
   }
 
@@ -50,60 +54,57 @@ export function parseSQLQuery(query) {
     groupBy: null,
     orderByAttr: null,
     orderDirection: null,
-    tableName: null,
+    table: null,
     alias: null,
   };
 
   // Table name and alias
-  const tableMatch = query.match(/FROM\s+"([^"]+)"(?:\s+AS\s+"([^"]+)")?/i);
+  const tableMatch = query.match(/FROM\s+["']?(\w+)["']?(?:\s+AS\s+["']?(\w+)["']?)?/i);
   if (tableMatch) {
-    result.tableName = tableMatch[1];
-    if (tableMatch[2]) {
-      result.alias = tableMatch[2];
-    }
+    result.table = tableMatch[1];
+    result.alias = tableMatch[2] || null;
   }
 
   // Columns and Aggregations
   const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i);
   if (selectMatch) {
-    const selectFields = selectMatch[1].split(',');
-    selectFields.forEach((field) => {
-      field = field.trim();
-      const aggMatch = field.match(/(\w+)\((\*|[^)]+)\)/);
-      if (aggMatch) {
-        result.aggregations.push({
-          func: aggMatch[1],
-          attr: aggMatch[2],
-        });
-      } else {
-        result.columns.push(field);
-      }
-    });
-  }
-
-  // WHERE
-  const whereMatch = query.match(/WHERE\s+\((.+)\)/i);
-  if (whereMatch) {
-    const conditions = whereMatch[1].split(/\s+(AND|OR)\s+/i);
-    if (conditions.length === 1) {
-      const [key, operator, value] = conditions[0].split(/\s+(=|>|<|>=|<=|!=)\s+/);
-      result.whereConditions.push({
-        key: key.trim(),
-        operator: operator.trim(),
-        value: parseWhereValue(value.trim()),
-      });
+    const selectPart = selectMatch[1].trim();
+    
+    // Si es un SELECT *
+    if (selectPart === '*') {
+      result.columns = ['*'];
     } else {
-      result.whereLogic = conditions[1].toUpperCase() || 'AND'; // AND or OR
-      conditions.forEach((condition) => {
-        if (condition !== 'AND' && condition !== 'OR') {
-          const [key, operator, value] = condition.split(/\s+(=|>|<|>=|<=|!=)\s+/);
-          result.whereConditions.push({
-            key: key.trim(),
-            operator: operator.trim(),
-            value: parseWhereValue(value.trim()),
+      const selectFields = selectPart.split(',').map(f => f.trim());
+      selectFields.forEach((field) => {
+        const aggMatch = field.match(/(\w+)\(([^)]+|\*)\)/);
+        if (aggMatch) {
+          result.aggregations.push({
+            func: aggMatch[1],
+            attr: aggMatch[2],
           });
+        } else if (field !== '*') {
+          result.columns.push(field);
+        } else {
+          result.columns.push('*');
         }
       });
+    }
+  }
+  // WHERE conditions
+  const whereMatch = query.match(/WHERE\s+\((.+?)\)(?:\s+|$)/i);
+  if (whereMatch) {
+    const whereClause = whereMatch[1];
+    
+    // Determine if we're using AND or OR logic
+    if (whereClause.includes(' AND ')) {
+      result.whereLogic = 'AND';
+      parseConditions(whereClause.split(' AND '), result);
+    } else if (whereClause.includes(' OR ')) {
+      result.whereLogic = 'OR';
+      parseConditions(whereClause.split(' OR '), result);
+    } else {
+      // Single condition
+      parseSingleCondition(whereClause, result);
     }
   }
 
@@ -114,7 +115,7 @@ export function parseSQLQuery(query) {
   }
 
   // ORDER BY
-  const orderByMatch = query.match(/ORDER\s+BY\s+(\w+)\s+(ASC|DESC)?/i);
+  const orderByMatch = query.match(/ORDER\s+BY\s+(\w+)(?:\s+(ASC|DESC))?/i);
   if (orderByMatch) {
     result.orderByAttr = orderByMatch[1];
     result.orderDirection = orderByMatch[2]
@@ -122,18 +123,60 @@ export function parseSQLQuery(query) {
       : 'ASC';
   }
 
+  // LIMIT and OFFSET
+  const limitMatch = query.match(/LIMIT\s+(\d+)/i);
+  if (limitMatch) {
+    result.limit = parseInt(limitMatch[1], 10);
+  }
+
+  const offsetMatch = query.match(/OFFSET\s+(\d+)/i);
+  if (offsetMatch) {
+    result.offset = parseInt(offsetMatch[1], 10);
+  }
+
   return result;
 }
 
+function parseConditions(conditions, result) {
+  conditions.forEach((condition) => {
+    parseSingleCondition(condition.trim(), result);
+  });
+}
+
+function parseSingleCondition(condition, result) {
+  // Support for different operators (=, >, <, >=, <=, !=, LIKE)
+  const operatorPattern = /\s*(=|>=|<=|!=|>|<|LIKE)\s*/i;
+  const parts = condition.split(operatorPattern);
+  
+  if (parts.length >= 3) {
+    const key = parts[0].trim();
+    const operator = parts[1].trim();
+    const rawValue = parts[2].trim();
+    
+    result.whereConditions.push({
+      key: key,
+      operator: operator,
+      value: parseWhereValue(rawValue),
+    });
+  }
+}
+
 function parseWhereValue(value) {
-  if (value.toLowerCase() === 'true') {
+  // Remove surrounding single or double quotes
+  const cleanValue = value.replace(/^['"]|['"]$/g, '');
+  
+  // Convert booleans
+  if (cleanValue.toLowerCase() === 'true') {
     return true;
   }
-  if (value.toLowerCase() === 'false') {
+  if (cleanValue.toLowerCase() === 'false') {
     return false;
   }
-  if (!isNaN(value)) {
-    return value;
+  
+  // Always convert numeric values to a float
+  if (!isNaN(cleanValue) && cleanValue !== '') {
+    return parseFloat(cleanValue);
   }
-  return value.replace(/['"]/g, '');
+  
+  return cleanValue;
 }
