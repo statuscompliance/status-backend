@@ -1,45 +1,32 @@
-import gaugeStructure from './panels/gaugeStructure';
-import graphPanel from './panels/graphPanel';
-import tablePanel from './panels/tablePanel';
-import statPanel from './panels/statPanel';
-import timeseriesPanel from './panels/timeseriesPanel';
-import barPanel from './panels/barPanel';
-import piePanel from './panels/piePanel';
-import geoMapPanel from './panels/geoMapPanel';
-
-/** 
- * Object containing the structure of different panel types
- */
-const panelStructures = {
-  gauge: gaugeStructure,
-  graph: graphPanel,
-  table: tablePanel,
-  stat: statPanel,
-  timeseries: timeseriesPanel,
-  bar: barPanel,
-  pie: piePanel,
-  geomap: geoMapPanel
-};
+import timeseriesPanel from './panels/timeseriesPanel.js';
+import tablePanel from './panels/tablePanel.js';
+import statPanel from './panels/statPanel.js';
+import piePanel from './panels/piePanel.js';
+import barPanel from './panels/barPanel.js';
+import gaugeStructure from './panels/gaugeStructure.js';
+import graphPanel from './panels/graphPanel.js';
 
 /**
- * Creates a panel template based on the provided type.
- * @param {string} type - The type of the panel to create.
- * @returns {object} - A structured clone of the panel template.
- * @throws {Error} - If the panel type is not supported.
+ * Creates a panel structure based on the requested type
+ * @param {string} type - The type of panel to create
+ * @returns {Object} The panel structure
+ * @throws {Error} If the panel type is not supported
  */
-function createPanelTemplate(type) {
-  const structure = Object.prototype.hasOwnProperty.call(
-    panelStructures,
-    type
-  )
-    ? panelStructures[type]
-    : undefined;
+export default function createPanelTemplate(type) {
+  const templates = {
+    'timeseries': timeseriesPanel,
+    'table': tablePanel,
+    'stat': statPanel,
+    'piechart': piePanel,
+    'gauge': gaugeStructure,
+    'bar': barPanel,
+    'graph': graphPanel
+  };
 
-  if (!structure) {
-    throw new Error(`Panel type not supported: ${type}`);
+  if (!templates[type]) {
+    throw new Error(`Unsupported panel type: ${type}`);
   }
 
-  return structuredClone(structure);
+  // Create a deep copy to avoid modifying the original template
+  return JSON.parse(JSON.stringify(templates[type]));
 }
-
-export default createPanelTemplate;

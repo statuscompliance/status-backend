@@ -76,7 +76,7 @@ export function parseSQLQuery(query) {
     } else {
       const selectFields = selectPart.split(',').map(f => f.trim());
       selectFields.forEach((field) => {
-        const aggMatch = field.match(/(\w+)\(([^)]+|\*)\)/);
+        const aggMatch = field.match(/^(\w+)\((\*|[^()]*?)\)$/);
         if (aggMatch) {
           result.aggregations.push({
             func: aggMatch[1],
@@ -145,7 +145,7 @@ function parseConditions(conditions, result) {
 
 function parseSingleCondition(condition, result) {
   // Support for different operators (=, >, <, >=, <=, !=, LIKE)
-  const operatorPattern = /\s*(=|>=|<=|!=|>|<|LIKE)\s*/i;
+  const operatorPattern = /\s*(>=|<=|!=|LIKE|=|>|<)\s*/i;
   const parts = condition.split(operatorPattern);
   
   if (parts.length >= 3) {
@@ -163,7 +163,7 @@ function parseSingleCondition(condition, result) {
 
 function parseWhereValue(value) {
   // Remove surrounding single or double quotes
-  const cleanValue = value.replace(/^['"]|['"]$/g, '');
+  const cleanValue = value.replace(/(^['"])|(['"]$)/g, '');
   
   // Convert booleans
   if (cleanValue.toLowerCase() === 'true') {

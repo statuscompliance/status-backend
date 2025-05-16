@@ -14,7 +14,7 @@ describe('createPanelTemplate', () => {
   it('should throw an error when type is unsupported', () => {
     const unsupportedType = 'unknown';
     expect(() => createPanelTemplate(unsupportedType)).toThrowError(
-      `Panel type not supported: ${unsupportedType}`
+      `Unsupported panel type: ${unsupportedType}`
     );
   });
 
