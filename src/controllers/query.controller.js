@@ -1,5 +1,6 @@
 import { models } from '../models/models.js';
 import { getSQLFromSequelize, parseSQLQuery } from '../utils/sqlQueryBuilder.js';
+import { handleControllerError } from '../utils/errorHandler.js';
 
 export async function createQuery(req, res) {
   const { model, operation, options } = req.body;
@@ -15,10 +16,7 @@ export async function createQuery(req, res) {
       query: response,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: 'Failed to create SQL query',
-      error: error.message,
-    });
+    return handleControllerError(res, error, 'Failed to create SQL query');
   }
 }
 
@@ -30,9 +28,6 @@ export async function parseQuery(req, res) {
       sql: response,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: 'Failed to parse SQL query',
-      error: error.message,
-    });
+    return handleControllerError(res, error, 'Failed to parse SQL query');
   }
 }

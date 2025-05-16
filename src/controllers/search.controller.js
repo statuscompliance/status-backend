@@ -1,4 +1,5 @@
 import { methods } from '../config/grafana.js';
+import { handleControllerError } from '../utils/errorHandler.js';
 
 export async function searchItems(req, res) {
   try {
@@ -41,13 +42,6 @@ export async function searchItems(req, res) {
 
     return res.status(200).json(response.data);
   } catch (error) {
-    if (error.response) {
-      const { status, data } = error.response;
-      return res.status(status).json(data);
-    }
-    return res.status(500).json({
-      message: 'Failed to search in Grafana due to server error',
-      error: error.message,
-    });
+    return handleControllerError(res, error, 'Failed to search in Grafana');
   }
 }

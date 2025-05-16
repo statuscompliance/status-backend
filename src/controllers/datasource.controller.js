@@ -1,21 +1,13 @@
 import { methods } from '../config/grafana.js';
 import crypto from 'crypto';
+import { handleControllerError } from '../utils/errorHandler.js';
 
 export async function getDatasources(req, res) {
   try {
     const response = await methods.datasource.getDataSources();
     return res.status(200).json(response.data);
   } catch (error) {
-    if (error.response) {
-      const { status } = error.response;
-      return res.status(status).json(error);
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to retrieve datasources in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to retrieve datasources in Grafana');
   }
 }
 
@@ -37,18 +29,6 @@ export async function addDatasource(req, res) {
     });
     return res.status(201).json(response.data);
   } catch (error) {
-    if (error.response) {
-      const { status, statusText, data } = error.response;
-      return res.status(status).json({
-        message: `Failed to create datasource in Grafana: ${statusText}`,
-        error: data.message || error.message,
-      });
-    } else {
-      return res.status(500).json({
-        message:
-                    'Failed to create datasource in Grafana due to server error',
-        error: error.message,
-      });
-    }
+    return handleControllerError(res, error, 'Failed to create datasource in Grafana');
   }
 }
