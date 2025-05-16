@@ -25,4 +25,5 @@ export async function verifyAdmin(req, res, next) {
 
   req.user = decoded;
   next();
+  return res.status(200).json({ message: 'Admin access granted' });
 }
