@@ -520,8 +520,6 @@ describe('Scope Controller Tests', () => {
 
       await scopeController.updateScopeSetById(req, res);
       
-      //Print the response
-      console.log(res.json.mock.calls[0][0]);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(mockUpdatedScopeSet);
     });
