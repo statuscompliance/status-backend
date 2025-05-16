@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import createPanelTemplate from '../../../src/utils/panelStructures';
-import gaugeStructure from '../../../src/utils/gaugeStructure'; 
+import gaugeStructure from '../../../src/utils/panels/gaugeStructure'; 
 
 describe('createPanelTemplate', () => {
   it('should return the correct template for a supported type', () => {
