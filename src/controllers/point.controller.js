@@ -83,3 +83,43 @@ export const deleteAllPoints = async (req, res) => {
     });
   }
 };
+
+export const updatePointByComputationGroup = async (req, res) => {
+  try {
+    const { computationGroup } = req.params;
+    const updateData = req.body;
+    
+    if (!computationGroup || !uuidValidate(computationGroup)) {
+      return res.status(400).json({ message: 'Invalid computation group id' });
+    }
+    
+    const points = await models.Point.findAll({
+      where: { computationGroup }
+    });
+    
+    if (points.length === 0) {
+      return res.status(404).json({ 
+        message: `No points found with computation group ${computationGroup}` 
+      });
+    }
+    
+    await models.Point.update(
+      updateData,
+      { where: { computationGroup } }
+    );
+    
+    const updatedPoints = await models.Point.findAll({
+      where: { computationGroup }
+    });
+    
+    return res.status(200).json({
+      message: 'Points updated successfully',
+      points: updatedPoints
+    });
+  } catch (error) {
+    console.error(`Error updating points by computation group ${req.params.computationGroup}:`, error);
+    return res.status(500).json({
+      message: 'An error occurred while updating the points.'
+    });
+  }
+};
