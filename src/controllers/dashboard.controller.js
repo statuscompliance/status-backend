@@ -163,7 +163,15 @@ export async function createDashboardTemplate(req, res) {
 
 export async function createTemporaryDashboard(req, res) {
   try {
-    const { panelConfig, title, baseDashboardUid, timeRange, autoCleanup } = req.body;
+    const { panelConfig, baseDashboardUid, timeRange, autoCleanup } = req.body;
+    let title = req.body.title;
+    
+    if (baseDashboardUid) {
+      title = `tmp-${baseDashboardUid}`;
+    } else {
+      title = title || `tmp-${new Date().toISOString()}`;
+    }
+    
     let dashboardTemplate = {
       annotations: { list: [] },
       editable: true,
@@ -176,7 +184,7 @@ export async function createTemporaryDashboard(req, res) {
       time: timeRange || { from: 'now-6h', to: 'now' },
       timepicker: {},
       timezone: 'browser',
-      title: title || `Temp Preview - ${new Date().toISOString()}`,
+      title: title,
       version: 0,
       weekStart: '',
       refresh: '5s'
@@ -191,13 +199,13 @@ export async function createTemporaryDashboard(req, res) {
             ...baseDashboard,
             id: null,
             uid: null,
-            title: title || `Temp Preview - ${new Date().toISOString()}`,
+            title: title,
             tags: [...(baseDashboard.tags || []), 'temp', 'preview'],
             panels: []
           };
         }
       } catch (error) {
-        console.warn('Error al obtener dashboard base:', error.message);
+        console.warn('Error while fetching base dashboard', error.message);
       }
     }
 
@@ -227,7 +235,7 @@ export async function createTemporaryDashboard(req, res) {
         dashboardTemplate.panels.push(newPanel);
       } catch (error) {
         return res.status(400).json({
-          message: error.message || `Tipo de panel no soportado: ${panelConfig.type}`
+          message: error.message || `Panel type "${panelConfig.type}" is not supported`,
         });
       }
     }
