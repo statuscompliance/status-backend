@@ -15,8 +15,11 @@ export default defineConfig({
         html: 'coverage/html',
         text: 'coverage/text',
       },
-      include: ['src/**/*.{js,ts}'],
+      include: ['src/**/*.{js,ts}']
     },
+    benchmark: {
+      include: ['**/*.benchmark.ts']
+    }
   },
   resolve: {
     alias: {
