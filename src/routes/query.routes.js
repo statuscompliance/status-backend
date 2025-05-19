@@ -57,6 +57,24 @@ const router = Router();
  *                 query:
  *                   type: string
  *                   example: "SELECT timestamp, guaranteeValue, id FROM Point AS points;"
+ *       400:
+ *         description: Bad request - Model not supported
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Model not supported: InvalidModel"
+ *                 supportedModels:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Point", "User", "Agreement"]
  *       500:
  *         description: Failed to create SQL query
  *         content:
