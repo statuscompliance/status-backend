@@ -1,5 +1,7 @@
 import { models } from '../models/models.js';
 import ScopeSet from '../models/scopeSet.model.js';
+import mongoose from 'mongoose';
+import { handleControllerError } from '../utils/errorHandler.js';
 
 export async function getAllScopes(req, res) {
   try {
@@ -7,7 +9,7 @@ export async function getAllScopes(req, res) {
     res.status(200).json(scopes);
   } catch (error) {
     console.error('Error retrieving scopes:', error);
-    res.status(500).json({ error: 'Failed to retrieve scopes' });
+    handleControllerError(res, error, 'Failed to retrieve scopes');
   }
 }
 
@@ -23,13 +25,12 @@ export async function getScopeById(req, res) {
     }
   } catch (error) {
     console.error('Error retrieving scope:', error);
-    res.status(500).json({ error: 'Failed to retrieve scope by ID' });
+    handleControllerError(res, error, 'Failed to retrieve scope by ID');
   }
 }
 
 export async function createScope(req, res) {
   try {
-    
     let { name, description, type, default: defaultValue } = req.body;
     
     if (typeof name !== 'string') {
@@ -47,7 +48,7 @@ export async function createScope(req, res) {
     res.status(201).json(newScope);
   } catch (error) {
     console.error('Failed to create scope:', error);
-    res.status(400).json({ error: 'Failed to create scope' });
+    return res.status(400).json({ error: 'Failed to create scope' });
   }
 }
 
@@ -60,21 +61,18 @@ export async function updateScope(req, res) {
     if (!name || typeof name !== 'string') {
       return res.status(400).json({ error: 'Name must be a string' });
     }
-
-    // Normalize the name to lowercase and replace spaces with underscores.
     const updatedData = {
       name: name.toLowerCase().replace(/\s+/g, '_'),
       description,
       type,
       default: defaultValue,
     };
-    // Check if the scope exists before updating.
+
     const [updated] = await models.Scope.update(updatedData, { where: { id } });
     if (!updated) {
       return res.status(404).json({ error: 'Scope not found' });
     }
 
-    // Fetch the updated scope to return it in the response.
     const updatedScope = await models.Scope.findByPk(id);
     if (!updatedScope) {
       return res.status(404).json({ error: 'Scope not found after update' });
@@ -100,19 +98,33 @@ export async function deleteScope(req, res) {
     }
   } catch (error) {
     console.error('Failed to delete scope', error);
-    return res.status(500).json({ error: 'Failed to delete scope' });
+    handleControllerError(res, error, 'Failed to delete scope');
   }
 }
 
 export async function createScopeSet(req, res) {
   try {
     const { controlId, scopes } = req.body;
-    const newScopeSet = new ScopeSet({ controlId, scopes });
+    
+    let scopesForDB = scopes;
+    
+    if (Array.isArray(scopes)) {
+      scopesForDB = {};
+      scopes.forEach((value, index) => {
+        scopesForDB[index.toString()] = value;
+      });
+    }
+    
+    const newScopeSet = new ScopeSet({ 
+      controlId, 
+      scopes: scopesForDB 
+    });
+    
     await newScopeSet.save();
     res.status(201).json(newScopeSet);
   } catch (error) {
     console.error('Failed to create scope set', error);
-    res.status(500).json({ error: 'Failed to create scope set' });
+    handleControllerError(res, error, 'Failed to create scope set');
   }
 }
 
@@ -122,48 +134,101 @@ export async function getAllScopeSets(req, res) {
     res.status(200).json(scopeSets);
   } catch (error) {
     console.error('Failed to retrieve all scope sets', error);
-    res.status(500).json({ error: 'Failed to retrieve all scope sets' });
+    handleControllerError(res, error, 'Failed to retrieve all scope sets');
   }
 }
 
 export async function getScopeSetsByControlId(req, res) {
   try {
     const { controlId } = req.params;
-    const scopeSets = await ScopeSet.find({ controlId });
+    const scopeSets = await ScopeSet.find({ controlId: Number(controlId) });
     res.status(200).json(scopeSets);
   } catch (error) {
     console.error('Failed to retrieve scope sets by control ID', error);
-    res.status(500).json({ error: 'Failed to retrieve scope sets by control ID' });
+    handleControllerError(res, error, 'Failed to retrieve scope sets by control ID');
   }
 }
 
 export async function updateScopeSetById(req, res) {
   try {
     const { id } = req.params;
-    const { controlId, scopes } = req.body;
-    const updatedScopeSet = await ScopeSet.findByIdAndUpdate(id, { controlId, scopes }, { new: true });
-    if (updatedScopeSet) {
-      res.status(200).json(updatedScopeSet);
-    } else {
-      res.status(404).json({ error: 'ScopeSet not found' });
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid ScopeSet ID format' });
     }
+    
+    const { controlId, scopes } = req.body;
+    
+    let scopesForDB = scopes;
+    
+    if (Array.isArray(scopes)) {
+      scopesForDB = {};
+      scopes.forEach((value, index) => {
+        scopesForDB[index.toString()] = value;
+      });
+    }
+    
+    const updatedScopeSet = await ScopeSet.findByIdAndUpdate(
+      id, 
+      { controlId, scopes: scopesForDB }, 
+      { new: true }
+    );
+    
+    if (!updatedScopeSet) {
+      return res.status(404).json({ error: 'ScopeSet not found' });
+    }
+    
+    return res.status(200).json(updatedScopeSet);
   } catch (error) {
     console.error('Failed to update scope set by ID', error);
-    res.status(500).json({ error: 'Failed to update scope set by ID' });
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({ error: 'Invalid data format' });
+    }
+    
+    handleControllerError(res, error, 'Failed to update scope set by ID');
   }
 }
 
 export async function getScopeSetById(req, res) {
   try {
     const { id } = req.params;
-    const scopeSet = await ScopeSet.findById(id);
-    if (scopeSet) {
-      res.status(200).json(scopeSet);
-    } else {
-      res.status(404).json({ error: 'ScopeSet not found' });
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid ScopeSet ID format' });
     }
+    
+    const scopeSet = await ScopeSet.findById(id);
+    
+    if (!scopeSet) {
+      return res.status(404).json({ error: 'ScopeSet not found' });
+    }
+    
+    return res.status(200).json(scopeSet);
   } catch (error) {
     console.error('Failed to retrieve scope set by ID', error);
-    res.status(500).json({ error: 'Failed to retrieve scope set by ID' });
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({ error: 'Invalid ScopeSet ID format' });
+    }
+    
+    handleControllerError(res, error, 'Failed to retrieve scope set by ID');
+  }
+}
+
+export async function deleteScopeSetsByControlId(req, res) {
+  try {
+    const { controlId } = req.params;
+    
+    const result = await ScopeSet.deleteMany({ controlId: Number(controlId) });
+    
+    if (result.deletedCount > 0) {
+      return res.status(204).send();
+    } else {
+      return res.status(404).json({ error: 'No ScopeSets found with that controlId' });
+    }
+  } catch (error) {
+    console.error('Failed to delete scope sets by control ID', error);
+    handleControllerError(res, error, 'Failed to delete scope sets by control ID');
   }
 }

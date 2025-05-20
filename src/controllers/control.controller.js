@@ -148,14 +148,12 @@ export const updateControl = async (req, res) => {
       return res.status(404).json({ message: 'Control not found' });
     }
     
-    // No se permite cambiar un control finalizado a borrador
     if (currentControl.status === 'finalized' && status === 'draft') {
       return res.status(400).json({ 
         message: 'Cannot change status from finalized to draft' 
       });
     }
     
-    // Si es un control finalizado, validar los params
     if (status === 'finalized' || (!status && currentControl.status === 'finalized')) {
       const {validation, textError} = checkRequiredProperties(params || currentControl.params, ['endpoint', 'threshold']);
       if (!validation) {
@@ -329,6 +327,11 @@ export const createDraftControl = async (req, res) => {
     return res.status(400).json({
       error: 'Missing required fields for draft control: name and catalogId'
     });
+  }
+  
+  const {validation, textError} = checkRequiredProperties(params, ['endpoint', 'threshold']);
+  if (!validation) {
+    return res.status(400).json({error: textError});
   }
   
   try {

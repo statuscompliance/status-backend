@@ -6,7 +6,7 @@ const client_secret = process.env.GH_CLIENT_SECRET;
 
 export default function () {
   const router = Router();
-  router.get('/ghAccessToken', async function (req, res) {
+  router.get('/github/auth', async function (req, res) {
     try {
       const code = req.query.code;
   
@@ -39,13 +39,13 @@ export default function () {
     }
   });
   
-  router.get('/getAuth', async function (req, res) {
+  router.get('/header', async function (req, res) {
     try {
       const authorizationHeader = req.get('Authorization');
       res.json({ authorizationHeader });
     } catch (error) {
-      console.error('Error al obtener el encabezado de autorización:', error);
-      res.status(500).json({ message: 'Error interno del servidor.' });
+      console.error('Error while retrieving authorization header:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 
@@ -55,7 +55,7 @@ export default function () {
 /**
  * Retrieves GitHub access token using the provided authorization code.
  * @swagger
- * /ghAccessToken:
+ * /github/auth:
  *   get:
  *     summary: Retrieves GitHub access token
  *     tags: [Auth]
@@ -95,7 +95,7 @@ export default function () {
 /**
  * Retrieves authorization header.
  * @swagger
- * /getAuth:
+ * /header:
  *   get:
  *     summary: Retrieves authorization header
  *     tags: [Auth]

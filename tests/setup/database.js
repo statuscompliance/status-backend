@@ -3,6 +3,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Sequelize } from 'sequelize';
 import { newDb } from 'pg-mem';
 import { registerDB } from '../../src/db/database';
+import { models } from '../../src/models/models.js';
 
 // moment is imported from pg-mem to avoid deprecation warnings
 import moment from 'moment';
@@ -16,11 +17,12 @@ export const connect = async () => {
   await registerDB(await initPostgres());
   await sequelize.sync({ force: true });
   await initMongoDB();
+
+  await setupEndpointConfigurations();
 };
 
 
 export const closeDatabase = async () => {
-  // Close MongoDB connection and stop server
   if (mongoose.connection.readyState) {
     await mongoose.connection.dropDatabase();
     await mongoose.connection.close();
@@ -28,7 +30,6 @@ export const closeDatabase = async () => {
     console.log('[database] In-memory MongoDB closed');
   }
 
-  // Close the SQLite (Sequelize) connection
   if (sequelize) {
     await sequelize.close();
     console.log('[database] In-memory SQLite (PG mem) closed');
@@ -36,7 +37,6 @@ export const closeDatabase = async () => {
 };
 
 export const clearDatabase = async () => {
-  // Clear MongoDB collections
   const collections = mongoose.connection.collections;
   await Promise.all(
     Object.values(collections).map(async (collection) => {
@@ -45,7 +45,6 @@ export const clearDatabase = async () => {
   );
   console.log('[database] In-memory MongoDB cleared');
 
-  // Clear SQLite data by re-syncing the models
   if (sequelize) {
     await sequelize.drop({ cascade: true });
     console.log('[database] In-memory SQLite (PG mem) cleared');
@@ -76,4 +75,22 @@ async function initPostgres() {
   await sequelize.authenticate();
   console.log('[database] In-memory SQLite (PG mem) connected');
   return sequelize;
+}
+
+async function setupEndpointConfigurations() {
+  const endpoints = [
+    '/config', '/users', '/scripts', '/controls', '/grafana',
+    '/thread', '/catalogs', '/assistant', '/github/auth', '/header',
+    '/computations', '/points', '/scopes', 'docs', 'api-docs',
+  ];
+
+  for (const endpoint of endpoints) {
+    await models.Configuration.create({
+      endpoint,
+      available: true,
+      limit: 100
+    });
+  }
+  
+  console.log('[database] Endpoint configurations created');
 }

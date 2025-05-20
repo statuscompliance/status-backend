@@ -1,6 +1,7 @@
 import { addYears, addMonths, addWeeks, addDays, parseISO, isWithinInterval, add, setSeconds, isSameDay, getDay, getDaysInMonth, getYear, getMonth, isValid } from 'date-fns';
+import logger from '../config/logger.js';
 
-
+// Period types with their corresponding date-fns functions
 export const periodTypes = {
   yearly: addYears,
   monthly: addMonths,
@@ -10,16 +11,16 @@ export const periodTypes = {
 };
 
 export function getDates(from, to, period, customConfig) {
-
   if (!isValid(from)) {
-    console.error("Invalid 'from' date provided.");
+    logger.error("Invalid 'from' date provided.");
     return [];
   }
 
   if (!isValid(to)) {
-    console.error("Invalid 'to' date provided.");
+    logger.error("Invalid 'to' date provided.");
     return [];
   }
+  
   if (period in periodTypes) {
     const periodFunction = periodTypes[period];
     let current = new Date(from);
@@ -31,14 +32,14 @@ export function getDates(from, to, period, customConfig) {
       }
       return dates;
     } catch (error) {
-      console.error(`Error generating dates for period ${period}:`, error);
+      logger.error(`Error generating dates for period ${period}:`, { error });
       return [];
     }
   }
 
   if (period === 'customRules') {
     if (!customConfig?.rules || !customConfig?.Wto) {
-      console.error("Incomplete custom rules configuration: 'rules' and 'Wto' are required.");
+      logger.error("Incomplete custom rules configuration: 'rules' and 'Wto' are required.");
       return [];
     }
     try {
@@ -47,17 +48,16 @@ export function getDates(from, to, period, customConfig) {
       rulesArr = rulesArr.map(rule => rule + untilDate);
       return generateDatesFromRules(rulesArr, from, to);
     } catch (error) {
-      console.error('Error generating dates with custom rules:', error);
+      logger.error('Error generating dates with custom rules:', { error });
       return [];
     }
   }
 
-  console.error(`Invalid period type: ${period}`);
+  logger.error(`Invalid period type: ${period}`);
   return [];
 }
 
 export function generateDatesFromRules(rulesArr, from, to) {
-
   const generatedDates = [];
 
   rulesArr.forEach(rule => {
@@ -100,7 +100,6 @@ export function parseRule(rule) {
   };
 }
 
-//
 export function generateDatesForFrequency(ruleData, from, to) {
   const generatedDates = [];
   let currentDate = new Date(ruleData.startDate);
@@ -118,7 +117,6 @@ export function generateDatesForFrequency(ruleData, from, to) {
   }
 
   return generatedDates.sort((a, b) => a.getTime() - b.getTime());
-
 }
 
 function adjustToFirstWeeklyOccurrence(currentDate, byDay) {
@@ -140,7 +138,7 @@ function generateDatesForDay(currentDate, byHour, from, to, generatedDates) {
   });
 }
 
-function advanceToNextDate(currentDate, ruleData) {
+export function advanceToNextDate(currentDate, ruleData) {
   if (ruleData.frequency === 'DAILY') {
     return add(currentDate, { days: ruleData.interval || 1 });
   } else if (ruleData.frequency === 'WEEKLY' && ruleData.byDay) {
@@ -155,7 +153,6 @@ function advanceToNextDate(currentDate, ruleData) {
   }
 }
 
-//
 export function adjustDateToHour(date, hour) {
   const dateWithHour = setSeconds(new Date(date), 0);
   dateWithHour.setHours(hour);
