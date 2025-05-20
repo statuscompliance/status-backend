@@ -30,7 +30,7 @@ export default (sequelize) => sequelize.define('Catalog', {
     defaultValue: 'finalized'
   }
 }, {
-  tableName: 'catalog',
+  tableName: 'catalogs',
   timestamps: false
 });
 

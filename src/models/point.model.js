@@ -38,6 +38,9 @@ export default (sequelize) => sequelize.define('Point', {
     type: DataTypes.UUID,
     allowNull: true
   },
+},{
+  tableName: 'points',
+  freezeTableName: true
 });
 
 /**
