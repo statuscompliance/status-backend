@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 import os from 'os';
 
 const isTestEnvironment = !!import.meta.env?.VITEST;
+/* istanbul ignore next */
+const isMongoLoggingEnabled = process.env.MONGO_LOGGING_ENABLED !== 'false';
 
 // Schema for logs in MongoDB
 const logSchema = new mongoose.Schema(
@@ -58,81 +60,86 @@ const customLevels = {
 // Add colors to winston
 winston.addColors(customLevels.colors);
 
-// Custom formatter for console logs
+// Format timestamp to ISO
+const formatTimestamp = (timestamp) => new Date(timestamp).toISOString();
+
+// Format ID section
+const formatIdSection = (requestId, userId) => {
+  if (requestId === '-' && userId === '-') return '[-]';
+  if (requestId === '-') return `[-] [${userId}]`;
+  if (userId === '-') return `[${requestId}] [-]`;
+  return `[${requestId}] [${userId}]`;
+};
+
+// Format HTTP log
+const formatHttpLog = (timestamp, level, idSection, method, url, statusCode) => {
+  let httpInfo = `${method.padEnd(7)} ${url}`;
+  if (statusCode) {
+    const statusColor = statusCode >= 400 ? '\x1b[31m' : '\x1b[32m';
+    httpInfo += ` ${statusColor}${statusCode}\x1b[0m`;
+  }
+  return `${timestamp} [${level.padEnd(5)}] ${idSection} ${httpInfo}`;
+};
+
+// Format error log
+const formatErrorLog = (timestamp, level, idSection, message, stack) => {
+  return `${timestamp} [${level.padEnd(5)}] ${idSection} ${message}\n${stack}`;
+};
+
+// Format connection log
+const formatConnectionLog = (timestamp, level, idSection, message, metadata) => {
+  const details = [];
+  if (metadata.uri && metadata.uri !== '[REDACTED]') details.push(`uri: ${metadata.uri}`);
+  if (metadata.database) details.push(`db: ${metadata.database}`);
+  if (metadata.host) details.push(`host: ${metadata.host}`);
+  
+  const infoStr = details.length > 0 ? `${message} (${details.join(', ')})` : message;
+  return `${timestamp} [${level.padEnd(5)}] ${idSection} ${infoStr}`;
+};
+
+// Clean metadata by removing common fields
+const cleanMetadata = (metadata) => {
+  const fieldsToRemove = [
+    'service', 'environment', 'host', 'pid', 'requestId', 'userId', 
+    'ip', 'url', 'method', 'stack', 'functionName', 'lineNumber', 
+    'uri', 'database'
+  ];
+  
+  const cleanedMeta = { ...metadata };
+  fieldsToRemove.forEach(field => delete cleanedMeta[field]);
+  return cleanedMeta;
+};
+
+// Main console format
 const consoleFormat = winston.format.printf(({ level, message, timestamp, ...metadata }) => {
-  // Extract main properties for display
+  // Extract main properties 
   const requestId = metadata.requestId || '-';
   const userId = metadata.userId || '-';
   const method = metadata.method || '';
   const url = metadata.url || '';
   const statusCode = metadata.statusCode || '';
   
-  // Format the timestamp
-  const formattedDate = new Date(timestamp).toISOString();
+  // Format timestamp and IDs
+  const formattedDate = formatTimestamp(timestamp);
+  const idSection = formatIdSection(requestId, userId);
   
-  // Format requestId and userId brackets
-  // If both are empty or just dashes, show a single bracket pair
-  let idSection = '';
-  if (requestId === '-' && userId === '-') {
-    idSection = '[-]';
-  } else if (requestId === '-') {
-    idSection = `[-] [${userId}]`;
-  } else if (userId === '-') {
-    idSection = `[${requestId}] [-]`;
-  } else {
-    idSection = `[${requestId}] [${userId}]`;
-  }
-  
-  // Determine HTTP request log format
+  // HTTP request logs
   if (method && url) {
-    let httpInfo = `${method.padEnd(7)} ${url}`;
-    if (statusCode) {
-      const statusColor = statusCode >= 400 ? '\x1b[31m' : '\x1b[32m'; // red or green
-      httpInfo += ` ${statusColor}${statusCode}\x1b[0m`;
-    }
-    return `${formattedDate} [${level.padEnd(5)}] ${idSection} ${httpInfo}`;
+    return formatHttpLog(formattedDate, level, idSection, method, url, statusCode);
   }
   
-  // Format for error logs with stack trace
+  // Error logs with stack trace
   if (metadata.stack) {
-    return `${formattedDate} [${level.padEnd(5)}] ${idSection} ${message}\n${metadata.stack}`;
+    return formatErrorLog(formattedDate, level, idSection, message, metadata.stack);
   }
   
-  // Check for connection info or other special metadata display
+  // Connection logs
   if (metadata.uri || metadata.database || metadata.host) {
-    let infoStr = message;
-    
-    // Add relevant connection details inline instead of JSON format
-    const details = [];
-    if (metadata.uri && metadata.uri !== '[REDACTED]') details.push(`uri: ${metadata.uri}`);
-    if (metadata.database) details.push(`db: ${metadata.database}`);
-    if (metadata.host) details.push(`host: ${metadata.host}`);
-    
-    if (details.length > 0) {
-      infoStr += ` (${details.join(', ')})`;
-    }
-    
-    return `${formattedDate} [${level.padEnd(5)}] ${idSection} ${infoStr}`;
+    return formatConnectionLog(formattedDate, level, idSection, message, metadata);
   }
-  
-  // Clean metadata for display (remove common fields)
-  const cleanedMeta = { ...metadata };
-  delete cleanedMeta.service;
-  delete cleanedMeta.environment;
-  delete cleanedMeta.host;
-  delete cleanedMeta.pid;
-  delete cleanedMeta.requestId;
-  delete cleanedMeta.userId;
-  delete cleanedMeta.ip;
-  delete cleanedMeta.url;
-  delete cleanedMeta.method;
-  delete cleanedMeta.stack;
-  delete cleanedMeta.functionName;
-  delete cleanedMeta.lineNumber;
-  delete cleanedMeta.uri;
-  delete cleanedMeta.database;
   
   // Basic format for other logs
+  const cleanedMeta = cleanMetadata(metadata);
   const metaString = Object.keys(cleanedMeta).length > 0 
     ? `\n${JSON.stringify(cleanedMeta, null, 2)}` 
     : '';
@@ -201,8 +208,8 @@ const logger = winston.createLogger({
         consoleFormat
       ),
     }),
-    // Only add MongoDB transport if not in test environment
-    ...(isTestEnvironment ? [] : [
+    // Only add MongoDB transport if not in test environment and MongoDB logging is enabled
+    ...(isTestEnvironment || !isMongoLoggingEnabled ? [] : [
       new MongoTransport({
         level: 'info',
       })
@@ -213,9 +220,10 @@ const logger = winston.createLogger({
 
 // Function to initialize MongoDB connection for logs
 export const initLogDB = async () => {
-  // Skip MongoDB connection in test environment
-  if (isTestEnvironment) {
-    logger.info('Test environment detected - skipping MongoDB logger initialization');
+  // Skip MongoDB connection in test environment or if MongoDB logging is disabled
+  if (isTestEnvironment || !isMongoLoggingEnabled) {
+    const skipReason = isTestEnvironment ? 'Test environment detected' : 'MongoDB logging disabled';
+    logger.info(`${skipReason} - skipping MongoDB logger initialization`);
     return null;
   }
   

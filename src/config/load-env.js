@@ -1,4 +1,5 @@
-// load-env.js  /* istanbul ignore if */
+// load-env.js  
+/* istanbul ignore if */
 if (!import.meta.env?.VITEST) {
   await import('dotenv/config');
 }
