@@ -30,7 +30,7 @@ export default (sequelize) => sequelize.define(
     }
   },
   {
-    tableName: 'computation',
+    tableName: 'computations',
     timestamps: true,
   }
 );
