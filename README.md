@@ -6,7 +6,7 @@
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=statuscompliance_status-backend&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=statuscompliance_status-backend) 
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=statuscompliance_status-backend&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=statuscompliance_status-backend) 
 [![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=statuscompliance_status-backend&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=statuscompliance_status-backend)
-
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/statuscompliance/status-backend)
 </div>
 
 ## Introduction
