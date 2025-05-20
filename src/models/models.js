@@ -10,11 +10,14 @@ const VITEST_ENV = import.meta.env?.VITEST;
 
 export const models = {};
 export async function initModels(sequelize){
+  /* istanbul ignore next */
   const modules = VITEST_ENV ? 
     import.meta.glob('./*.js') : await readdir(import.meta.dirname);
   for (const model in modules) {
+    /* istanbul ignore next */
     const modelName = VITEST_ENV ? model : modules[model];
     if(!filterModules(modelName)) {
+      /* istanbul ignore next */
       const { default: newModel } = await (VITEST_ENV ? modules[modelName]() : import(`./${modelName}`));
       const instance = await newModel(sequelize);
       models[instance.name] = instance;

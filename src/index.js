@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import express from 'express';
 import catalogRoutes from './routes/catalog.routes.js';
 import controlRoutes from './routes/control.routes.js';
@@ -22,11 +21,11 @@ import { sequelize } from './db/database.js';
 import { verifyAdmin } from './middleware/verifyAdmin.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import logger, { requestLogger, initLogDB } from './config/logger.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
-// Check if we are in a test environment
 const isTestEnvironment = !!import.meta.env?.VITEST;
-
-const API_PREFIX = (!isTestEnvironment && process.env.API_PREFIX) || '';
+const API_PREFIX = isTestEnvironment ? '' : process.env.API_PREFIX || '';
 
 const swaggerOptions = {
   swaggerDefinition: {
@@ -65,6 +64,9 @@ const configureApp = () => {
     })
   );
 
+  // Add middleware for HTTP request logging
+  app.use(requestLogger);
+  
   app.use(cookieParser());
   app.use(indexRoutes());
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
@@ -86,6 +88,9 @@ const configureApp = () => {
   app.use(`${API_PREFIX}/thread`, threadRoutes());
   app.use(verifyAdmin);
   app.use(`${API_PREFIX}/config`, configRoutes());
+  
+  // Error handling middleware at the end of the chain
+  app.use(errorHandler);
 
   return app;
 };
@@ -124,21 +129,30 @@ async function insertEndpointsToConfig() {
       }
     }
   } catch (error) {
-    console.error('[server] Error al insertar endpoints:', error);
+    console.error('[server] Error inserting endpoints:', error);
   }
 }
 
 // Only start the server if we are not in a test environment
 if (!isTestEnvironment) {
   const app = configureApp();
-  app.listen(3001, () => {
-    console.log(`[server] Running on http://localhost:3001${API_PREFIX}`);
-    console.log('[server] Doc on http://localhost:3001/docs');
-    console.log('[server] API Raw Spec on http://localhost:3001/api-docs');
-  });
   
-  // Insert endpoints to configuration table
-  insertEndpointsToConfig();
+  // Initialize connection to the log database
+  initLogDB().then(() => {
+    app.listen(3001, () => {
+      logger.info(`Server running on http://localhost:3001${API_PREFIX}`);
+      logger.info('Doc on http://localhost:3001/docs');
+      logger.info('API Raw Spec on http://localhost:3001/api-docs');
+    });
+    
+    // Insert endpoints to configuration table
+    insertEndpointsToConfig();
+  }).catch(err => {
+    logger.error('Failed to initialize log database', { error: err.message, stack: err.stack });
+  });
+} else {
+  // In test environment
+  logger.info('Running in test environment');
 }
 
 export default configureApp;

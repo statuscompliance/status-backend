@@ -37,7 +37,7 @@ export default (sequelize) => sequelize.define(
     },
   },
   {
-    tableName: 'control',
+    tableName: 'controls',
     timestamps: false,
   }
 );
