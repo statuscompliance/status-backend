@@ -8,7 +8,7 @@ import { handleControllerError } from '../utils/errorHandler.js';
  * @returns {boolean} - true if the model is supported, false otherwise
  */
 function isModelSupported(modelName) {
-  return models && modelName && Object.prototype.hasOwnProperty.call(models, modelName);
+  return models && modelName && Object.hasOwn(models, modelName);
 }
 
 export async function createQuery(req, res) {
