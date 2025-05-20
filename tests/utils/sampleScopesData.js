@@ -1,29 +1,35 @@
 export const sampleScopes = [
   {
-    name: 'user_role',
-    description: 'Role of the user',
+    name: 'country',
+    description: 'Computation area',
     type: 'string',
-    default: 'guest',
+    default: '*',
   },
   {
-    name: 'is_admin',
-    description: 'Indicates if the user is an administrator',
-    type: 'boolean',
-    default: 'false',
+    name: 'city',
+    description: 'Country City',
+    type: 'string',
+    default: '*',
   },
   {
-    name: 'language_preference',
-    description: 'Preferred language of the user',
+    name: 'declaration',
+    description: 'Declaration identifier',
     type: 'string',
-    default: 'en',
+    default: '*',
+  },
+  {
+    name: 'location',
+    description: 'Specific location of the establishment',
+    type: 'string',
+    default: '*',
   },
 ];
 
 export const newScopeData = {
-  name: 'feature_enabled',
-  description: 'Indicates if a certain feature is enabled',
-  type: 'boolean',
-  default: 'false',
+  name: 'business_unit',
+  description: 'Business unit identifier',
+  type: 'string',
+  default: '*',
 };
 
 export const invalidScopeData = {
@@ -34,8 +40,8 @@ export const invalidScopeData = {
 };
 
 export const updatedScopeData = {
-  name: 'updated_feature',
-  description: 'Updated description for the feature flag',
-  type: 'boolean',
-  default: 'true',
+  name: 'region',
+  description: 'Geographic region identifier',
+  type: 'string',
+  default: '*',
 };

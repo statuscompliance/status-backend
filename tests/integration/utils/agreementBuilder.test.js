@@ -23,8 +23,8 @@ describe('agreementBuilder Integration', () => {
   });
 
   test('agreementBuilder generates a valid agreement with data from the database', async () => {
-    const catalog = await models.Catalog.findOne({ where: { id: 10 } });
-    const controls = await models.Control.findAll({ where: { catalogId: 10 } });
+    const catalog = await models.Catalog.findOne({ where: { id: '10' } });
+    const controls = await models.Control.findAll({ where: { catalogId: '10' } });
 
     const agreement = await agreementBuilder(catalog, controls);
 
@@ -44,7 +44,7 @@ describe('agreementBuilder Integration', () => {
 
   test('agreementBuilder handles missing catalog gracefully', async () => {
     const catalog = null;
-    const controls = await models.Control.findAll({ where: { catalogId: 10 } });
+    const controls = await models.Control.findAll({ where: { catalogId: '10' } });
 
     await expect(agreementBuilder(catalog, controls))
       .rejects
@@ -52,7 +52,7 @@ describe('agreementBuilder Integration', () => {
   });
 
   test('agreementBuilder handles missing controls gracefully', async () => {
-    const catalog = await models.Catalog.findOne({ where: { id: 10 } });
+    const catalog = await models.Catalog.findOne({ where: { id: '10' } });
     const controls = [];
 
     const agreement = await agreementBuilder(catalog, controls);
@@ -63,8 +63,8 @@ describe('agreementBuilder Integration', () => {
   });
 
   test('agreementBuilder applies overrides correctly', async () => {
-    const catalog = await models.Catalog.findOne({ where: { id: 10 } });
-    const controls = await models.Control.findAll({ where: { catalogId: 10 } });
+    const catalog = await models.Catalog.findOne({ where: { id: '10' } });
+    const controls = await models.Control.findAll({ where: { catalogId: '10' } });
 
     const overrides = {
       id: 'test-override',
@@ -84,8 +84,8 @@ describe('agreementBuilder Integration', () => {
   });
 
   test('agreementBuilder generates unique IDs', async () => {
-    const catalog = await models.Catalog.findOne({ where: { id: 10 } });
-    const controls = await models.Control.findAll({ where: { catalogId: 10 } });
+    const catalog = await models.Catalog.findOne({ where: { id: '10' } });
+    const controls = await models.Control.findAll({ where: { catalogId: '10' } });
 
     const agreement1 = await agreementBuilder(catalog, controls);
     const agreement2 = await agreementBuilder(catalog, controls);
@@ -94,8 +94,8 @@ describe('agreementBuilder Integration', () => {
   });
 
   test('agreementBuilder transforms text correctly', async () => {
-    const catalog = await models.Catalog.findOne({ where: { id: 10 } });
-    const controls = await models.Control.findAll({ where: { catalogId: 10 } });
+    const catalog = await models.Catalog.findOne({ where: { id: '10' } });
+    const controls = await models.Control.findAll({ where: { catalogId: '10' } });
 
     const agreement = await agreementBuilder(catalog, controls);
 
@@ -110,8 +110,8 @@ describe('agreementBuilder Integration', () => {
   });
 
   test('agreementBuilder startDate and endDate defaults', async () => {
-    const catalog = await models.Catalog.findOne({ where: { id: 10 } });
-    const controls = await models.Control.findAll({ where: { catalogId: 10 } });
+    const catalog = await models.Catalog.findOne({ where: { id: '10' } });
+    const controls = await models.Control.findAll({ where: { catalogId: '10' } });
 
     const agreement = await agreementBuilder(catalog, controls);
 
@@ -120,8 +120,8 @@ describe('agreementBuilder Integration', () => {
   });
 
   test('agreementBuilder should use catalog dates when overrides are not provided', async () => {
-    const catalog = await models.Catalog.findOne({ where: { id: 10 } });
-    const controls = await models.Control.findAll({ where: { catalogId: 10 } });
+    const catalog = await models.Catalog.findOne({ where: { id: '10' } });
+    const controls = await models.Control.findAll({ where: { catalogId: '10' } });
 
     const agreement = await agreementBuilder(catalog, controls);
 
@@ -140,7 +140,7 @@ describe('agreementBuilder Integration', () => {
   });
 
   test('agreementBuilder handles controls with missing catalogId', async () => {
-    const catalog = await models.Catalog.findOne({ where: { id: 10 } });
+    const catalog = await models.Catalog.findOne({ where: { id: '10' } });
     const controls = [{
       id: 99,
       name: 'Test Control Without Catalog',
@@ -163,7 +163,7 @@ describe('agreementBuilder Integration', () => {
       startDate: null,
       endDate: null
     };
-    const controls = await models.Control.findAll({ where: { catalogId: 10 } });
+    const controls = await models.Control.findAll({ where: { catalogId: '10' } });
 
     const agreement = await agreementBuilder(catalog, controls);
 
@@ -173,7 +173,7 @@ describe('agreementBuilder Integration', () => {
   });
 
   test('agreementBuilder handles controls with special characters in name', async () => {
-    const catalog = await models.Catalog.findOne({ where: { id: 10 } });
+    const catalog = await models.Catalog.findOne({ where: { id: '10' } });
     const controls = [{
       id: 100,
       name: 'Test Control with !@#$%^&*()_+',
