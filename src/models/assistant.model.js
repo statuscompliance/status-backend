@@ -27,6 +27,9 @@ export default (sequelize) => sequelize.define('Assistant', {
     allowNull: false,
     defaultValue: 'INACTIVE',
   },
+},{
+  tableName: 'assistants',
+  freezeTableName: true
 });
 
 /**

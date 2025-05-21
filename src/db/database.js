@@ -2,8 +2,11 @@ import { Sequelize } from 'sequelize';
 import mongoose from 'mongoose';
 export let sequelize;
 import { initModels } from '../models/models.js';
+import logger from '../config/logger.js';
 
-const getPostgresConfig = async  () => {
+const isTestEnvironment = !!import.meta.env?.VITEST;
+
+const getPostgresConfig = async () => {
   const sequelize = new Sequelize({
     dialect: 'postgres',
     port: process.env.DB_PORT || 5432,
@@ -12,11 +15,14 @@ const getPostgresConfig = async  () => {
     password: process.env.DB_PASSWORD || 'root',
     database: process.env.DB_NAME || 'statusdb',
     ssl: false,
-    logging: false,
+    logging: (msg) => logger.debug(msg),
   });
-  console.info('[database] Connecting to Postgres...');
+  logger.info('Connecting to Postgres...', { 
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'statusdb'
+  });
   await sequelize.authenticate();
-  console.info('[database] Postgres successfully connected.');
+  logger.info('Postgres successfully connected');
   return sequelize;
 }
 
@@ -25,9 +31,11 @@ const initMongoDB = async () => {
     await mongoose.connect(
       process.env.MONGO_URI || 'mongodb://root:root@localhost:27017/statusdb?authSource=admin'
     );
-    console.log('[database] MongoDB connected');
+    logger.info('MongoDB connected', {
+      uri: process.env.MONGO_URI ? '[REDACTED]' : 'mongodb://root:root@localhost:27017/statusdb'
+    });
   } catch (err) {
-    console.error('[database] MongoDB connection error:', err.message);
+    logger.error('MongoDB connection error', { error: err.message, stack: err.stack });
   }
 };
 
@@ -40,9 +48,10 @@ export const registerDB = async (instance) => {
   if(!sequelize) {
     sequelize = instance;
     await initModels(sequelize);
+    logger.info('Database models initialized');
   }
 }
 
-if (!import.meta.env?.VITEST) {
+if (!isTestEnvironment) {
   await registerDB(await initDB());
 }
