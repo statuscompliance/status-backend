@@ -48,7 +48,7 @@ export const registerDB = async (instance) => {
   if(!sequelize) {
     sequelize = instance;
     await initModels(sequelize);
-    logger.info('Database models initialized');
+    logger.debug('Database models initialized');
   }
 }
 

@@ -2,6 +2,7 @@ import { beforeAll, afterAll, vi } from 'vitest';
 import supertest from 'supertest';
 import { connect, clearDatabase, closeDatabase } from './database';
 import configureApp from '../../src/index.js';
+import logger from '../../src/config/logger.js';
 
 const app = configureApp();
 
@@ -27,7 +28,7 @@ async function mockRedis() {
   vi.mock('ioredis', () => {
     return import('ioredis-mock'); // Dynamically import 'redis-mock' for mocking
   });
-  console.log('[redis] Redis mocked');
+  logger.debug('Redis mocked');
 }
 
 export { request };

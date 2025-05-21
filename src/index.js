@@ -150,9 +150,6 @@ if (!isTestEnvironment) {
   }).catch(err => {
     logger.error('Failed to initialize log database', { error: err.message, stack: err.stack });
   });
-} else {
-  // In test environment
-  logger.info('Running in test environment');
 }
 
 export default configureApp;
