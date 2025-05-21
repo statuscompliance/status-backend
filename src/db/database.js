@@ -15,7 +15,7 @@ const getPostgresConfig = async () => {
     password: process.env.DB_PASSWORD || 'root',
     database: process.env.DB_NAME || 'statusdb',
     ssl: false,
-    logging: (msg) => logger.debug(msg),
+    logging: (msg) => logger.database(msg),
   });
   logger.info('Connecting to Postgres...', { 
     host: process.env.DB_HOST || 'localhost',
