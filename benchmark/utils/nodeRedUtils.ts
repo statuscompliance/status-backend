@@ -81,13 +81,8 @@ export async function executeEndpointFlow(endpointUrl: string, msg: any) {
   }
 }
 
-export async function closeNodeRedConnection(): Promise<void> {
-  
-  console.log('Closing Node-RED connection...');
-}
-
-export async function createEndpointFlow(endpointUrl: string, flowId: string, nodes: Object): Promise<boolean> {
-  console.log(`Creating Node-RED flow with endpoint: ${endpointUrl} (ID: ${flowId})`);
+export async function updateFlow(flowId: string, nodes: any): Promise<boolean> {
+  console.log(`Attempting to update Node-RED flow with ID: ${flowId}`);
 
   const authHeader = generateAuthHeader(NODE_RED_USERNAME, NODE_RED_PASSWORD);
   const headers = {
@@ -96,57 +91,23 @@ export async function createEndpointFlow(endpointUrl: string, flowId: string, no
   };
 
   try {
-    const response = await fetch(`http://localhost:${NODE_RED_PORT}/flow`, {
-      method: 'POST',
+    const response = await fetch(`http://localhost:${NODE_RED_PORT}/flow/${flowId}`, {
+      method: 'PUT',
       headers: headers,
       body: JSON.stringify(nodes),
     });
 
     if (response.ok) {
-      console.log(`Endpoint flow "${flowId}" created successfully at ${endpointUrl}.`);
+      console.log(`Flow with ID "${flowId}" updated successfully.`);
       return true;
     } else {
       const errorText = await response.text();
-      console.error(`Failed to create endpoint flow "${flowId}". Status: ${response.status}, Response: ${errorText}`);
+      console.error(`Failed to update flow "${flowId}". Status: ${response.status}, Response: ${errorText}`);
       return false;
     }
   } catch (error) {
-    console.error('Error creating Node-RED endpoint flow:', error);
+    console.error('Error updating Node-RED flow:', error);
     return false;
-  }
-}
-
-export async function createFlow(nodes: any): Promise<string | null> {
-  console.log('Attempting to create Node-RED flow with configuration:', nodes);
-
-  const authHeader = generateAuthHeader(NODE_RED_USERNAME, NODE_RED_PASSWORD);
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(authHeader ? { 'Authorization': authHeader } : {}),
-  };
-
-  try {
-    const response = await fetch(`http://localhost:${NODE_RED_PORT}/flows`, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(nodes),
-    });
-
-    if (response.ok) {
-      const responseData = await response.json();
-      const flowId = responseData.flows[0].id; // Assuming the first flow in the array is the one we created
-      console.log(`Flow created successfully with ID: ${flowId}`);
-      return flowId;
-    } else {
-      // Handle error response
-      const errorText = await response.text();
-      console.error(`Failed to create flow. Status: ${response.status}, Response: ${errorText}`);
-      return null;
-    }
-
-  } catch (error) {
-    console.error('Error creating Node-RED flow:', error);
-    return null;
   }
 }
 

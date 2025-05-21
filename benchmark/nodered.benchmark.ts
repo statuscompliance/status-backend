@@ -1,30 +1,60 @@
-import { describe, bench, beforeAll, afterAll } from 'vitest';
-import { connectNodeRed, closeNodeRedConnection, executeEndpointFlow, createEndpointFlow, deleteFlow } from './utils/nodeRedUtils';
-import { endpoint, flowId, nodes } from './utils/defaultFlow';
+import { describe, bench, beforeEach, afterEach } from 'vitest';
+import { connectNodeRed, executeEndpointFlow, updateFlow, deleteFlow } from './utils/nodeRedUtils';
+import { simpleFLow, sampleStatusFlow1, sampleStatusFlow2, endpoint } from './flows/sampleFlows';
 
-describe('Benchmark de Ciclo de Vida Completo de Node-RED', () => {
+async function setupNodeRedFlow(endpoint: string, flowId: string, nodes: any) {
+  console.log('--- Inicio del ciclo de vida de la prueba ---');
+
+  const isConnected = await connectNodeRed();
+  if (!isConnected) {
+    throw new Error('Failed to connect to Node-RED.');
+  }
+  console.log('Conexión a Node-RED establecida.');
+
+  const flowCreated = await updateFlow(flowId, nodes);
+  if (!flowCreated) {
+    throw new Error(`Failed to create endpoint flow at ${endpoint}.`);
+  }
+  console.log(`Flujo creado en ${endpoint} con ID ${flowId}.`);
+}
+
+async function tearDownNodeRedFlow(flowId: string, receivedMessage: any) {
+  console.log('--- Ending Benchmarking ---');
+  if (flowId) {
+    const flowDeleted = await deleteFlow(flowId);
+    if (flowDeleted) {
+      console.log(`Deleted flow with ID: ${flowId}.`);
+    } else {
+      console.warn(`Could not delete flow with ID: ${flowId}.`);
+    }
+  }
+  console.log('Closing Node-RED connection...');
+
+  console.log('Node-RED connection closed (simulated logic).');
+
+  if (receivedMessage) {
+    console.log('Mensaje (posiblemente) recibido durante el benchmark:', receivedMessage);
+  } else {
+    console.log('No se recibió ningún mensaje específico durante el benchmark (depende del flujo de Node-RED).');
+  }
+}
+
+describe('Node-Red custom flows Benchmark', () => {
   let receivedMessage: any = null;
+  let currentFlow: any = null;
 
-  beforeAll(async () => {
-    console.log('--- Inicio del ciclo de vida de la prueba ---');
-
-    const isConnected = await connectNodeRed();
-    if (!isConnected) {
-      throw new Error('Failed to connect to Node-RED.');
-    }
-    console.log('Conexión a Node-RED establecida.');
-
-    const flowCreated = await createEndpointFlow(endpoint, flowId, nodes);
-    if (!flowCreated) {
-      throw new Error(`Failed to create endpoint flow at ${endpoint}.`);
-    }
-    console.log(`Flujo creado en ${endpoint} con ID ${flowId}.`);
+  beforeEach(async () => {
+    await setupNodeRedFlow(endpoint, currentFlow.id, currentFlow.nodes);
   });
 
-  bench('Ejecutar flujo predeterminado y recibir mensaje', async () => {
+  afterEach(async () => {
+    tearDownNodeRedFlow(currentFlow.id, receivedMessage);
+  });
 
+
+  bench('Sample Default Flow Benchmark', async () => {
+    currentFlow = simpleFLow;
     const msg = { payload: 'Mensaje personalizado para la prueba', timestamp: Date.now() };
-
     try {
       receivedMessage = await executeEndpointFlow(endpoint, msg);
       console.log('Mensaje personalizado enviado y (posiblemente) recibido por el benchmark.');
@@ -32,28 +62,50 @@ describe('Benchmark de Ciclo de Vida Completo de Node-RED', () => {
       console.error('Error al ejecutar el flujo:', error);
       throw error;
     }
-
   });
 
-  afterAll(async () => {
-    console.log('--- Finalizando el ciclo de vida de la prueba ---');
-    if (flowId) {
-      const flowDeleted = await deleteFlow(flowId);
-      if (flowDeleted) {
-        console.log(`Flujo con ID ${flowId} eliminado.`);
-      } else {
-        console.warn(`No se pudo eliminar el flujo con ID ${flowId}.`);
+  bench('Sample Status Flow1 Benchmark', async () => {
+    currentFlow = sampleStatusFlow1;
+    const payload = [
+      {
+        message: 'Hello, this is a test message.',
+        timestamp: new Date().toISOString()
+      },
+      {
+        message: 'Another test message.',
+        timestamp: new Date().toISOString()
       }
-    }
-    await closeNodeRedConnection();
+    ];
 
-    console.log('Conexión a Node-RED cerrada (lógica simulada).');
-    
-    if (receivedMessage) {
-      console.log('Mensaje (posiblemente) recibido durante el benchmark:', receivedMessage);
-    } else {
-      console.log('No se recibió ningún mensaje específico durante el benchmark (depende del flujo de Node-RED).');
+    try {
+      receivedMessage = await executeEndpointFlow(endpoint, payload);
+    } catch (error) {
+      console.error('Unexpected error ocurred while executing the flow: ', error);
+      throw error;
     }
   });
-  
+
+  bench('Sample Status Flow2 Benchmark', async () => {
+    currentFlow = sampleStatusFlow2;
+    const payload = [
+      {
+        message: 'Hello, this is a test message.',
+        timestamp: new Date().toISOString(),
+        status: 'success'
+      },
+      {
+        message: 'Another test message.',
+        timestamp: new Date().toISOString(),
+        status: 'error'
+      }
+    ];
+
+    try {
+      receivedMessage = await executeEndpointFlow(endpoint, payload);
+    } catch (error) {
+      console.error('Unexpected error ocurred while executing the flow: ', error);
+      throw error;
+    }
+  });
+
 });
