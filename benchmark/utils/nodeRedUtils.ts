@@ -1,8 +1,8 @@
 import http from 'http';
-import * as dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config'  
 
-const NODE_RED_PORT: number = 1880;
+const NODE_RED_HOST: string = '127.0.0.1';
+const NODE_RED_PORT: number = 1880; // Default Node-RED port
 const NODE_RED_USERNAME = 'admin';
 const NODE_RED_PASSWORD = 'admin';
 
@@ -19,7 +19,7 @@ function generateAuthHeader(username?: string, password?: string): string | unde
 async function checkNodeRedStatus(): Promise<boolean> {
   return new Promise((resolve) => {
     const req = http.request({
-      hostname: 'localhost',
+      hostname: NODE_RED_HOST,
       port: NODE_RED_PORT,
       path: '/',
       method: 'GET'
@@ -31,7 +31,7 @@ async function checkNodeRedStatus(): Promise<boolean> {
       resolve(false);
     });
 
-    req.setTimeout(1000); // Adjust timeout as needed
+    req.setTimeout(1000);
     req.end();
   });
 }
@@ -50,7 +50,7 @@ export async function connectNodeRed(): Promise<boolean> {
 
 export async function executeEndpointFlow(endpointUrl: string, msg: any) {
   
-  console.log(`Executing flow at endpoint: http://localhost:${NODE_RED_PORT}${endpointUrl}`);
+  console.log(`Executing flow at endpoint: http://${NODE_RED_HOST}:${NODE_RED_PORT}${endpointUrl}`);
   
   try {
     const authHeader = generateAuthHeader(NODE_RED_USERNAME, NODE_RED_PASSWORD);
@@ -60,7 +60,7 @@ export async function executeEndpointFlow(endpointUrl: string, msg: any) {
     };
 
     const response = await fetch(
-      `http://localhost:${NODE_RED_PORT}${endpointUrl}`, {
+      `http://${NODE_RED_HOST}:${NODE_RED_PORT}${endpointUrl}`, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify(msg)
@@ -91,7 +91,7 @@ export async function updateFlow(flowId: string, nodes: any): Promise<boolean> {
   };
 
   try {
-    const response = await fetch(`http://localhost:${NODE_RED_PORT}/flow/${flowId}`, {
+    const response = await fetch(`http://${NODE_RED_HOST}:${NODE_RED_PORT}/flow/${flowId}`, {
       method: 'PUT',
       headers: headers,
       body: JSON.stringify(nodes),
@@ -119,7 +119,7 @@ export async function deleteFlow(flowId: string): Promise<boolean> {
   };
 
   try {
-    const response = await fetch(`http://localhost:${NODE_RED_PORT}/flow/${flowId}`, {
+    const response = await fetch(`${NODE_RED_HOST}:${NODE_RED_PORT}/flow/${flowId}`, {
       method: 'DELETE',
       headers: headers,
     });

@@ -3,19 +3,19 @@ import { connectNodeRed, executeEndpointFlow, updateFlow, deleteFlow } from './u
 import { simpleFLow, sampleStatusFlow1, sampleStatusFlow2, endpoint } from './flows/sampleFlows';
 
 async function setupNodeRedFlow(endpoint: string, flowId: string, nodes: any) {
-  console.log('--- Inicio del ciclo de vida de la prueba ---');
+  console.log('--- Starting Node Red Benchmarks ---');
 
   const isConnected = await connectNodeRed();
   if (!isConnected) {
     throw new Error('Failed to connect to Node-RED.');
   }
-  console.log('Conexión a Node-RED establecida.');
+  console.log('Node-RED connection established.');
 
   const flowCreated = await updateFlow(flowId, nodes);
   if (!flowCreated) {
     throw new Error(`Failed to create endpoint flow at ${endpoint}.`);
   }
-  console.log(`Flujo creado en ${endpoint} con ID ${flowId}.`);
+  console.log(`Flow with ID: ${flowId} created successfully at ${endpoint}.`);
 }
 
 async function tearDownNodeRedFlow(flowId: string, receivedMessage: any) {
@@ -33,9 +33,9 @@ async function tearDownNodeRedFlow(flowId: string, receivedMessage: any) {
   console.log('Node-RED connection closed (simulated logic).');
 
   if (receivedMessage) {
-    console.log('Mensaje (posiblemente) recibido durante el benchmark:', receivedMessage);
+    console.log('Received message during benchmark:', receivedMessage);
   } else {
-    console.log('No se recibió ningún mensaje específico durante el benchmark (depende del flujo de Node-RED).');
+    console.log('No message received during benchmark.');
   }
 }
 
@@ -54,12 +54,11 @@ describe('Node-Red custom flows Benchmark', () => {
 
   bench('Sample Default Flow Benchmark', async () => {
     currentFlow = simpleFLow;
-    const msg = { payload: 'Mensaje personalizado para la prueba', timestamp: Date.now() };
+    const msg = { payload: 'Sample Message for Benchmarks', timestamp: Date.now() };
     try {
       receivedMessage = await executeEndpointFlow(endpoint, msg);
-      console.log('Mensaje personalizado enviado y (posiblemente) recibido por el benchmark.');
     } catch (error) {
-      console.error('Error al ejecutar el flujo:', error);
+      console.error('Unexpected error ocurred while executing the flow: ', error);
       throw error;
     }
   });
