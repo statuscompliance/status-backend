@@ -52,7 +52,8 @@ describe('Scope Controller Tests', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Failed to retrieve scopes',
+        error: 'Database error',
+        message: 'Failed to retrieve scopes',
       });
     });
   });
@@ -76,7 +77,7 @@ describe('Scope Controller Tests', () => {
     it('should handle errors gracefully in getScopeById', async () => {
       // Mock error
       vi.spyOn(models.Scope, 'findByPk').mockRejectedValueOnce(
-        new Error('Failed to retrieve scope set by ID')
+        new Error('Database error')
       );
   
       const req = { params: { id: 1 } };
@@ -86,7 +87,8 @@ describe('Scope Controller Tests', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Failed to retrieve scope by ID',
+        error:'Database error',
+        message: 'Failed to retrieve scope by ID',
       });
     });
     it('should return 404 if scope not found', async () => {
@@ -100,7 +102,7 @@ describe('Scope Controller Tests', () => {
       expect(res.json).toHaveBeenCalledWith({ error: 'Scope not found' });
     });
     it('should return 400 if an error occurs during creation', async () => {
-      vi.spyOn(models.Scope, 'create').mockRejectedValue(new Error('DB error'));
+      vi.spyOn(models.Scope, 'create').mockRejectedValue(new Error('Database error'));
   
       const req = { body: { name: 'scope1', description: 'desc', type: 't', default: false } };
       const res = createRes();
@@ -333,7 +335,8 @@ describe('Scope Controller Tests', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Failed to delete scope',
+        error:'Database error',
+        message: 'Failed to delete scope',
       });
     });
     it('should return 500 if an error occurs during deletion', async () => {
@@ -341,12 +344,12 @@ describe('Scope Controller Tests', () => {
       const res = createRes();
   
       // Simular error en la eliminación
-      vi.spyOn(models.Scope, 'destroy').mockRejectedValue(new Error('DB error'));
+      vi.spyOn(models.Scope, 'destroy').mockRejectedValue(new Error('Database error'));
   
       await scopeController.deleteScope(req, res);
   
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to delete scope' });
+      expect(res.json).toHaveBeenCalledWith({ error:'Database error', message: 'Failed to delete scope' });
     });
     it('should return 404 if scope not found', async () => {
       const req = { params: { id: 1 } };
@@ -376,7 +379,8 @@ describe('Scope Controller Tests', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Failed to create scope set',
+        error:'Database error',
+        message: 'Failed to create scope set',
       });
     });
     it('should create a new scope set and return it with status 201', async () => {
@@ -441,7 +445,8 @@ describe('Scope Controller Tests', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Failed to create scope set',
+        error:'Database error',
+        message: 'Failed to create scope set',
       });
     });
   });
@@ -470,7 +475,8 @@ describe('Scope Controller Tests', () => {
       await scopeController.getAllScopeSets(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to retrieve all scope sets' });
+      expect(res.json).toHaveBeenCalledWith({ error:'Database error',
+        message: 'Failed to retrieve all scope sets' });
     });
   });
   describe('getScopeSetsByControlId', () => {
@@ -500,7 +506,7 @@ describe('Scope Controller Tests', () => {
       await scopeController.getScopeSetsByControlId(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to retrieve scope sets by control ID' });
+      expect(res.json).toHaveBeenCalledWith({ error:'Database error', message: 'Failed to retrieve scope sets by control ID' });
     });
   });
   describe('updateScopeSetById', () => {
@@ -520,8 +526,6 @@ describe('Scope Controller Tests', () => {
 
       await scopeController.updateScopeSetById(req, res);
       
-      //Print the response
-      console.log(res.json.mock.calls[0][0]);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(mockUpdatedScopeSet);
     });
@@ -611,7 +615,7 @@ describe('Scope Controller Tests', () => {
       await scopeController.updateScopeSetById(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to update scope set by ID' });
+      expect(res.json).toHaveBeenCalledWith({ error:'Database error', message: 'Failed to update scope set by ID' });
     });
   });
 
@@ -659,7 +663,7 @@ describe('Scope Controller Tests', () => {
       await scopeController.getScopeSetById(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to retrieve scope set by ID' });
+      expect(res.json).toHaveBeenCalledWith({ error:'Database error', message: 'Failed to retrieve scope set by ID' });
     });
 
     it('should return 400 for invalid ID format', async () => {
@@ -723,5 +727,52 @@ describe('Scope Controller Tests', () => {
         default: false
       });
     });
+  });
+});
+
+describe('deleteScopeSetsByControlId', () => {
+  it('should delete all scope sets with the specified controlId with status 204', async () => {
+    const mockControlId = '123';
+    const mockDeleteResult = { deletedCount: 2 }; // Simulamos que se eliminaron 2 documentos
+
+    vi.spyOn(ScopeSet, 'deleteMany').mockResolvedValue(mockDeleteResult);
+
+    const req = { params: { controlId: mockControlId } };
+    const res = createRes();
+
+    await scopeController.deleteScopeSetsByControlId(req, res);
+
+    expect(ScopeSet.deleteMany).toHaveBeenCalledWith({ controlId: Number(mockControlId) });
+    expect(res.status).toHaveBeenCalledWith(204);
+    expect(res.send).toHaveBeenCalled();
+  });
+
+  it('should return 404 if no scope sets are found with that controlId', async () => {
+    const mockControlId = '999';
+    const mockDeleteResult = { deletedCount: 0 }; // No se eliminó ningún documento
+
+    vi.spyOn(ScopeSet, 'deleteMany').mockResolvedValue(mockDeleteResult);
+
+    const req = { params: { controlId: mockControlId } };
+    const res = createRes();
+
+    await scopeController.deleteScopeSetsByControlId(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: 'No ScopeSets found with that controlId' });
+  });
+
+  it('should handle errors gracefully in deleteScopeSetsByControlId', async () => {
+    const mockControlId = '123';
+    
+    vi.spyOn(ScopeSet, 'deleteMany').mockRejectedValue(new Error('Database error'));
+
+    const req = { params: { controlId: mockControlId } };
+    const res = createRes();
+
+    await scopeController.deleteScopeSetsByControlId(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error:'Database error', message: 'Failed to delete scope sets by control ID' });
   });
 });
