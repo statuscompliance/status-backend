@@ -49,6 +49,7 @@ describe('Logger Module', () => {
       expect(logger.warn).toBeTypeOf('function');
       expect(logger.http).toBeTypeOf('function');
       expect(logger.debug).toBeTypeOf('function');
+      expect(logger.database).toBeTypeOf('function');
     });
 
     it('should have correct log levels', () => {
@@ -58,12 +59,43 @@ describe('Logger Module', () => {
       expect(levels).toContain('info');
       expect(levels).toContain('http');
       expect(levels).toContain('debug');
+      expect(levels).toContain('database');
+    });
+
+    it('should have database level with correct priority', () => {
+      // Database should have higher number than other levels
+      expect(logger.levels.database).toBeGreaterThan(logger.levels.error);
+      expect(logger.levels.database).toBeGreaterThan(logger.levels.warn);
+      expect(logger.levels.database).toBeGreaterThan(logger.levels.info);
+      expect(logger.levels.database).toBeGreaterThan(logger.levels.http);
+      expect(logger.levels.database).toBeGreaterThan(logger.levels.debug);
     });
 
     it('should have console transport', () => {
       const transports = logger.transports;
       const hasConsoleTransport = transports.some(t => t instanceof winston.transports.Console);
       expect(hasConsoleTransport).toBe(true);
+    });
+  });
+
+  describe('database logging', () => {
+    it('should log database operations correctly', () => {
+      vi.spyOn(logger, 'database').mockImplementation(() => {});
+      
+      logger.database('Connected to MongoDB', {
+        uri: 'mongodb://localhost:27017',
+        database: 'test_db',
+        host: 'localhost:27017'
+      });
+
+      expect(logger.database).toHaveBeenCalledWith(
+        'Connected to MongoDB',
+        expect.objectContaining({
+          uri: 'mongodb://localhost:27017',
+          database: 'test_db',
+          host: 'localhost:27017'
+        })
+      );
     });
   });
 

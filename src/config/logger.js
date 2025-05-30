@@ -47,6 +47,7 @@ const customLevels = {
     info: 2,
     http: 3,
     debug: 4,
+    database: 5,
   },
   colors: {
     error: 'bold red',
@@ -54,6 +55,7 @@ const customLevels = {
     info: 'bold green',
     http: 'bold cyan',
     debug: 'bold magenta',
+    database: 'bold blue',
   },
 };
 
