@@ -151,6 +151,7 @@ describe('refreshAccessToken', () => {
   
 
   it('should return an error if refresh token is invalid', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     const invalidRefreshToken = 'invalidRefreshToken';
     jwtVerifySpy.mockImplementationOnce(() => {
       throw new Error('Invalid refresh token');

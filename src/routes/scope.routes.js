@@ -10,7 +10,8 @@ import {
   createScopeSet,
   getScopeSetsByControlId,
   getScopeSetById,
-  updateScopeSetById
+  updateScopeSetById,
+  deleteScopeSetsByControlId
 } from '../controllers/scope.controller.js';
 
 export default function () {
@@ -20,6 +21,7 @@ export default function () {
   router.get('/sets/:id', checkIdParam, getScopeSetById);
   router.put('/sets/:id', checkIdParam, updateScopeSetById);
   router.get('/sets/control/:controlId', getScopeSetsByControlId);
+  router.delete('/sets/control/:controlId', deleteScopeSetsByControlId);
   router.get('', getAllScopes);
   router.get('/:id', validateUUID('id'), getScopeById);
   router.post('', createScope);
@@ -393,6 +395,42 @@ export default function () {
  *                   type: string
  *       500:
  *         description: Failed to get scope sets
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /scopes/sets/control/{controlId}:
+ *   delete:
+ *     summary: Deletes all scope sets by control ID
+ *     tags: [Scopes]
+ *     parameters:
+ *       - in: path
+ *         name: controlId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The control ID
+ *     responses:
+ *       204:
+ *         description: No content, deleted successfully
+ *       404:
+ *         description: No scope sets found with that controlId
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Failed to delete scope sets
  *         content:
  *           application/json:
  *             schema:

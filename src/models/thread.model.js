@@ -13,6 +13,9 @@ export default (sequelize) => sequelize.define('Thread', {
     type: DataTypes.STRING(50),
     allowNull: false,
   },
+},{
+  tableName: 'threads',
+  freezeTableName: true
 });
 
 

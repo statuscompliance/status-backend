@@ -215,7 +215,6 @@ describe('Scope API Routes', () => {
     });
   });
 
-  // Tests for ScopeSet endpoints
   describe('ScopeSet API Routes', () => {
     let scopeMap;
 
@@ -344,6 +343,39 @@ describe('Scope API Routes', () => {
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body.length).toBeGreaterThan(0);
         expect(response.body[0].controlId).toBe(sampleScopeSets[0].controlId);
+      });
+    });
+
+    describe('DELETE /scopes/sets/control/:controlId', () => {
+      it('should delete all scope sets with the specified controlId', async () => {
+        // Create a scope set to delete
+        const scopeSet = new ScopeSet({
+          controlId: sampleScopeSets[0].controlId,
+          scopes: scopeMap
+        });
+        await scopeSet.save();
+
+        // Verify it exists before deletion
+        const beforeDelete = await ScopeSet.find({ controlId: sampleScopeSets[0].controlId });
+        expect(beforeDelete.length).toBeGreaterThan(0);
+
+        const response = await request.delete(`/scopes/sets/control/${sampleScopeSets[0].controlId}`);
+        
+        expect(response.status).toBe(204);
+
+        // Verify it was deleted from the database
+        const afterDelete = await ScopeSet.find({ controlId: sampleScopeSets[0].controlId });
+        expect(afterDelete.length).toBe(0);
+      });
+
+      it('should return 404 if no scope sets found with that controlId', async () => {
+        // Use a controlId that does not exist in the database
+        const nonExistentControlId = 99999;
+        
+        const response = await request.delete(`/scopes/sets/control/${nonExistentControlId}`);
+        
+        expect(response.status).toBe(404);
+        expect(response.body.error).toBe('No ScopeSets found with that controlId');
       });
     });
   });
