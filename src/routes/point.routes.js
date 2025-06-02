@@ -12,9 +12,9 @@ export default function () {
   const router = Router();
   router.get('', getPoints);
   router.delete('', deleteAllPoints);
+  router.get('/catalog/:tpaId', getPointsByAgreementId); 
   router.get('/:id', getPointById);
   router.delete('/:id', deletePointById);
-  router.get('/catalog/:tpaId', getPointsByAgreementId);
   router.put('/computationGroup/:computationGroup', updatePointByComputationGroup);
 
   return router;
