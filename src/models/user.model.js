@@ -33,6 +33,9 @@ export default (sequelize) => sequelize.define('User', {
   refresh_token: {
     type: DataTypes.STRING(255),
   },
+},{
+  tableName: 'users',
+  freezeTableName: true
 });
 
 /**

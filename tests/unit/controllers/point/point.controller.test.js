@@ -5,12 +5,13 @@ import {
   deletePointById,
   getPointsByAgreementId,
   deleteAllPoints,
+  updatePointByComputationGroup,
 } from '../../../../src/controllers/point.controller.js';
 import { models } from '../../../../src/models/models.js';
 import { validate as uuidValidate } from 'uuid';
+import * as errorHandler from '../../../../src/utils/errorHandler.js';
 
-// Helper para crear objetos mock de req/res
-
+// Helper to create mock req/res objects
 function createRes() {
   return {
     status: vi.fn().mockReturnThis(),
@@ -20,6 +21,8 @@ function createRes() {
 }
 
 const userId = '5f1b7114-b133-487b-9442-2b48bf60807c';
+const computationGroupId = '5f1b7114-b133-487b-9442-2b48bf60807d';
+
 describe('Point Controller Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -27,6 +30,10 @@ describe('Point Controller Tests', () => {
       validate: vi.fn(() => true),
     }));
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Create a mock for errorHandler that returns only the message
+    vi.spyOn(errorHandler, 'handleControllerError').mockImplementation((res, error, message) => {
+      return res.status(500).json({ message });
+    });
   });
 
   describe('getPoints', () => {
@@ -66,7 +73,7 @@ describe('Point Controller Tests', () => {
       const point = { id: userId, value: 300 };
       vi.spyOn(models.Point, 'findByPk').mockResolvedValue(point);
 
-      // Forzamos que uuid.validate retorne true para que el controlador siga el camino correcto
+      // Force uuid.validate to return true so the controller follows the correct path
       uuidValidate.mockReturnValue(true);
 
       const req = { params: { id: userId } };
@@ -134,6 +141,11 @@ describe('Point Controller Tests', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'An error occurred while retrieving the point.',
     });
+    expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+      res,
+      mockError,
+      'An error occurred while retrieving the point.'
+    );
   });
 });
 
@@ -192,6 +204,11 @@ describe('deletePointById', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'An error occurred while deleting the point.',
     });
+    expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+      res,
+      mockError,
+      'An error occurred while deleting the point.'
+    );
   });
 
   describe('getPointsByAgreementId', () => {
@@ -248,9 +265,13 @@ describe('deletePointById', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        message:
-          'An error occurred while retrieving the points for this agreement.',
+        message: 'An error occurred while retrieving the points for this agreement.',
       });
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res,
+        mockError,
+        'An error occurred while retrieving the points for this agreement.'
+      );
     });
   });
 
@@ -279,6 +300,112 @@ describe('deletePointById', () => {
       expect(res.json).toHaveBeenCalledWith({
         message: 'An error occurred while deleting all points.',
       });
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res,
+        mockError,
+        'An error occurred while deleting all points.'
+      );
+    });
+  });
+
+  describe('updatePointByComputationGroup', () => {
+    beforeEach(() => {
+      // Reset mocks before each test to avoid interference
+      vi.clearAllMocks();
+      // Restore the default behavior of uuid.validate
+      uuidValidate.mockImplementation(() => true);
+    });
+
+    it('should update points by computation group with status 200', async () => {
+      const mockPoints = [
+        { id: '1', value: 100, computationGroup: computationGroupId },
+        { id: '2', value: 200, computationGroup: computationGroupId }
+      ];
+      const updateData = { status: 'completed' };
+      const updatedMockPoints = mockPoints.map(point => ({ ...point, ...updateData }));
+      
+      vi.spyOn(models.Point, 'findAll')
+        .mockResolvedValueOnce(mockPoints)      // First call for validation
+        .mockResolvedValueOnce(updatedMockPoints); // Second call to return updated points
+        
+      vi.spyOn(models.Point, 'update').mockResolvedValue([2]); // 2 rows updated
+      
+      const req = { 
+        params: { computationGroup: computationGroupId },
+        body: updateData 
+      };
+      const res = createRes();
+      
+      await updatePointByComputationGroup(req, res);
+      
+      expect(models.Point.findAll).toHaveBeenCalledTimes(2);
+      expect(models.Point.update).toHaveBeenCalledWith(
+        updateData,
+        { where: { computationGroup: computationGroupId } }
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Points updated successfully',
+        points: updatedMockPoints
+      });
+    });
+    
+    it('should return 400 for invalid computation group id', async () => {
+      // Force uuid.validate to return false for this specific test
+      uuidValidate.mockReturnValue(false);
+      
+      const req = { params: { computationGroup: 'invalid-id' }, body: {} };
+      const res = createRes();
+      
+      await updatePointByComputationGroup(req, res);
+      
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid computation group id' });
+      expect(models.Point.findAll).not.toHaveBeenCalled();
+    });
+    
+    it('should return 404 when no points found with computation group', async () => {
+      // Ensure UUID validation passes
+      uuidValidate.mockReturnValue(true);
+      
+      // Mock findAll to return empty array (no points)
+      vi.spyOn(models.Point, 'findAll').mockResolvedValue([]);
+      
+      // Spy on update to verify it's not called
+      vi.spyOn(models.Point, 'update');
+      
+      const req = { 
+        params: { computationGroup: computationGroupId },
+        body: { status: 'completed' } 
+      };
+      const res = createRes();
+      
+      await updatePointByComputationGroup(req, res);
+      
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ 
+        message: `No points found with computation group ${computationGroupId}`
+      });
+      expect(models.Point.update).not.toHaveBeenCalled();
+    });
+    
+    it('should handle errors gracefully', async () => {
+      const mockError = new Error('Database error');
+      vi.spyOn(models.Point, 'findAll').mockRejectedValueOnce(mockError);
+      
+      const req = { 
+        params: { computationGroup: computationGroupId },
+        body: { status: 'completed' } 
+      };
+      const res = createRes();
+      
+      await updatePointByComputationGroup(req, res);
+      
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res, 
+        mockError, 
+        'An error occurred while updating the points.'
+      );
     });
   });
 });

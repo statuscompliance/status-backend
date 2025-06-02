@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import gaugeStructure from '../../../src/utils/gaugeStructure'; 
+import gaugeStructure from '../../../src/utils/panels/gaugeStructure'; 
 
 describe('gaugeStructure object', () => {
   it('should be defined', () => {
@@ -9,8 +9,7 @@ describe('gaugeStructure object', () => {
 
   it('should have the correct datasource', () => {
     expect(gaugeStructure.datasource).toEqual({
-      default: true,
-      type: 'mysql',
+      type: 'grafana-postgresql-datasource',
       uid: 'P5E4ECD82955BB660',
     });
   });
@@ -32,7 +31,7 @@ describe('gaugeStructure object', () => {
   it('should contain SQL target query with expected structure', () => {
     const target = gaugeStructure.targets[0];
     expect(target.rawQuery).toBe(true);
-    expect(target.rawSql).toContain('SELECT COUNT(`limit`)');
+    expect(target.rawSql).toContain('SELECT "agreementId", "guaranteeValue", "timestamp" FROM "Points"');
     expect(target.sql.columns[0].type).toBe('function');
   });
 

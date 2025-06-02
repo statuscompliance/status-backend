@@ -47,6 +47,7 @@ beforeAll(async () => {
   await models.Configuration.bulkCreate(sampleConfigurations);
   await models.Assistant.bulkCreate(sampleAssistants);
   await updateConfigurationsCache();
+  vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterAll(async () => {
@@ -69,9 +70,7 @@ describe('Endpoint Integration Tests', () => {
   });
 
   it('should return 404 for an unavailable /users endpoint', async () => {
-
     let testConfig = await models.Configuration.findOne({ where: { endpoint: `${API_PREFIX}/users` } });
-    console.log('Test Config:', JSON.stringify(testConfig, null, 2));
 
     await models.Configuration.update({ available: false }, { where: { id: testConfig.id } });
     setConfigurationsCache(await models.Configuration.findAll());
@@ -116,11 +115,6 @@ describe('Assistant Limit Integration Tests', () => {
   });
 
   it('should send 429 if the number of assistants is greater than or equal to the limit', async () => {
-
-    // Create an assistant to reach the limit
-    console.log('Assistants created:', JSON.stringify(await models.Assistant.findAll(), null, 2));
-    console.log('Configurations Cache:', JSON.stringify(getConfigurationsCache(), null, 2));
-
     setConfigurationsCache(await models.Configuration.findAll());
 
     const response = await postResponse(`${API_PREFIX}/assistant`, sampleAssistants[0], adminToken);
