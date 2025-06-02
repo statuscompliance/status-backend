@@ -36,7 +36,9 @@ describe('Computation Controller', () => {
   const invalidId = 'invalidId';
   const controlId = 'controlId';
 
-  const mockComputation1 = createComputationExample();
+  const mockComputation1 = createComputationExample({
+    computationGroup: 'computationGroupId',
+  });
   const mockComputation2 = createComputationExample({
     id: 'computationId2',
     computationGroup: 'computationGroupId2',
@@ -441,7 +443,7 @@ describe('Computation Controller', () => {
       });
     });
   });
-  //
+  
   describe('deleteComputationByControlId', () => {
     it('should delete computations by controlId and return 204', async () => {
       const req = { params: { controlId: 'test-control-id' } };
@@ -455,6 +457,17 @@ describe('Computation Controller', () => {
       });
       expect(res.status).toHaveBeenCalledWith(204);
       expect(res.end).toHaveBeenCalled();
+    });
+    it('should return 404 if no computations are found', async () => {
+      const req = { params: { controlId: 'nonexistent-id' } };
+      vi.spyOn(models.Computation, 'destroy').mockResolvedValue(0); // No rows deleted
+  
+      await deleteComputationByControlId(req, res);
+  
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'No computations found to delete',
+      });
     });
     it('should handle errors and return 500', async () => {
       const req = { params: { controlId: 'test-control-id' } };
