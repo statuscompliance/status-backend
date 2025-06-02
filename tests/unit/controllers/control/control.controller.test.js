@@ -1,4 +1,3 @@
-// tests/unit/controllers/control.controller.test.js
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as control from '../../../../src/controllers/control.controller.js';
 import { models } from '../../../../src/models/models.js';
@@ -6,6 +5,7 @@ import * as utils from '../../../../src/utils/checkRequiredProperties.js';
 import * as panelUtils from '../../../../src/utils/panelUtils.js';
 import { createControlExample } from '../../../utils/createControlExample.js';
 import { mockController } from '../../../utils/mockController.js';
+
 // --- Helpers ---
 function createRes() {
   return {
@@ -32,10 +32,8 @@ describe('Control Controller', () => {
     });
   });
 
-  // getControls models.Control
   describe('getControls', () => {
     it('should return 200 with an empty list', async () => {
-      // const spy = mockFindAll([]);
       const spy = mockController(models.Control, 'findAll', []);
 
       await control.getControls({ query: {} }, res);
@@ -48,7 +46,7 @@ describe('Control Controller', () => {
       await control.getControls({ query: { status: 'bad' } }, res);
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Invalid status filter: bad. Allowed values are "finalized" or "draft".'
+        error: 'Invalid status filter: bad. Allowed values are finalized or draft.'
       });
     });
 
@@ -63,7 +61,6 @@ describe('Control Controller', () => {
     });
   });
 
-  // getControl
   describe('getControl', () => {
     it('should return 404 if control does not exist', async () => {
       mockController(models.Control, 'findByPk', null);
@@ -96,7 +93,6 @@ describe('Control Controller', () => {
     });
   });
 
-  // getCatalogControls
   describe('getCatalogControls', () => {
     const catalogId = 'catalog-1';
     it('should return 200 with controls filtered by catalogId', async () => {
@@ -121,7 +117,6 @@ describe('Control Controller', () => {
 
     it('should return 500 for internal server error', async () => {
       mockController(models.Control, 'findAll', null, new Error('Internal error'));
-      //mockFindAll(null, new Error('Internal error'));
       await control.getCatalogControls(
         { params: { catalogId: catalogId }, query: {} },
         res
@@ -134,7 +129,6 @@ describe('Control Controller', () => {
     });
   });
 
-  // createControl
   describe('createControl', () => {
     const bodyControl = createControlExample();
 
@@ -188,7 +182,6 @@ describe('Control Controller', () => {
     });
   });
 
-  // updateControl
   describe('updateControl', () => {
     const currentControl = createControlExample({
       id: controlId,
@@ -239,7 +232,7 @@ describe('Control Controller', () => {
       expect(res.json).toHaveBeenCalledWith(updatedControl);
     });
   });
-  // deleteControl
+
   describe('deleteControl', () => {
     it('should return 404 if control to delete does not exist', async () => {
       mockController(models.Control, 'destroy', 0);
@@ -261,7 +254,7 @@ describe('Control Controller', () => {
       expect(res.status).toHaveBeenCalledWith(500);
     });
   });
-  // addPanelToControl
+
   describe('addPanelToControl', () => {
     it('should return 201 on successful panel addition', async () => {
       mockController(models.Control, 'findByPk', { id: controlId });
@@ -293,7 +286,6 @@ describe('Control Controller', () => {
     });
   });
 
-  // getPanelsByControlId
   describe('getPanelsByControlId', () => {
     beforeEach(() => {
       vi.spyOn(panelUtils, 'mapPanelsToDTO').mockResolvedValue([]);
@@ -336,7 +328,6 @@ describe('Control Controller', () => {
     });
   });
 
-  // deletePanelFromControl
   describe('deletePanelFromControl', () => {
     const panelId = 'panelId';
     function mockPanelDestroy(returnValue, error = null) {
@@ -373,7 +364,6 @@ describe('Control Controller', () => {
     });
   });
 
-  // createDraftControl
   describe('createDraftControl', () => {
     const controlCatalog = createControlExample({ catalogId: 'catalog-1' });
 
@@ -421,7 +411,6 @@ describe('Control Controller', () => {
     });
   });
 
-  // finalizeControl
   describe('finalizeControl', () => {
     const controlCatalog = createControlExample({ catalogId: 'catalog-1' });
 
@@ -481,7 +470,6 @@ describe('Control Controller', () => {
     });
   });
 
-  // finalizeControlsByCatalogId
   describe('finalizeControlsByCatalogId', () => {
     it('should return an empty object if no draft controls are found', async () => {
       mockController(models.Control, 'findAll', []);
