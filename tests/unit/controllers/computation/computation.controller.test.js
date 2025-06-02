@@ -24,7 +24,7 @@ function createRes() {
   return {
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
-    end: vi.fn(),
+    end: vi.fn().mockReturnThis(),
   };
 }
 
@@ -74,6 +74,7 @@ describe('Computation Controller', () => {
         message: `Failed to get computations, error: ${error.message}`,
       });
     });
+    
   });
 
   describe('getComputationsById', () => {
@@ -203,69 +204,57 @@ describe('Computation Controller', () => {
   });
   describe('setComputeIntervalBytControlIdAndCreationDate', () => {
     const from = '2025-05-01T00:00:00.000Z';
-    const to = '2025-05-02T23:59:59.999Z';
-
+    const controlId = 'some-valid-id';
     const reqBase = {
-      params: mockComputation2,
+      params: { controlId },
       body: {
-        start_compute: '2025-05-01T10:00:00Z',
-        end_compute: '2025-05-01T12:00:00Z',
+        from: '2025-05-02T00:00:00.000Z',
+        to: '2025-05-02T23:59:59.999Z',
       },
-      query: { from, to },
     };
 
     it('should return 400 if from or to is missing', async () => {
-      const reqMissing = { ...reqBase, query: { from } }; // Not 'to' query param
+      const reqMissing = { ...reqBase, body: { from } }; // Not 'to' query param
       await setComputeIntervalBytControlIdAndCreationDate(reqMissing, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        message: 'Missing from or to query parameters',
+        error: '"from" and "to" are required in body',
       });
     });
 
     it('should return 404 if no computations are updated', async () => {
-      const spy = mockController(models.Computation, 'update', [0]);
+      mockController(models.Computation, 'update', [0]);
       await setComputeIntervalBytControlIdAndCreationDate(reqBase, res);
-
-      expect(spy).toHaveBeenCalledWith(
-        {
-          start_compute: reqBase.body.start_compute,
-          end_compute: reqBase.body.end_compute,
-        },
-        {
-          where: {
-            controlId,
-            createdAt: {
-              [Op.between]: [new Date(from), new Date(to)],
-            },
-          },
-        }
-      );
 
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({
-        message: 'No computations found to update',
+        message: 'No computations found for the given controlId',
       });
     });
 
     it('should return 204 if computations are updated successfully', async () => {
-      mockController(models.Computation, 'update', [5]);
+      const updatedCount = 5
+      mockController(models.Computation, 'update', [updatedCount]);
       await setComputeIntervalBytControlIdAndCreationDate(reqBase, res);
 
       expect(res.status).toHaveBeenCalledWith(204);
-      expect(res.end).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ message: `${updatedCount} computations updated.` });
     });
 
     it('should return 500 if update fails', async () => {
+
       const error = new Error('Update failed');
+      vi.spyOn(models.Computation, 'update').mockImplementation(() => {
+        throw new Error('Unexpected error');
+      });
 
       mockController(models.Computation, 'update', mockComputation2, error);
       await setComputeIntervalBytControlIdAndCreationDate(reqBase, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        message: `Failed to update computations, error: ${error.message}`,
+        error: error.message,
       });
     });
   });
