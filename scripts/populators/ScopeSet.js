@@ -1,10 +1,9 @@
 import ScopeSet from '../../src/models/scopeSet.model.js';
+import logger from '../../src/config/logger.js';
 
 async function populateScopeSets() {
   try {
-    console.log('__________________________________');
-    console.log('Starting scope set population...');
-    console.log('__________________________________');
+    logger.info('[DATA INITIALIZATION] Starting scope set configuration process');
 
     // Create scope sets
     const scopeSets = [
@@ -169,15 +168,15 @@ async function populateScopeSets() {
 
       if (!existingScopeSet) {
         await ScopeSet.create(scopeSetData);
-        console.log(`Scope set for control ID ${scopeSetData.controlId} successfully created.`);
+        logger.info(`[SCOPE SET CREATED] Control ID ${scopeSetData.controlId} scope set successfully initialized`);
       } else {
-        console.log(`Scope set for control ID ${scopeSetData.controlId} already exists.`);
+        logger.info(`[SCOPE SET SKIPPED] Control ID ${scopeSetData.controlId} scope set already exists in the system`);
       }
     }
 
-    console.log('Scope set population completed.');
+    logger.info('[DATA INITIALIZATION] Scope set configuration process completed successfully');
   } catch (error) {
-    console.error('Error during scope set population:', error);
+    logger.error('[DATA INITIALIZATION ERROR] Failed to configure scope sets', { error, stack: error.stack });
   }
 }
 

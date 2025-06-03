@@ -1,10 +1,9 @@
 import { models } from '../../src/models/models.js';
+import logger from '../../src/config/logger.js';
 
 async function populateCatalogs() {
   try {
-    console.log('__________________________________');
-    console.log('Starting catalog population...');
-    console.log('__________________________________');
+    logger.info('[DATA INITIALIZATION] Starting catalog definitions process');
     
     // Create catalogs
     const catalogs = [
@@ -71,15 +70,15 @@ async function populateCatalogs() {
       });
 
       if (created) {
-        console.log(`Catalog "${catalogData.name}" successfully created.`);
+        logger.info(`[CATALOG CREATED] Catalog "${catalogData.name}" successfully initialized in the system`);
       } else {
-        console.log(`Catalog "${catalogData.name}" already exists.`);
+        logger.info(`[CATALOG SKIPPED] Catalog "${catalogData.name}" already exists in the system`);
       }
     }
 
-    console.log('Catalog population completed.');
+    logger.info('[DATA INITIALIZATION] Catalog definitions process completed successfully');
   } catch (error) {
-    console.error('Error during catalog population:', error);
+    logger.error('[DATA INITIALIZATION ERROR] Failed to configure system catalogs', { error, stack: error.stack });
   }
 }
 
