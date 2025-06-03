@@ -1,4 +1,4 @@
-import { describe, bench, beforeEach, beforeAll, expect } from 'vitest';
+import { describe, bench, beforeAll, expect } from 'vitest';
 import { deleteFlow, executeEndpointFlow, connectNodeRed, createFlow } from './utils/nodeRedUtils.js';
 import { simpleFLow, sampleStatusFlow1, sampleStatusFlow2, endpoint } from './flows/sampleFlows.js';
 import logger from '../src/config/logger.js';
@@ -11,10 +11,6 @@ describe('Node-Red custom flows Benchmark', () => {
     const ready = await connectNodeRed();
     expect(ready).toBe(true);
     logger.info('Node-RED is ready for benchmarks.');
-  });
-
-  beforeEach(async () => {
-    await connectNodeRed();
   });
 
   bench('Simple Default Flow Benchmark', async () => {
@@ -31,6 +27,7 @@ describe('Node-Red custom flows Benchmark', () => {
       await executeEndpointFlow(endpoint, msg);
 
     } catch (error) {
+      logger.error('Unexpected error occurred while executing the flow: ', error);
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
@@ -58,7 +55,10 @@ describe('Node-Red custom flows Benchmark', () => {
 
       await executeEndpointFlow(endpoint, payload);
 
+      await executeEndpointFlow(endpoint, payload);
+
     } catch (error) {
+      logger.error('Unexpected error occurred while executing the flow: ', error);
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
@@ -86,7 +86,10 @@ describe('Node-Red custom flows Benchmark', () => {
 
       await executeEndpointFlow(endpoint, payload);
 
+      await executeEndpointFlow(endpoint, payload);
+
     } catch (error) {
+      logger.error('Unexpected error occurred while executing the flow: ', error);
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {

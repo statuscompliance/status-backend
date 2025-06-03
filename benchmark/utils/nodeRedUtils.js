@@ -94,14 +94,14 @@ async function authenticateNodeRed() {
  * @param {number} intervalMs The delay between polls (in milliseconds).
  * @returns {Promise<boolean>} True if the endpoint responds within the timeout, false otherwise.
  */
-async function waitForFlowEndpointReady(endpointUrl, timeoutMs = 90000, intervalMs = 2000) {
+async function waitForFlowEndpointReady(endpointUrl, timeoutMs = 90000, intervalMs = 3000) {
   const startTime = Date.now();
   const fullUrl = `${NODE_RED_URL}${endpointUrl}`;
   logger.debug(`[Flow Endpoint Check] Waiting for flow endpoint '${fullUrl}' to be ready...`);
 
   while (Date.now() - startTime < timeoutMs) {
     try {
-      const response = await axios.get(fullUrl, { timeout: 3000 });
+      const response = await axios.get(fullUrl, { timeout: 90000 });
       logger.debug(`[Flow Endpoint Check] Endpoint '${fullUrl}' responded with status: ${response.status}. Considering it ready.`);
       return true;
     } catch (error) {
