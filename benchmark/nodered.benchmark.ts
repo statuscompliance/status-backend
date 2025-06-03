@@ -12,8 +12,16 @@ describe('Node-Red custom flows Benchmark', () => {
     expect(ready).toBe(true);
     logger.info('Node-RED is ready for benchmarks.');
   });
+  
+  beforeAll(async () => {
+    logger.info('Starting Node-RED custom flows benchmark...');
+    const ready = await connectNodeRed();
+    expect(ready).toBe(true);
+    logger.info('Node-RED is ready for benchmarks.');
+  });
 
   beforeEach(async () => {
+    await connectNodeRed();
     await connectNodeRed();
   });
 
@@ -31,6 +39,7 @@ describe('Node-Red custom flows Benchmark', () => {
       await executeEndpointFlow(endpoint, msg);
 
     } catch (error) {
+      logger.error('Unexpected error occurred while executing the flow: ', error);
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
@@ -58,7 +67,10 @@ describe('Node-Red custom flows Benchmark', () => {
 
       await executeEndpointFlow(endpoint, payload);
 
+      await executeEndpointFlow(endpoint, payload);
+
     } catch (error) {
+      logger.error('Unexpected error occurred while executing the flow: ', error);
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
@@ -86,7 +98,10 @@ describe('Node-Red custom flows Benchmark', () => {
 
       await executeEndpointFlow(endpoint, payload);
 
+      await executeEndpointFlow(endpoint, payload);
+
     } catch (error) {
+      logger.error('Unexpected error occurred while executing the flow: ', error);
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
