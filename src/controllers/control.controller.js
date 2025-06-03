@@ -250,7 +250,7 @@ export async function getPanelsByControlId(req, res) {
     });
     // Map to enriched DTOs
     const panelsDTO = await mapPanelsToDTO(panels);
-   
+
     res.status(200).json(panelsDTO);
   } catch (error) {
     const message = 'Failed to get panels from control, error in Grafana API';

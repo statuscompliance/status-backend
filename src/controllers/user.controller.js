@@ -105,17 +105,23 @@ export async function signIn(req, res) {
         httpOnly: true,
         path: '/',
         maxAge: token_expiration * 1000,
+        sameSite: 'none',
+        secure: false,
       });
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         path: '/',
         maxAge: refreshToken_expiration * 1000,
+        sameSite: 'none',
+        secure: false,
       });
       if (nodeRedToken !== '') {
         res.cookie('nodeRedToken', nodeRedToken, {
           httpOnly: true,
           path: '/',
           maxAge: refreshToken_expiration * 1000,
+          sameSite: 'none',
+          secure: false,
         });
       }
 
@@ -265,6 +271,8 @@ export async function refreshToken(req, res) {
         httpOnly: true,
         path: '/',
         maxAge: token_expiration * 1000,
+        sameSite: 'none',
+        secure: false,
       });
 
       return res.status(200).json({

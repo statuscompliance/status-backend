@@ -1,10 +1,9 @@
 import { models } from '../../src/models/models.js';
+import logger from '../../src/config/logger.js';
 
 async function populateScopes() {
   try {
-    console.log('__________________________________');
-    console.log('Starting scope population...');
-    console.log('__________________________________');
+    logger.info('[DATA INITIALIZATION] Starting system scope definitions process');
 
     // Data for scopes
     const scopes = [
@@ -45,15 +44,15 @@ async function populateScopes() {
       });
 
       if (created) {
-        console.log(`Scope ${scopeData.name} successfully created.`);
+        logger.info(`[SCOPE CREATED] Scope "${scopeData.name}" successfully initialized in the system`);
       } else {
-        console.log(`Scope ${scopeData.name} already exists.`);
+        logger.info(`[SCOPE SKIPPED] Scope "${scopeData.name}" already exists in the system`);
       }
     }
 
-    console.log('Scope population completed.');
+    logger.info('[DATA INITIALIZATION] System scope definitions process completed successfully');
   } catch (error) {
-    console.error('Error during scope population:', error);
+    logger.error('[DATA INITIALIZATION ERROR] Failed to configure system scopes', { error, stack: error.stack });
   }
 }
 

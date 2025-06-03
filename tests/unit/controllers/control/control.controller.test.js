@@ -256,11 +256,12 @@ describe('Control Controller', () => {
         message: 'Cannot change status from finalized to draft',
       });
     });
+
     it('should return 400 if a finalized control is updated with invalid params (no status change)', async () => {
       const finalizedControl = createControlExample({
         id: controlId,
         status: 'finalized',
-        params: { }, // Valid initial params
+        params: { some_invalid_param: 'value' }, // invalid params
       });
       mockController(models.Control, 'findByPk', finalizedControl);
 
@@ -279,7 +280,7 @@ describe('Control Controller', () => {
       );
 
       expect(utils.checkRequiredProperties).toHaveBeenCalledWith(
-        {},
+        {some_invalid_param: 'value' },
         ['endpoint', 'threshold']
       );
       expect(res.status).toHaveBeenCalledWith(400);
