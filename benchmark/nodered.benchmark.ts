@@ -1,109 +1,100 @@
-import { describe, bench, beforeEach, afterEach } from 'vitest';
-import { connectNodeRed, executeEndpointFlow, updateFlow, deleteFlow } from './utils/nodeRedUtils';
-import { simpleFLow, sampleStatusFlow1, sampleStatusFlow2, endpoint } from './flows/sampleFlows';
+import { describe, bench, beforeEach, beforeAll, expect } from 'vitest';
+import { deleteFlow, executeEndpointFlow, connectNodeRed, createFlow } from './utils/nodeRedUtils.js';
+import { simpleFLow, sampleStatusFlow1, sampleStatusFlow2, endpoint } from './flows/sampleFlows.js';
+import logger from '../src/config/logger.js';
 
-async function setupNodeRedFlow(endpoint: string, flowId: string, nodes: any) {
-  console.log('--- Starting Node Red Benchmarks ---');
-
-  const isConnected = await connectNodeRed();
-  if (!isConnected) {
-    throw new Error('Failed to connect to Node-RED.');
-  }
-  console.log('Node-RED connection established.');
-
-  const flowCreated = await updateFlow(flowId, nodes);
-  if (!flowCreated) {
-    throw new Error(`Failed to create endpoint flow at ${endpoint}.`);
-  }
-  console.log(`Flow with ID: ${flowId} created successfully at ${endpoint}.`);
-}
-
-async function tearDownNodeRedFlow(flowId: string, receivedMessage: any) {
-  console.log('--- Ending Benchmarking ---');
-  if (flowId) {
-    const flowDeleted = await deleteFlow(flowId);
-    if (flowDeleted) {
-      console.log(`Deleted flow with ID: ${flowId}.`);
-    } else {
-      console.warn(`Could not delete flow with ID: ${flowId}.`);
-    }
-  }
-  console.log('Closing Node-RED connection...');
-
-  console.log('Node-RED connection closed (simulated logic).');
-
-  if (receivedMessage) {
-    console.log('Received message during benchmark:', receivedMessage);
-  } else {
-    console.log('No message received during benchmark.');
-  }
-}
 
 describe('Node-Red custom flows Benchmark', () => {
-  let receivedMessage: any = null;
-  let currentFlow: any = null;
+  
+  beforeAll(async () => {
+    logger.info('Starting Node-RED custom flows benchmark...');
+    const ready = await connectNodeRed();
+    expect(ready).toBe(true);
+    logger.info('Node-RED is ready for benchmarks.');
+  });
 
   beforeEach(async () => {
-    await setupNodeRedFlow(endpoint, currentFlow.id, currentFlow.nodes);
+    await connectNodeRed();
   });
 
-  afterEach(async () => {
-    tearDownNodeRedFlow(currentFlow.id, receivedMessage);
-  });
+  bench('Simple Default Flow Benchmark', async () => {
 
-
-  bench('Sample Default Flow Benchmark', async () => {
-    currentFlow = simpleFLow;
-    const msg = { payload: 'Sample Message for Benchmarks', timestamp: Date.now() };
     try {
-      receivedMessage = await executeEndpointFlow(endpoint, msg);
+      logger.debug(`[Benchmark] Deploying ${simpleFLow.id}`);
+      const deployed = await createFlow(simpleFLow.flow);
+      if (!deployed) {
+        throw new Error(`Failed to deploy flow for benchmark: ${simpleFLow.id}`);
+      }
+
+      const msg = { payload: 'Sample Message for Benchmarks', timestamp: Date.now() };
+
+      await executeEndpointFlow(endpoint, msg);
+
     } catch (error) {
-      console.error('Unexpected error ocurred while executing the flow: ', error);
+      logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
+    } finally {
+      logger.debug(`[Benchmark] Deleting ${simpleFLow.id}`);
+      const deleted = await deleteFlow(simpleFLow.id);
+      if (!deleted) {
+        logger.warn(`Failed to delete flow after benchmark: ${simpleFLow.id}. Manual cleanup might be needed.`);
+      }
     }
   });
 
   bench('Sample Status Flow1 Benchmark', async () => {
-    currentFlow = sampleStatusFlow1;
-    const payload = [
-      {
-        message: 'Hello, this is a test message.',
-        timestamp: new Date().toISOString()
-      },
-      {
-        message: 'Another test message.',
-        timestamp: new Date().toISOString()
-      }
-    ];
 
     try {
-      receivedMessage = await executeEndpointFlow(endpoint, payload);
+      logger.debug(`[Benchmark] Deploying ${sampleStatusFlow1.id}`);
+      const deployed = await createFlow(sampleStatusFlow1.flow);
+      if (!deployed) {
+        throw new Error(`Failed to deploy flow for benchmark: ${sampleStatusFlow1.id}`);
+      }
+
+      const payload = [
+        { message: 'Hello, this is a test message.', timestamp: new Date().toISOString() },
+        { message: 'Another test message.', timestamp: new Date().toISOString() }
+      ];
+
+      await executeEndpointFlow(endpoint, payload);
+
     } catch (error) {
-      console.error('Unexpected error ocurred while executing the flow: ', error);
+      logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
+    } finally {
+      logger.debug(`[Benchmark] Deleting ${sampleStatusFlow1.id}`);
+      const deleted = await deleteFlow(sampleStatusFlow1.id);
+      if (!deleted) {
+        logger.warn(`Failed to delete flow after benchmark: ${sampleStatusFlow1.id}. Manual cleanup might be needed.`);
+      }
     }
   });
 
   bench('Sample Status Flow2 Benchmark', async () => {
-    currentFlow = sampleStatusFlow2;
-    const payload = [
-      {
-        message: 'Hello, this is a test message.',
-        timestamp: new Date().toISOString(),
-        status: 'success'
-      },
-      {
-        message: 'Another test message.',
-        timestamp: new Date().toISOString(),
-        status: 'error'
-      }
-    ];
 
     try {
-      receivedMessage = await executeEndpointFlow(endpoint, payload);
+      logger.debug(`[Benchmark] Deploying ${sampleStatusFlow2.id}`);
+      const deployed = await createFlow(sampleStatusFlow2.flow);
+      if (!deployed) {
+        throw new Error(`Failed to deploy flow for benchmark: ${sampleStatusFlow2.id}`);
+      }
+
+      const payload = [
+        { message: 'Hello, this is a test message.', timestamp: new Date().toISOString(), status: 'success' },
+        { message: 'Another test message.', timestamp: new Date().toISOString(), status: 'error' }
+      ];
+
+      await executeEndpointFlow(endpoint, payload);
+
     } catch (error) {
-      console.error('Unexpected error ocurred while executing the flow: ', error);
+      logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
+    } finally {
+      logger.debug(`[Benchmark] Deleting ${sampleStatusFlow2.id}`);
+      const deleted = await deleteFlow(sampleStatusFlow2.id);
+      if (!deleted) {
+        logger.warn(`Failed to delete flow after benchmark: ${sampleStatusFlow2.id}. Manual cleanup might be needed.`);
+      }
     }
   });
 
