@@ -28,7 +28,6 @@ describe('Node-Red custom flows Benchmark', () => {
 
     } catch (error) {
       logger.error('Unexpected error occurred while executing the flow: ', error);
-      logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
       logger.debug(`[Benchmark] Deleting ${simpleFLow.flow[0].id}`);
@@ -55,10 +54,7 @@ describe('Node-Red custom flows Benchmark', () => {
 
       await executeEndpointFlow(endpoint, payload);
 
-      await executeEndpointFlow(endpoint, payload);
-
     } catch (error) {
-      logger.error('Unexpected error occurred while executing the flow: ', error);
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
@@ -86,10 +82,7 @@ describe('Node-Red custom flows Benchmark', () => {
 
       await executeEndpointFlow(endpoint, payload);
 
-      await executeEndpointFlow(endpoint, payload);
-
     } catch (error) {
-      logger.error('Unexpected error occurred while executing the flow: ', error);
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
