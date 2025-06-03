@@ -1,20 +1,27 @@
 /**
- * Builds a WHERE clause for Sequelize queries with validated status filters.
- * @param {Object} query - The query params object.
- * @param {Array<string>} validStatuses - Allowed values for the status field.
+ * Constructs a Sequelize WHERE clause from query parameters.
+ * Validates parameters based on allowed values defined in a dictionary.
+ *
+ * @param {Object} query - Query params (e.g., from req.query).
+ * @param {Object} validParamsMap - Dictionary with keys as param names and values as arrays of valid options.
  * @returns {Object} Sequelize-compatible where clause.
+ * @throws {Error} If any param has an invalid value.
  */
-export const buildWhereClause = (query, validStatuses = ['finalized', 'draft']) => {
-  const { status, ...otherFilters } = query;
-  const whereClause = { ...otherFilters };
+export const buildWhereClause = (query, validParamsMap = {}) => {
+  const whereClause = {};
 
-  if (status) {
-    if (validStatuses.includes(status)) {
-      whereClause.status = status;
+  for (const [key, value] of Object.entries(query)) {
+    if (validParamsMap[key]) {
+      if (validParamsMap[key].includes(value)) {
+        whereClause[key] = value;
+      } else {
+        throw new Error(
+          `Invalid value for "${key}": "${value}". Allowed values are ${validParamsMap[key].join(' or ')}.`
+        );
+      }
     } else {
-      throw new Error(
-        `Invalid status filter: ${status}. Allowed values are ${validStatuses.join(' or ')}.`
-      );
+      // Include param as-is if not restricted
+      whereClause[key] = value;
     }
   }
 

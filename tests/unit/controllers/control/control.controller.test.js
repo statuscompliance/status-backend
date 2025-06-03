@@ -43,10 +43,12 @@ describe('Control Controller', () => {
     });
 
     it('should return 400 for invalid status filter', async () => {
-      await control.getControls({ query: { status: 'bad' } }, res);
+      const statusInvalid = 'bad';
+      await control.getControls({ query: { status: statusInvalid } }, res);
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Invalid status filter: bad. Allowed values are finalized or draft.'
+        error: `Invalid value for "status": "${statusInvalid}". Allowed values are draft or finalized.`,
+
       });
     });
 
@@ -144,6 +146,49 @@ describe('Control Controller', () => {
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(newControl);
     });
+
+    it('should return 201 when only startDate is valid', async () => {
+      const newControl = { id: 'newControlId' };
+      const controlWithStartDate = {
+        ...bodyControl,
+        startDate: '2023-01-01T00:00:00Z',
+        endDate: undefined, // Ensure endDate is not present
+      };
+      mockController(models.Control, 'create', newControl);
+
+      await control.createControl({ body: controlWithStartDate }, res);
+
+      expect(models.Control.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDate: new Date('2023-01-01T00:00:00Z'),
+          endDate: null,
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(newControl);
+    });
+
+    it('should return 201 when only endDate is valid', async () => {
+      const newControl = { id: 'newControlId' };
+      const controlWithEndDate = {
+        ...bodyControl,
+        startDate: undefined, // Ensure startDate is not present
+        endDate: '2023-12-31T23:59:59Z',
+      };
+      mockController(models.Control, 'create', newControl);
+
+      await control.createControl({ body: controlWithEndDate }, res);
+
+      expect(models.Control.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDate: null,
+          endDate: new Date('2023-12-31T23:59:59Z'),
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(newControl);
+    });
+
     it('should return 400 for invalid parameters', async () => {
       utils.checkRequiredProperties.mockReturnValueOnce({
         validation: false,
@@ -187,6 +232,12 @@ describe('Control Controller', () => {
       id: controlId,
       status: 'draft',
     });
+    const finalizedControl = createControlExample({
+      id: controlId,
+      status: 'finalized',
+      params: { endpoint: 'valid', threshold: 10 }, // Valid initial params
+    });
+
     it('should return 404 if control to update does not exist', async () => {
       mockController(models.Control, 'findByPk', null);
       await control.updateControl({ params: { id: invalidId }, body: {} }, res);
@@ -194,11 +245,7 @@ describe('Control Controller', () => {
     });
 
     it('should return 400 if attempting to change status from finalized to draft', async () => {
-      const finalized = createControlExample({
-        id: 'any',
-        status: 'finalized',
-      });
-      mockController(models.Control, 'findByPk', finalized);
+      mockController(models.Control, 'findByPk', finalizedControl);
 
       await control.updateControl(
         { params: { id: controlId }, body: { status: 'draft' } },
@@ -209,12 +256,44 @@ describe('Control Controller', () => {
         message: 'Cannot change status from finalized to draft',
       });
     });
+    it('should return 400 if a finalized control is updated with invalid params (no status change)', async () => {
+      const finalizedControl = createControlExample({
+        id: controlId,
+        status: 'finalized',
+        params: { }, // Valid initial params
+      });
+      mockController(models.Control, 'findByPk', finalizedControl);
+
+      utils.checkRequiredProperties.mockReturnValueOnce({
+        validation: false,
+        textError: 'missing endpoint',
+      });
+
+      await control.updateControl(
+        { params: { id: controlId },
+          body: {
+            name: 'Updated Name',
+          },
+        },
+        res
+      );
+
+      expect(utils.checkRequiredProperties).toHaveBeenCalledWith(
+        {},
+        ['endpoint', 'threshold']
+      );
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Invalid parameters for finalized control: missing endpoint',
+      });
+    });
 
     it('should return 200 and the updated control on successful update', async () => {
       const updatedControl = {
         ...currentControl,
         name: 'Updated Control',
         description: 'New Description',
+        params: { },
       };
 
       vi.spyOn(models.Control, 'findByPk')
@@ -230,6 +309,27 @@ describe('Control Controller', () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(updatedControl);
+    });
+
+    it('should return 500 for internal server error during update', async () => {
+
+      mockController(models.Control, 'findByPk', controlId);
+
+      // Mock the update method to throw an error, simulating a database failure
+      vi.spyOn(models.Control, 'update').mockImplementation(() => {
+        throw new Error('Database connection lost');
+      });
+
+      await control.updateControl(
+        { params: { id: controlId }, body: { name: 'New Name' } },
+        res
+      );
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Failed to update control',
+        error: 'Database connection lost',
+      });
     });
   });
 
@@ -283,6 +383,28 @@ describe('Control Controller', () => {
         res
       );
       expect(res.status).toHaveBeenCalledWith(404);
+    });
+    it('should return 500 for internal server error during panel addition', async () => {
+      mockController(models.Control, 'findByPk', { id: controlId });
+
+      // Mock models.Panel.create to throw an error, simulating a database failure
+      vi.spyOn(models.Panel, 'create').mockImplementation(() => {
+        throw new Error('Database write failed');
+      });
+
+      await control.addPanelToControl(
+        {
+          params: { id: controlId, panelId: panelId },
+          body: { dashboardUid: 'dashboardUid' },
+        },
+        res
+      );
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Failed to panel to control',
+        error: 'Database write failed',
+      });
     });
   });
 
@@ -365,7 +487,7 @@ describe('Control Controller', () => {
   });
 
   describe('createDraftControl', () => {
-    const controlCatalog = createControlExample({ catalogId: 'catalog-1' });
+    const controlCatalog = createControlExample({ catalogId: 'catalog-1', status: 'draft' });
 
     it('should return 400 if required fields are missing', async () => {
       await control.createDraftControl({ body: {} }, res);
@@ -397,17 +519,89 @@ describe('Control Controller', () => {
 
       expect(res.status).toHaveBeenCalledWith(400);
     });
-    it('should return 201 and the created draft control', async () => {
+    it('should return 201 and the created draft control when description is not provided', async () => {
       vi.spyOn(models.Catalog, 'findByPk').mockResolvedValueOnce({
         status: 'draft',
       });
-      const controlDraft = { catalogId: 'catalog-1' };
-      mockController(models.Control, 'create', controlDraft);
+      const controlDataWithoutDescription = {
+        ...controlCatalog,
+        description: undefined, // Explicitly set to undefined
+      };
+      const createdControlResult = {
+        ...controlDataWithoutDescription,
+        description: '', // Expected default value control.controller.js
+      };
+      mockController(models.Control, 'create', createdControlResult);
+
+      await control.createDraftControl({ body: controlDataWithoutDescription }, res);
+
+      expect(models.Control.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: '',
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(createdControlResult);
+    });
+
+    it('should set period to MONTHLY by default if not provided', async () => {
+      const controlBodyWithoutPeriod = {
+        name: 'Control without period',
+        catalogId: 'catalog-1',
+        description: 'Some description',
+        params: { }, // Provide valid params to pass initial validation
+      };
+
+      vi.spyOn(models.Catalog, 'findByPk').mockResolvedValueOnce({
+        id: 'catalog-1',
+        status: 'draft',
+      });
+
+      // Ensure checkRequiredProperties passes for this scenario
+      vi.spyOn(utils, 'checkRequiredProperties').mockReturnValueOnce({
+        validation: true,
+        textError: '',
+      });
+
+      const createdControl = {
+        ...controlCatalog,
+        period: null, // default value MONTHLY
+      };
+
+      mockController(models.Control, 'create', createdControl);
+
+      await control.createDraftControl({ body: controlBodyWithoutPeriod }, res);
+
+      // Verify that models.Control.create was called with 'MONTHLY' for period
+      expect(models.Control.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          period: 'MONTHLY',
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(createdControl);
+    });
+
+    it('should return 500 for internal server error during draft control creation', async () => {
+
+      // Ensure catalog exists and is draft
+      vi.spyOn(models.Catalog, 'findByPk').mockResolvedValueOnce({
+        id: 'catalog-1',
+        status: 'draft',
+      });
+
+      // Mock the control creation to throw an error
+      vi.spyOn(models.Control, 'create').mockImplementation(() => {
+        throw new Error('Database insert failed for draft control');
+      });
 
       await control.createDraftControl({ body: controlCatalog }, res);
 
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith(controlDraft);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Failed to create draft control',
+        error: 'Database insert failed for draft control',
+      });
     });
   });
 
@@ -419,6 +613,26 @@ describe('Control Controller', () => {
       await control.finalizeControl({ params: { id: invalidId } }, res);
       expect(res.status).toHaveBeenCalledWith(404);
     });
+
+    it('should return 404 if associated catalog does not exist during finalization', async () => {
+      const draftControlWithMissingCatalog = {
+        ...controlCatalog,
+        catalogId: 'nonExistentCatalogId', // Point to a missing catalog
+        status: 'draft',
+      };
+      mockController(models.Control, 'findByPk', draftControlWithMissingCatalog);
+
+      vi.spyOn(models.Catalog, 'findByPk').mockResolvedValueOnce(null);
+
+      await control.finalizeControl({ params: { id: controlId } }, res);
+
+      expect(models.Catalog.findByPk).toHaveBeenCalledWith('nonExistentCatalogId');
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Associated catalog with ID nonExistentCatalogId not found.',
+      });
+    });
+
     it('should return 400 if control is not in draft status', async () => {
       mockController(models.Control, 'findByPk', {
         ...controlCatalog,
@@ -468,6 +682,27 @@ describe('Control Controller', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(updated[1][0]);
     });
+    it('should return 500 for internal server error during control finalization', async () => {
+      const draftControl = { ...controlCatalog, status: 'draft' };
+      mockController(models.Control, 'findByPk', draftControl); // Control found and is draft
+
+      vi.spyOn(models.Catalog, 'findByPk').mockResolvedValueOnce({
+        status: 'finalized', // Catalog is finalized
+      });
+
+      // Mock the update method to throw an error, simulating a database failure
+      vi.spyOn(models.Control, 'update').mockImplementation(() => {
+        throw new Error('Database connection lost during finalization');
+      });
+
+      await control.finalizeControl({ params: { id: controlId } }, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Failed to finalize control',
+        error: 'Database connection lost during finalization',
+      });
+    });
   });
 
   describe('finalizeControlsByCatalogId', () => {
@@ -499,6 +734,20 @@ describe('Control Controller', () => {
       await expect(
         control.finalizeControlsByCatalogId('catalog-1')
       ).rejects.toThrow('Internal error');
+    });
+  });
+  describe('getModelById Helper', async () => {
+    it('should use default resource name if not provided and return 404', async () => {
+      mockController(models.Control, 'findByPk', null); // Mock findByPk to return null (not found)
+      const mockRes = createRes(); // Use your helper to create a mock res
+
+      // Call getModelById directly, omitting the 'name' option
+      const result = await control.getModelById(mockRes, models.Control, 'nonExistentId');
+
+      expect(result).toBeNull();
+      expect(mockRes.status).toHaveBeenCalledWith(404);
+      // Crucially, expect the message to use the default 'Resource' name
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Resource with ID nonExistentId not found.' });
     });
   });
 });

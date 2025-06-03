@@ -4,6 +4,10 @@ import { mapPanelsToDTO } from '../utils/panelUtils.js';
 import { buildWhereClause } from '../utils/buildWhereClause.js';
 import { handleControllerError } from '../utils/errorHandler.js';
 
+const validFilters = {
+  status: ['draft', 'finalized'],
+};
+
 // Function to check if a model instance exists by ID
 export async function getModelById(res, model, id, { name = 'Resource' } = {}) {
   const entity = await model.findByPk(id);
@@ -16,11 +20,11 @@ export async function getModelById(res, model, id, { name = 'Resource' } = {}) {
 
 export const getControls = async (req, res) => {
   try {
-    const whereClause = buildWhereClause(req.query);
+    const whereClause = buildWhereClause(req.query, validFilters);
     const controls = await models.Control.findAll({ where: whereClause });
     res.status(200).json(controls);
   } catch (error) {
-    if (error.message.startsWith('Invalid status filter')) {
+    if (error.message.startsWith('Invalid value for')) {
       return res.status(400).json({ error: error.message });
     }
     handleControllerError(res, error, 'Failed to retrieve controls');
@@ -46,12 +50,12 @@ export const getCatalogControls = async (req, res) => {
   try {
     const { catalogId } = req.params;
     const query = { ...req.query, catalogId };
-    const whereClause = buildWhereClause(query);
+    const whereClause = buildWhereClause(query, validFilters);
     const controls = await models.Control.findAll({ where: whereClause });
 
     res.status(200).json(controls);
   } catch (error) {
-    if (error.message.startsWith('Invalid status filter')) {
+    if (error.message.startsWith('Invalid value for')) {
       return res.status(400).json({ error: error.message });
     }
     handleControllerError(res, error, 'Failed to retrieve catalog controls');
