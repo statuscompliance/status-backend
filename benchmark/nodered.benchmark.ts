@@ -14,7 +14,6 @@ describe('Node-Red custom flows Benchmark', () => {
   });
 
   bench('Simple Default Flow Benchmark', async () => {
-
     try {
       logger.debug(`[Benchmark] Deploying ${simpleFLow.flow[0].id}`);
       const deployed = await createFlow(simpleFLow.flow);
@@ -28,7 +27,6 @@ describe('Node-Red custom flows Benchmark', () => {
 
     } catch (error) {
       logger.error('Unexpected error occurred while executing the flow: ', error);
-      logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
       logger.debug(`[Benchmark] Deleting ${simpleFLow.flow[0].id}`);
@@ -40,7 +38,6 @@ describe('Node-Red custom flows Benchmark', () => {
   });
 
   bench('Sample Status Flow1 Benchmark', async () => {
-
     try {
       logger.debug(`[Benchmark] Deploying ${sampleStatusFlow1.flow[0].id}`);
       const deployed = await createFlow(sampleStatusFlow1.flow);
@@ -55,10 +52,7 @@ describe('Node-Red custom flows Benchmark', () => {
 
       await executeEndpointFlow(endpoint, payload);
 
-      await executeEndpointFlow(endpoint, payload);
-
     } catch (error) {
-      logger.error('Unexpected error occurred while executing the flow: ', error);
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
@@ -71,7 +65,6 @@ describe('Node-Red custom flows Benchmark', () => {
   });
 
   bench('Sample Status Flow2 Benchmark', async () => {
-
     try {
       logger.debug(`[Benchmark] Deploying ${sampleStatusFlow2.flow[0].id}`);
       const deployed = await createFlow(sampleStatusFlow2.flow);
@@ -86,10 +79,7 @@ describe('Node-Red custom flows Benchmark', () => {
 
       await executeEndpointFlow(endpoint, payload);
 
-      await executeEndpointFlow(endpoint, payload);
-
     } catch (error) {
-      logger.error('Unexpected error occurred while executing the flow: ', error);
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
@@ -100,5 +90,4 @@ describe('Node-Red custom flows Benchmark', () => {
       }
     }
   });
-
 });

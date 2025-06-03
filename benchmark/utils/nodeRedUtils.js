@@ -55,7 +55,7 @@ async function authenticateNodeRed() {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
-        timeout: 5000
+        timeout: 10000
       });
 
       if (tokenResponse.data && tokenResponse.data.access_token) {
