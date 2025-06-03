@@ -1,0 +1,12 @@
+services:
+  node-red-test:
+    image: statuscompliance/node-red-status:latest
+    container_name: node-red-benchmark
+    ports:
+      - "1880:1880"
+    environment:
+      - NODE_RED_USERNAME=admin
+      - NODE_RED_PASSWORD=admin
+      - NODE_RED_ENABLE_PROJECTS=false
+      - TZ=Europe/Madrid
+    restart: "no"
