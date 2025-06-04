@@ -101,9 +101,48 @@ export async function signIn(req, res) {
         { refresh_token: refreshToken },
         { where: { username } }
       );
+      
       let nodeRedToken = '';
       if (user.authority === 'DEVELOPER' || user.authority === 'ADMIN') {
-        nodeRedToken = await getNodeRedToken(username, password);
+        try {
+          nodeRedToken = await getNodeRedToken(username, password);
+        } catch (nodeRedError) {
+          // Si el error es de autenticación (403), lo manejamos específicamente
+          if (nodeRedError.statusCode === 403) {
+            logger.warn(`Node-RED authentication failed for user: ${username}`, {
+              userId: user.id,
+              statusCode: 403
+            });
+            
+            // No interrumpimos el flujo, simplemente no enviamos token de Node-RED
+            res.cookie('accessToken', accessToken, {
+              httpOnly: true,
+              path: '/',
+              maxAge: token_expiration * 1000,
+              sameSite: 'none',
+              secure: false,
+            });
+            res.cookie('refreshToken', refreshToken, {
+              httpOnly: true,
+              path: '/',
+              maxAge: refreshToken_expiration * 1000,
+              sameSite: 'none',
+              secure: false,
+            });
+            
+            return res.status(200).json({
+              username: user.username,
+              email: user.email,
+              authority: user.authority,
+              accessToken: accessToken,
+              refreshToken: refreshToken,
+              nodeRedAccess: false,
+              message: 'Logged in successfully, but Node-RED access was denied. Check Node-RED credentials.'
+            });
+          }
+          // Re-lanzamos cualquier otro tipo de error para que sea manejado por el catch externo
+          throw nodeRedError;
+        }
       }
 
       res.cookie('accessToken', accessToken, {
@@ -137,10 +176,24 @@ export async function signIn(req, res) {
         accessToken: accessToken,
         refreshToken: refreshToken,
         nodeRedToken: nodeRedToken,
+        nodeRedAccess: nodeRedToken !== '',
       });
     }
   } catch (error) {
-    return handleControllerError(res, error, 'Internal server error');
+    // Check if the error has a specific status code
+    const statusCode = error.statusCode || 500;
+    const errorMessage = error.message || 'Internal server error';
+    
+    logger.error(`Error during sign in: ${errorMessage}`, {
+      userId: req.body.username || 'unknown',
+      statusCode,
+      error
+    });
+    
+    return res.status(statusCode).json({ 
+      message: errorMessage,
+      details: statusCode === 403 ? 'Node-RED authentication failed' : undefined
+    });
   }
 }
 

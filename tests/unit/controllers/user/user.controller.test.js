@@ -389,14 +389,11 @@ describe('User Controller Tests', () => {
       
       const req = createSignInReq();
       const res = createRes();
-
+      
       await userController.signIn(req, res);
 
-      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
-        res, 
-        error, 
-        'Internal server error'
-      );
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Database error' });
     });
 
     it('should call getNodeRedToken and include it in the response for DEVELOPER', async () => {
@@ -424,6 +421,97 @@ describe('User Controller Tests', () => {
           nodeRedToken: { accessToken: 'mockNodeRedToken' },
         })
       );
+    });
+
+    it('should handle Node-RED authentication failure with 403 status code', async () => {
+      const developerUser = {
+        ...DEFAULT_USER,
+        id: 123,
+        username: 'developerUser',
+        authority: 'DEVELOPER',
+      };
+      
+      mockSuccessfulAuth(developerUser);
+      
+      // Simulate Node-RED 403 authentication error
+      const nodeRedError = new Error('Node-RED authentication failed');
+      nodeRedError.statusCode = 403;
+      
+      vi.spyOn(nodeRedTokenModule, 'getNodeRedToken')
+        .mockRejectedValue(nodeRedError);
+      
+      const req = createSignInReq('developerUser', 'developerPassword');
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      // Verify token cookies are set despite Node-RED failure
+      expect(res.cookie).toHaveBeenCalledWith(
+        'accessToken',
+        MOCK_TOKEN,
+        expect.objectContaining({
+          httpOnly: true,
+          path: '/',
+        })
+      );
+      
+      expect(res.cookie).toHaveBeenCalledWith(
+        'refreshToken',
+        MOCK_TOKEN,
+        expect.objectContaining({
+          httpOnly: true,
+          path: '/',
+        })
+      );
+      
+      // Verify Node-RED token is not sent
+      expect(res.cookie).not.toHaveBeenCalledWith(
+        'nodeRedToken',
+        expect.any(String),
+        expect.any(Object)
+      );
+      
+      // Verify response is successful but includes Node-RED access denied message
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        username: developerUser.username,
+        email: developerUser.email,
+        authority: developerUser.authority,
+        accessToken: MOCK_TOKEN,
+        refreshToken: MOCK_TOKEN,
+        nodeRedAccess: false,
+        message: 'Logged in successfully, but Node-RED access was denied. Check Node-RED credentials.'
+      });
+    });
+
+    it('should re-throw non-403 errors from Node-RED authentication', async () => {
+      const developerUser = {
+        ...DEFAULT_USER,
+        id: 123,
+        username: 'developerUser',
+        authority: 'DEVELOPER',
+      };
+      
+      mockSuccessfulAuth(developerUser);
+      
+      // Simulate Node-RED general error (non-403)
+      const nodeRedError = new Error('Node-RED general error');
+      nodeRedError.statusCode = 500;
+      
+      vi.spyOn(nodeRedTokenModule, 'getNodeRedToken')
+        .mockRejectedValue(nodeRedError);
+      
+      const req = createSignInReq('developerUser', 'developerPassword');
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      // Verify error is handled by the outer catch block
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Node-RED general error',
+        details: undefined
+      });
     });
   });
 
