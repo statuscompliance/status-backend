@@ -4,6 +4,7 @@ import { models } from '../../../../src/models/models.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import * as nodeRedTokenModule from '../../../../src/utils/nodeRedToken.js';
+import * as errorHandler from '../../../../src/utils/errorHandler.js';
 import { 
   DEFAULT_USER, 
   adminUser,
@@ -64,6 +65,9 @@ describe('User Controller Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(errorHandler, 'handleControllerError').mockImplementation((res, error, message) => {
+      return res.status(500).json({ message: message || 'Internal server error' });
+    });
   });
 
   // Test getUsers
@@ -82,15 +86,19 @@ describe('User Controller Tests', () => {
     });
 
     it('should handle errors gracefully in getUsers', async () => {
-      vi.spyOn(models.User, 'findAll').mockRejectedValueOnce(new Error('Database error'));
+      const error = new Error('Database error');
+      vi.spyOn(models.User, 'findAll').mockRejectedValueOnce(error);
       
       const req = {};
       const res = createRes();
 
       await userController.getUsers(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error' });
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res, 
+        error,
+        'Failed to retrieve users'
+      );
     });
   });
 
@@ -182,17 +190,21 @@ describe('User Controller Tests', () => {
       });
     });
 
-    it('should return 500 if there is a server error during user creation', async () => {
+    it('should handle server error during user creation', async () => {
       setupUserMocks();
-      vi.spyOn(models.User, 'create').mockRejectedValue(new Error('DB error'));
+      const error = new Error('DB error');
+      vi.spyOn(models.User, 'create').mockRejectedValue(error);
       
       const req = createSignUpReq({ username: 'errorUser' });
       const res = createRes();
 
       await userController.signUp(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Failed to create user, error' });
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res, 
+        error,
+        'Failed to create user'
+      );
     });
 
     it('should create user with default authority USER if not provided', async () => {
@@ -372,15 +384,19 @@ describe('User Controller Tests', () => {
     });
 
     it('should handle database error during user lookup in signIn', async () => {
-      vi.spyOn(models.User, 'findOne').mockRejectedValue(new Error('Database error'));
+      const error = new Error('Database error');
+      vi.spyOn(models.User, 'findOne').mockRejectedValue(error);
       
       const req = createSignInReq();
       const res = createRes();
 
       await userController.signIn(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error' });
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res, 
+        error, 
+        'Internal server error'
+      );
     });
 
     it('should call getNodeRedToken and include it in the response for DEVELOPER', async () => {
@@ -459,7 +475,8 @@ describe('User Controller Tests', () => {
     });
 
     it('should handle database error during user lookup in signOut', async () => {
-      vi.spyOn(models.User, 'findAll').mockRejectedValue(new Error('Database error'));
+      const error = new Error('Database error');
+      vi.spyOn(models.User, 'findAll').mockRejectedValue(error);
       
       const req = { cookies: { refreshToken: 'someToken' } };
       const res = createRes();
@@ -469,14 +486,10 @@ describe('User Controller Tests', () => {
       expect(models.User.findAll).toHaveBeenCalledWith({
         where: { refresh_token: 'someToken' },
       });
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        message: 'Internal server error',
-        error: 'Database error',
-      });
-      expect(console.error).toHaveBeenCalledWith(
-        'Error in signOut:',
-        new Error('Database error')
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res,
+        error,
+        'Error during sign out process'
       );
     });
   });
@@ -513,10 +526,11 @@ describe('User Controller Tests', () => {
     });
 
     it('should handle database error during user deletion in deleteUserById', async () => {
+      const error = new Error('Database error');
       const mockUser = {
         id: 1,
         username: 'existingUser',
-        destroy: vi.fn().mockRejectedValue(new Error('Database error')),
+        destroy: vi.fn().mockRejectedValue(error),
       };
       vi.spyOn(models.User, 'findByPk').mockResolvedValue(mockUser);
       
@@ -526,11 +540,10 @@ describe('User Controller Tests', () => {
       await userController.deleteUserById(req, res);
 
       expect(mockUser.destroy).toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error' });
-      expect(console.error).toHaveBeenCalledWith(
-        'Error in deleteUserById:',
-        new Error('Database error')
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res,
+        error,
+        'Failed to delete user'
       );
     });
   });
@@ -702,8 +715,9 @@ describe('User Controller Tests', () => {
     });
 
     it('should handle internal server error during refresh', async () => {
+      const error = new Error('Unexpected error');
       vi.spyOn(jwt, 'verify').mockImplementation(() => {
-        throw new Error('Unexpected error');
+        throw error;
       });
       
       const req = { cookies: { refreshToken: 'valid-refresh-token' } };
@@ -711,8 +725,11 @@ describe('User Controller Tests', () => {
 
       await userController.refreshToken(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error' });
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res, 
+        error, 
+        'Failed to refresh access token'
+      );
     });
 
     it('should refresh token for admin and developer roles', async () => {
