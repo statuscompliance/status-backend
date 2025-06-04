@@ -10,6 +10,57 @@ const token_expiration = parseInt(process.env.JWT_EXPIRATION) || 3600;
 const refreshToken_expiration =
   parseInt(process.env.JWT_REFRESH_EXPIRATION) || 3600 * 24 * 30;
 
+// Helper function to set cookie options based on environment
+export const getCookieOptions = (maxAge) => {
+  if (process.env.NODE_ENV === 'development') {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      maxAge: maxAge * 1000 
+    };
+  } else if (process.env.NODE_ENV === 'production') {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      maxAge: maxAge * 1000, 
+      sameSite: 'none', 
+      secure: true, 
+      partitioned: true 
+    };
+  } else {
+    // Default for test or other environments
+    return { 
+      httpOnly: true, 
+      path: '/',
+      maxAge: maxAge * 1000, 
+      sameSite: 'lax' 
+    };
+  }
+};
+
+// Helper function to get cookie clear options
+export const getClearCookieOptions = () => {
+  if (process.env.NODE_ENV === 'development') {
+    return { 
+      httpOnly: true, 
+      path: '/' 
+    };
+  } else if (process.env.NODE_ENV === 'production') {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      sameSite: 'none', 
+      secure: true 
+    };
+  } else {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      sameSite: 'lax' 
+    };
+  }
+};
+
 export async function signUp(req, res) {
   const { username, authority = 'USER', password, email } = req.body;
 
@@ -107,28 +158,16 @@ export async function signIn(req, res) {
         try {
           nodeRedToken = await getNodeRedToken(username, password);
         } catch (nodeRedError) {
-          // Si el error es de autenticación (403), lo manejamos específicamente
+          // If the error is authentication-related (403), handle it specifically
           if (nodeRedError.statusCode === 403) {
             logger.warn(`Node-RED authentication failed for user: ${username}`, {
               userId: user.id,
               statusCode: 403
             });
             
-            // No interrumpimos el flujo, simplemente no enviamos token de Node-RED
-            res.cookie('accessToken', accessToken, {
-              httpOnly: true,
-              path: '/',
-              maxAge: token_expiration * 1000,
-              sameSite: 'none',
-              secure: false,
-            });
-            res.cookie('refreshToken', refreshToken, {
-              httpOnly: true,
-              path: '/',
-              maxAge: refreshToken_expiration * 1000,
-              sameSite: 'none',
-              secure: false,
-            });
+            // Do not interrupt the flow, simply do not send Node-RED token
+            res.cookie('accessToken', accessToken, getCookieOptions(token_expiration));
+            res.cookie('refreshToken', refreshToken, getCookieOptions(refreshToken_expiration));
             
             return res.status(200).json({
               username: user.username,
@@ -140,33 +179,16 @@ export async function signIn(req, res) {
               message: 'Logged in successfully, but Node-RED access was denied. Check Node-RED credentials.'
             });
           }
-          // Re-lanzamos cualquier otro tipo de error para que sea manejado por el catch externo
+          // Rethrow any other type of error to be handled by the outer catch
           throw nodeRedError;
         }
       }
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        path: '/',
-        maxAge: token_expiration * 1000,
-        sameSite: 'none',
-        secure: false,
-      });
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        path: '/',
-        maxAge: refreshToken_expiration * 1000,
-        sameSite: 'none',
-        secure: false,
-      });
-      if (nodeRedToken !== '') {
-        res.cookie('nodeRedToken', nodeRedToken, {
-          httpOnly: true,
-          path: '/',
-          maxAge: refreshToken_expiration * 1000,
-          sameSite: 'none',
-          secure: false,
-        });
+      res.cookie('accessToken', accessToken, getCookieOptions(token_expiration));
+      res.cookie('refreshToken', refreshToken, getCookieOptions(refreshToken_expiration));
+      
+      if (nodeRedToken !== '' && nodeRedToken !== null) {
+        res.cookie('nodeRedToken', nodeRedToken, getCookieOptions(refreshToken_expiration));
       }
 
       res.status(200).json({
@@ -176,7 +198,7 @@ export async function signIn(req, res) {
         accessToken: accessToken,
         refreshToken: refreshToken,
         nodeRedToken: nodeRedToken,
-        nodeRedAccess: nodeRedToken !== '',
+        nodeRedAccess: nodeRedToken !== '' && nodeRedToken !== null,
       });
     }
   } catch (error) {
@@ -210,21 +232,9 @@ export async function signOut(req, res) {
     });
 
     if (user.length === 0) {
-      res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
-      res.clearCookie('accessToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
-      res.clearCookie('nodeRedToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
+      res.clearCookie('refreshToken', getClearCookieOptions());
+      res.clearCookie('accessToken', getClearCookieOptions());
+      res.clearCookie('nodeRedToken', getClearCookieOptions());
       return res
         .status(404)
         .json({ message: 'No user found for provided refresh token' });
@@ -237,21 +247,9 @@ export async function signOut(req, res) {
       }
     );
 
-    res.clearCookie('refreshToken', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
-    res.clearCookie('accessToken', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
-    res.clearCookie('nodeRedToken', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
+    res.clearCookie('refreshToken', getClearCookieOptions());
+    res.clearCookie('accessToken', getClearCookieOptions());
+    res.clearCookie('nodeRedToken', getClearCookieOptions());
 
     return res.status(204).json({ message: 'Signed out successfully' });
   } catch (error) {
@@ -338,13 +336,7 @@ export async function refreshToken(req, res) {
         { expiresIn: '1h' }
       );
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        path: '/',
-        maxAge: token_expiration * 1000,
-        sameSite: 'none',
-        secure: false,
-      });
+      res.cookie('accessToken', accessToken, getCookieOptions(token_expiration));
 
       logger.info('Access token refreshed', {
         userId: user.id,

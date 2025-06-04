@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as userController from '../../../../src/controllers/user.controller.js';
 import { models } from '../../../../src/models/models.js';
 import jwt from 'jsonwebtoken';
@@ -14,6 +14,9 @@ import {
 // Constants for reuse
 const MOCK_TOKEN = 'mockToken';
 
+// Save original environment
+const originalEnv = process.env.NODE_ENV;
+
 // Helper to create simple mock req/res objects
 function createRes() {
   return {
@@ -22,6 +25,20 @@ function createRes() {
     cookie: vi.fn(),
     clearCookie: vi.fn(),
   };
+}
+
+// Helper function to create signin request
+function createSignInReq(username = DEFAULT_USER.username, password = 'correctPassword') {
+  return { body: { username, password } };
+}
+
+// Helper function to mock successful auth
+function mockSuccessfulAuth(user = DEFAULT_USER) {
+  setupUserMocks({ 
+    findOneValue: user, 
+    compareValue: true 
+  });
+  vi.spyOn(jwt, 'sign').mockReturnValue(MOCK_TOKEN);
 }
 
 // Helper to setup common mocks for tests
@@ -40,24 +57,64 @@ function setupUserMocks({
   return { findOne: models.User.findOne, findAll: models.User.findAll };
 }
 
-// Helper for common cookie clear expectations
+// Helper for common cookie clear expectations based on environment
 function expectCookiesCleared(res, includeNodeRed = true) {
-  expect(res.clearCookie).toHaveBeenCalledWith('refreshToken', {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-  });
-  expect(res.clearCookie).toHaveBeenCalledWith('accessToken', {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-  });
+  const cookieOptions = getClearCookieOptionsForTest();
+  
+  expect(res.clearCookie).toHaveBeenCalledWith('refreshToken', cookieOptions);
+  expect(res.clearCookie).toHaveBeenCalledWith('accessToken', cookieOptions);
   if (includeNodeRed) {
-    expect(res.clearCookie).toHaveBeenCalledWith('nodeRedToken', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
+    expect(res.clearCookie).toHaveBeenCalledWith('nodeRedToken', cookieOptions);
+  }
+}
+
+// Helper to get expected cookie options based on current NODE_ENV
+function getCookieOptionsForTest(maxAge = 3600) {
+  if (process.env.NODE_ENV === 'development') {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      maxAge: maxAge * 1000 
+    };
+  } else if (process.env.NODE_ENV === 'production') {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      maxAge: maxAge * 1000, 
+      sameSite: 'none', 
+      secure: true, 
+      partitioned: true 
+    };
+  } else {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      maxAge: maxAge * 1000, 
+      sameSite: 'lax' 
+    };
+  }
+}
+
+// Helper to get expected cookie clear options based on current NODE_ENV
+function getClearCookieOptionsForTest() {
+  if (process.env.NODE_ENV === 'development') {
+    return { 
+      httpOnly: true, 
+      path: '/' 
+    };
+  } else if (process.env.NODE_ENV === 'production') {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      sameSite: 'none', 
+      secure: true 
+    };
+  } else {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      sameSite: 'lax' 
+    };
   }
 }
 
@@ -67,6 +124,80 @@ describe('User Controller Tests', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(errorHandler, 'handleControllerError').mockImplementation((res, error, message) => {
       return res.status(500).json({ message: message || 'Internal server error' });
+    });
+    // Default to 'test' environment for most tests
+    process.env.NODE_ENV = 'test';
+  });
+
+  afterEach(() => {
+    // Restore original NODE_ENV
+    process.env.NODE_ENV = originalEnv;
+  });
+
+  // Test environment-specific cookie settings
+  describe('Cookie environment settings', () => {
+    it('should use development cookie settings when NODE_ENV is development', async () => {
+      process.env.NODE_ENV = 'development';
+      mockSuccessfulAuth();
+      
+      const req = createSignInReq();
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        'accessToken', 
+        MOCK_TOKEN, 
+        {
+          httpOnly: true,
+          path: '/',
+          maxAge: expect.any(Number)
+        }
+      );
+    });
+
+    it('should use production cookie settings when NODE_ENV is production', async () => {
+      process.env.NODE_ENV = 'production';
+      mockSuccessfulAuth();
+      
+      const req = createSignInReq();
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        'accessToken', 
+        MOCK_TOKEN, 
+        {
+          httpOnly: true,
+          path: '/',
+          maxAge: expect.any(Number),
+          sameSite: 'none',
+          secure: true,
+          partitioned: true
+        }
+      );
+    });
+
+    it('should use default cookie settings for other environments', async () => {
+      process.env.NODE_ENV = 'test';
+      mockSuccessfulAuth();
+      
+      const req = createSignInReq();
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        'accessToken', 
+        MOCK_TOKEN, 
+        {
+          httpOnly: true,
+          path: '/',
+          maxAge: expect.any(Number),
+          sameSite: 'lax'
+        }
+      );
     });
   });
 
@@ -513,6 +644,36 @@ describe('User Controller Tests', () => {
         details: undefined
       });
     });
+
+    it('should set cookies with proper options based on environment', async () => {
+      // Test different environments
+      const environments = ['development', 'production', 'test'];
+      
+      for (const env of environments) {
+        process.env.NODE_ENV = env;
+        mockSuccessfulAuth();
+        
+        const req = createSignInReq();
+        const res = createRes();
+        vi.clearAllMocks(); // Clear previous calls
+
+        await userController.signIn(req, res);
+
+        // Only verify cookie was called with accessToken and correct environment-specific options
+        const expectedOptions = getCookieOptionsForTest(3600);
+        expect(res.cookie).toHaveBeenCalledWith('accessToken', MOCK_TOKEN, expectedOptions);
+        
+        // Check refreshToken was set with some cookie options (don't check exact maxAge as it's different)
+        expect(res.cookie).toHaveBeenCalledWith(
+          'refreshToken', 
+          MOCK_TOKEN, 
+          expect.objectContaining({
+            httpOnly: true,
+            path: '/',
+          })
+        );
+      }
+    });
   });
 
   // Test signOut
@@ -562,8 +723,29 @@ describe('User Controller Tests', () => {
       expectCookiesCleared(res);
     });
 
-    it('should handle database error during user lookup in signOut', async () => {
-      const error = new Error('Database error');
+    it('should clear cookies with proper options based on environment', async () => {
+      // Test different environments
+      const environments = ['development', 'production', 'test'];
+      
+      for (const env of environments) {
+        process.env.NODE_ENV = env;
+        setupUserMocks({ findAllValue: [] });
+        
+        const req = { cookies: { refreshToken: 'invalidToken' } };
+        const res = createRes();
+        vi.clearAllMocks(); // Clear previous calls
+
+        await userController.signOut(req, res);
+
+        const expectedOptions = getClearCookieOptionsForTest();
+        expect(res.clearCookie).toHaveBeenCalledWith('refreshToken', expectedOptions);
+        expect(res.clearCookie).toHaveBeenCalledWith('accessToken', expectedOptions);
+        expect(res.clearCookie).toHaveBeenCalledWith('nodeRedToken', expectedOptions);
+      }
+    });
+
+    it('should handle database error during signOut process', async () => {
+      const error = new Error('Database error during signout');
       vi.spyOn(models.User, 'findAll').mockRejectedValue(error);
       
       const req = { cookies: { refreshToken: 'someToken' } };
@@ -579,6 +761,7 @@ describe('User Controller Tests', () => {
         error,
         'Error during sign out process'
       );
+      expect(res.status).toHaveBeenCalledWith(500);
     });
   });
 
@@ -839,6 +1022,149 @@ describe('User Controller Tests', () => {
           accessToken: MOCK_TOKEN,
         })
       );
+    });
+
+    it('should set cookies with proper options when refreshing token', async () => {
+      // Test different environments
+      const environments = ['development', 'production', 'test'];
+      
+      for (const env of environments) {
+        process.env.NODE_ENV = env;
+        
+        const mockUser = {
+          id: DEFAULT_USER._id || 1,
+          username: DEFAULT_USER.username,
+          email: DEFAULT_USER.email,
+          authority: DEFAULT_USER.authority,
+          refresh_token: 'valid-refresh-token'
+        };
+        
+        const { req, res } = setupRefreshTokenTest(mockUser);
+        vi.clearAllMocks(); // Clear previous calls
+
+        await userController.refreshToken(req, res);
+
+        const expectedOptions = getCookieOptionsForTest(3600);
+        expect(res.cookie).toHaveBeenCalledWith('accessToken', MOCK_TOKEN, expectedOptions);
+      }
+    });
+  });
+
+  // New tests for 100% coverage
+  describe('Cookie config helpers', () => {
+    it('should generate correct cookie options for different environments', () => {
+      // Test development environment
+      process.env.NODE_ENV = 'development';
+      const devOptions = userController.getCookieOptions(3600);
+      expect(devOptions).toEqual({
+        httpOnly: true,
+        path: '/',
+        maxAge: 3600 * 1000
+      });
+      
+      // Test production environment
+      process.env.NODE_ENV = 'production';
+      const prodOptions = userController.getCookieOptions(3600);
+      expect(prodOptions).toEqual({
+        httpOnly: true,
+        path: '/',
+        maxAge: 3600 * 1000,
+        sameSite: 'none',
+        secure: true,
+        partitioned: true
+      });
+      
+      // Test other environments
+      process.env.NODE_ENV = 'staging';
+      const otherOptions = userController.getCookieOptions(3600);
+      expect(otherOptions).toEqual({
+        httpOnly: true,
+        path: '/',
+        maxAge: 3600 * 1000,
+        sameSite: 'lax'
+      });
+    });
+    
+    it('should generate correct cookie clear options for different environments', () => {
+      // Test development environment
+      process.env.NODE_ENV = 'development';
+      const devOptions = userController.getClearCookieOptions();
+      expect(devOptions).toEqual({
+        httpOnly: true,
+        path: '/'
+      });
+      
+      // Test production environment
+      process.env.NODE_ENV = 'production';
+      const prodOptions = userController.getClearCookieOptions();
+      expect(prodOptions).toEqual({
+        httpOnly: true,
+        path: '/',
+        sameSite: 'none',
+        secure: true
+      });
+      
+      // Test other environments
+      process.env.NODE_ENV = 'staging';
+      const otherOptions = userController.getClearCookieOptions();
+      expect(otherOptions).toEqual({
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax'
+      });
+    });
+  });
+
+  describe('Edge cases for Node-RED token', () => {
+    it('should handle empty nodeRedToken correctly', async () => {
+      const user = {
+        ...DEFAULT_USER,
+        authority: 'DEVELOPER'
+      };
+      
+      mockSuccessfulAuth(user);
+      vi.spyOn(nodeRedTokenModule, 'getNodeRedToken').mockResolvedValue('');
+      
+      const req = createSignInReq();
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      // Verify Node-RED token cookie not set when empty
+      expect(res.cookie).toHaveBeenCalledTimes(2); // Only accessToken and refreshToken
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nodeRedToken: '',
+          nodeRedAccess: false
+        })
+      );
+    });
+    
+    it('should properly handle null nodeRedToken', async () => {
+      const user = {
+        ...DEFAULT_USER,
+        authority: 'DEVELOPER'
+      };
+      
+      mockSuccessfulAuth(user);
+      vi.spyOn(nodeRedTokenModule, 'getNodeRedToken').mockResolvedValue(null);
+      
+      const req = createSignInReq();
+      const res = createRes();
+
+      await userController.signIn(req, res);
+
+      // Verify response with null Node-RED token
+      // En lugar de verificar el objeto completo, verificamos solo las propiedades que nos interesan
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nodeRedToken: null
+        })
+      );
+      
+      // Verificar que nodeRedAccess refleja que no hay acceso a Node-RED cuando el token es null
+      const responseData = res.json.mock.calls[0][0];
+      expect(responseData.nodeRedAccess).toBe(false);
     });
   });
 });
