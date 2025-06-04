@@ -8,6 +8,9 @@ export default defineConfig({
     setupFiles: './tests/setup/setup.js',
     testMatch: ['**/*.test.js'],
     isolate: true,
+    setupTimeout: 30000,
+    hookTimeout:90000,
+    testTimeout: 30000,
     coverage: {
       provider: 'istanbul',
       reporter: ['html', 'text', 'lcov'],

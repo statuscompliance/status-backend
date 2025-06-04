@@ -1,7 +1,7 @@
 services:
   node-red-test:
     image: statuscompliance/node-red-status:latest
-    container_name: node-red-benchmark
+    container_name: node-red-testing
     ports:
       - "1880:1880"
     environment:
@@ -10,3 +10,9 @@ services:
       - NODE_RED_ENABLE_PROJECTS=false
       - TZ=Europe/Madrid
     restart: "no"
+    networks:
+      - node-red-network
+
+networks:
+  node-red-network:
+    driver: bridge
