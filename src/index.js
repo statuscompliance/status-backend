@@ -22,7 +22,6 @@ import { verifyAdmin } from './middleware/verifyAdmin.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import logger, { requestLogger, initLogDB } from './config/logger.js';
-import { errorHandler } from './middleware/errorHandler.js';
 
 const isTestEnvironment = !!import.meta.env?.VITEST;
 const API_PREFIX = isTestEnvironment ? '' : process.env.API_PREFIX || '';
@@ -88,9 +87,6 @@ const configureApp = () => {
   app.use(`${API_PREFIX}/thread`, threadRoutes());
   app.use(verifyAdmin);
   app.use(`${API_PREFIX}/config`, configRoutes());
-  
-  // Error handling middleware at the end of the chain
-  app.use(errorHandler);
 
   return app;
 };
