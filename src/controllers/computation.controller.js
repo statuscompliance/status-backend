@@ -5,6 +5,7 @@ import nodered from '../config/nodered.js';
 import { v4 as uuidv4 } from 'uuid';
 import redis from '../config/redis.js';
 import { calculateCompliance } from '../utils/calculateCompliance.js';
+import { handleControllerError } from '../utils/errorHandler.js';
 
 const API_PREFIX = process.env.API_PREFIX;
 
@@ -13,9 +14,7 @@ export async function getComputations(req, res) {
     const computations = await models.Computation.findAll();
     res.status(200).json(computations);
   } catch (error) {
-    res.status(500).json({
-      message: `Failed to get computations, error: ${error.message}`,
-    });
+    handleControllerError(res, error, 'Failed to get computations');
   }
 }
 
@@ -38,9 +37,7 @@ export async function getComputationsById(req, res) {
       computations: calculateCompliance(computations),
     });
   } catch (error) {
-    res.status(500).json({
-      message: `Failed to get computation, error: ${error.message}`,
-    });
+    handleControllerError(res, error, 'Failed to get computation by ID');
   }
 }
 
@@ -79,9 +76,7 @@ export async function getComputationsByControlIdAndCreationDate(req, res) {
 
     res.status(200).json(computations);
   } catch (error) {
-    res.status(500).json({
-      message: `Failed to get computations, error: ${error.message}`,
-    });
+    handleControllerError(res, error, 'Failed to get computation by control ID and creation date');
   }
 }
 
@@ -160,9 +155,7 @@ export async function createComputation(req, res) {
       computation: `${API_PREFIX}/computations/${computationId}`,
     });
   } catch (error) {
-    res.status(500).json({
-      message: `Failed to create computation, error: ${error.message}`,
-    });
+    handleControllerError(res, error, 'Failed to create computation');
   }
 }
 
@@ -185,9 +178,7 @@ export async function bulkCreateComputations(req, res) {
     }
     res.status(201).json(newComputations);
   } catch (error) {
-    res.status(500).json({
-      message: `Failed to create computations, error: ${error.message}`,
-    });
+    handleControllerError(res, error, 'Failed to create computations');
   }
 }
 
@@ -196,9 +187,8 @@ export async function deleteComputations(req, res) {
     await models.Computation.destroy({ where: {} });
     res.status(204).end();
   } catch (error) {
-    res.status(500).json({
-      message: `Failed to delete computations, error: ${error.message}`,
-    });
+    handleControllerError(res, error, 'Failed to delete computations');
+
   }
 }
 
@@ -211,8 +201,6 @@ export async function deleteComputationByControlId(req, res) {
     }
     res.status(204).end();
   } catch (error) {
-    res.status(500).json({
-      message: `Failed to delete computation, error: ${error.message}`,
-    });
+    handleControllerError(res, error, 'Failed to delete computation by control ID');
   }
 }
