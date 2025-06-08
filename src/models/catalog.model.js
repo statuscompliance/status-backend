@@ -1,6 +1,12 @@
 import { DataTypes } from 'sequelize';
 
 export default (sequelize) => sequelize.define('Catalog', {
+  id: {
+    type: import.meta.env?.VITEST ? DataTypes.STRING(50) :DataTypes.INTEGER,
+    primaryKey: true,
+    allowNull: false,
+    autoIncrement:  !import.meta.env?.VITEST,
+  },
   name: {
     type: DataTypes.STRING(100),
     allowNull: false
@@ -30,7 +36,7 @@ export default (sequelize) => sequelize.define('Catalog', {
     defaultValue: 'finalized'
   }
 }, {
-  tableName: 'catalog',
+  tableName: 'catalogs',
   timestamps: false
 });
 

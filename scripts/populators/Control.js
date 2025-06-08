@@ -1,10 +1,9 @@
 import { models } from '../../src/models/models.js';
+import logger from '../../src/config/logger.js';
 
 async function populateControls() {
   try {
-    console.log('__________________________________');
-    console.log('Starting control population...');
-    console.log('__________________________________');
+    logger.info('[DATA INITIALIZATION] Starting control definitions process');
 
     // Create controls
     const controls = [
@@ -87,15 +86,15 @@ async function populateControls() {
       });
 
       if (created) {
-        console.log(`Control "${controlData.name}" successfully created.`);
+        logger.info(`[CONTROL CREATED] Control "${controlData.name}" successfully initialized in the system`);
       } else {
-        console.log(`Control "${controlData.name}" already exists.`);
+        logger.info(`[CONTROL SKIPPED] Control "${controlData.name}" already exists in the system`);
       }
     }
 
-    console.log('Control population completed.');
+    logger.info('[DATA INITIALIZATION] Control definitions process completed successfully');
   } catch (error) {
-    console.error('Error during control population:', error);
+    logger.error('[DATA INITIALIZATION ERROR] Failed to configure system controls', { error, stack: error.stack });
   }
 }
 

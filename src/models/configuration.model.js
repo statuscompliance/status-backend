@@ -14,6 +14,9 @@ export default (sequelize) => sequelize.define('Configuration', {
     allowNull: true,
     defaultValue: 1,
   },
+},{
+  tableName: 'configurations',
+  freezeTableName: true
 });
 
 

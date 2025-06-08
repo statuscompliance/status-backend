@@ -86,7 +86,6 @@ export async function getAssistantLimit(req, res) {
     }
 
     const limit = configuration.dataValues.limit;
-    console.log('Limit:', limit);
 
     if (limit === null || limit === undefined) {
       return res

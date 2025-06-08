@@ -5,12 +5,13 @@ import {
   deletePointById,
   getPointsByAgreementId,
   deleteAllPoints,
+  updatePointByComputationGroup,
 } from '../../../../src/controllers/point.controller.js';
 import { models } from '../../../../src/models/models.js';
 import { validate as uuidValidate } from 'uuid';
+import * as errorHandler from '../../../../src/utils/errorHandler.js';
 
-// Helper para crear objetos mock de req/res
-
+// Helper to create mock req/res objects
 function createRes() {
   return {
     status: vi.fn().mockReturnThis(),
@@ -20,6 +21,8 @@ function createRes() {
 }
 
 const userId = '5f1b7114-b133-487b-9442-2b48bf60807c';
+const computationGroupId = '5f1b7114-b133-487b-9442-2b48bf60807d';
+
 describe('Point Controller Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -27,6 +30,10 @@ describe('Point Controller Tests', () => {
       validate: vi.fn(() => true),
     }));
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Create a mock for errorHandler that returns only the message
+    vi.spyOn(errorHandler, 'handleControllerError').mockImplementation((res, error, message) => {
+      return res.status(500).json({ message });
+    });
   });
 
   describe('getPoints', () => {
@@ -59,6 +66,25 @@ describe('Point Controller Tests', () => {
         message: 'An error occurred while retrieving the points.',
       });
     });
+
+    it('should call handleControllerError and return correct message on error', async () => {
+      const mockError = new Error('DB error');
+      vi.spyOn(models.Point, 'findAll').mockRejectedValueOnce(mockError);
+      const req = {};
+      const res = createRes();
+
+      await getPoints(req, res);
+
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res,
+        mockError,
+        'An error occurred while retrieving the points.'
+      );
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'An error occurred while retrieving the points.',
+      });
+    });
   });
 
   describe('getPointById', () => {
@@ -66,7 +92,7 @@ describe('Point Controller Tests', () => {
       const point = { id: userId, value: 300 };
       vi.spyOn(models.Point, 'findByPk').mockResolvedValue(point);
 
-      // Forzamos que uuid.validate retorne true para que el controlador siga el camino correcto
+      // Force uuid.validate to return true so the controller follows the correct path
       uuidValidate.mockReturnValue(true);
 
       const req = { params: { id: userId } };
@@ -87,110 +113,130 @@ describe('Point Controller Tests', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ message: 'Invalid point id' });
     });
-  });
 
-  it('should return 400 for missing or invalid id', async () => {
-    uuidValidate.mockReturnValue(false);
-    vi.spyOn(models.Point, 'findByPk').mockResolvedValue(false);
-    const reqWithInvalidId = { params: { id: 'invalid-uuid' } };
-    const res = createRes();
+    it('should return 400 for missing or invalid id', async () => {
+      uuidValidate.mockReturnValue(false);
+      vi.spyOn(models.Point, 'findByPk').mockResolvedValue(false);
+      const reqWithInvalidId = { params: { id: 'invalid-uuid' } };
+      const res = createRes();
 
-    await getPointById(reqWithInvalidId, res);
+      await getPointById(reqWithInvalidId, res);
 
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Invalid point id' });
-    expect(models.Point.findByPk).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid point id' });
+      expect(models.Point.findByPk).not.toHaveBeenCalled();
 
-    const reqWithMissingId = { params: {} };
-    await getPointById(reqWithMissingId, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Invalid point id' });
-    expect(models.Point.findByPk).not.toHaveBeenCalled();
-  });
+      const reqWithMissingId = { params: {} };
+      await getPointById(reqWithMissingId, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid point id' });
+      expect(models.Point.findByPk).not.toHaveBeenCalled();
+    });
 
-  it('should return 404 if point is not found', async () => {
-    vi.spyOn(models.Point, 'findByPk').mockResolvedValue(null);
-    uuidValidate.mockReturnValue(true);
-    const req = { params: { id: userId } };
-    const res = createRes();
+    it('should return 404 if point is not found', async () => {
+      vi.spyOn(models.Point, 'findByPk').mockResolvedValue(null);
+      uuidValidate.mockReturnValue(true);
+      const req = { params: { id: userId } };
+      const res = createRes();
 
-    await getPointById(req, res);
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({
-      message: `Point with id ${userId} not found`,
+      await getPointById(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: `Point with id ${userId} not found`,
+      });
+    });
+
+    it('should handle errors gracefully', async () => {
+      const mockError = new Error('Database error');
+      vi.spyOn(models.Point, 'findByPk').mockRejectedValueOnce(mockError);
+      uuidValidate.mockReturnValue(true);
+      const req = { params: { id: userId } };
+      const res = createRes();
+
+      await getPointById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'An error occurred while retrieving the point.',
+      });
+    });
+
+    it('should call handleControllerError and return correct message on error', async () => {
+      const mockError = new Error('DB error');
+      vi.spyOn(models.Point, 'findByPk').mockRejectedValueOnce(mockError);
+      uuidValidate.mockReturnValue(true);
+      const req = { params: { id: userId } };
+      const res = createRes();
+
+      await getPointById(req, res);
+
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res,
+        mockError,
+        'An error occurred while retrieving the point.'
+      );
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'An error occurred while retrieving the point.',
+      });
     });
   });
 
-  it('should handle errors gracefully', async () => {
-    const mockError = new Error('Database error');
-    vi.spyOn(models.Point, 'findByPk').mockRejectedValueOnce(mockError);
-    uuidValidate.mockReturnValue(true);
-    const req = { params: { id: userId } };
-    const res = createRes();
+  describe('deletePointById', () => {
+    it('should return 204 if point is successfully deleted', async () => {
+      vi.spyOn(models.Point, 'destroy').mockResolvedValue(1);
+      uuidValidate.mockReturnValue(true);
+      const req = { params: { id: userId } };
+      const res = createRes();
 
-    await getPointById(req, res);
+      await deletePointById(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      message: 'An error occurred while retrieving the point.',
+      expect(res.status).toHaveBeenCalledWith(204);
+      expect(res.end).toHaveBeenCalledTimes(1);
+      expect(models.Point.destroy).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
     });
-  });
-});
 
-describe('deletePointById', () => {
-  it('should return 204 if point is successfully deleted', async () => {
-    vi.spyOn(models.Point, 'destroy').mockResolvedValue(1);
-    uuidValidate.mockReturnValue(true);
-    const req = { params: { id: userId } };
-    const res = createRes();
+    it('should return 400 for missing or invalid id', async () => {
+      uuidValidate.mockReturnValue(false);
+      const reqWithInvalidId = { params: { id: 'invalid-uuid' } };
+      const res = createRes();
 
-    await deletePointById(req, res);
+      await deletePointById(reqWithInvalidId, res);
 
-    expect(res.status).toHaveBeenCalledWith(204);
-    expect(res.end).toHaveBeenCalledTimes(1);
-    expect(models.Point.destroy).toHaveBeenCalledWith({
-      where: { id: userId },
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid point id' });
     });
-  });
+    it('should return 404 if point to delete is not found', async () => {
+      vi.spyOn(models.Point, 'destroy').mockResolvedValue(0);
+      uuidValidate.mockReturnValue(true);
+      const req = { params: { id: userId } };
+      const res = createRes();
 
-  it('should return 400 for missing or invalid id', async () => {
-    uuidValidate.mockReturnValue(false);
-    const reqWithInvalidId = { params: { id: 'invalid-uuid' } };
-    const res = createRes();
+      await deletePointById(req, res);
 
-    await deletePointById(reqWithInvalidId, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Invalid point id' });
-  });
-  it('should return 404 if point to delete is not found', async () => {
-    vi.spyOn(models.Point, 'destroy').mockResolvedValue(0);
-    uuidValidate.mockReturnValue(true);
-    const req = { params: { id: userId } };
-    const res = createRes();
-
-    await deletePointById(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({
-      message: `Point with id ${userId} not found`,
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: `Point with id ${userId} not found`,
+      });
+      expect(models.Point.destroy).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
     });
-    expect(models.Point.destroy).toHaveBeenCalledWith({
-      where: { id: userId },
-    });
-  });
 
-  it('should handle errors gracefully', async () => {
-    const mockError = new Error('Database error');
-    vi.spyOn(models.Point, 'destroy').mockRejectedValueOnce(mockError);
-    const req = { params: { id: userId } };
-    const res = createRes();
+    it('should handle errors gracefully', async () => {
+      const mockError = new Error('Database error');
+      vi.spyOn(models.Point, 'destroy').mockRejectedValueOnce(mockError);
+      const req = { params: { id: userId } };
+      const res = createRes();
 
-    await deletePointById(req, res);
+      await deletePointById(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      message: 'An error occurred while deleting the point.',
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'An error occurred while deleting the point.',
+      });
     });
   });
 
@@ -248,8 +294,38 @@ describe('deletePointById', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        message:
-          'An error occurred while retrieving the points for this agreement.',
+        message: 'An error occurred while retrieving the points for this agreement.',
+      });
+    });
+
+    it('should return 400 and message if agreement id is missing (explicit return)', async () => {
+      const req = { params: {} };
+      const res = createRes();
+
+      await getPointsByAgreementId(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Missing agreement id',
+      });
+    });
+
+    it('should call handleControllerError and return correct message on error', async () => {
+      const mockError = new Error('DB error');
+      vi.spyOn(models.Point, 'findAll').mockRejectedValueOnce(mockError);
+      const req = { params: { tpaId: 'agreement-1' } };
+      const res = createRes();
+
+      await getPointsByAgreementId(req, res);
+
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res,
+        mockError,
+        'An error occurred while retrieving the points for this agreement.'
+      );
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'An error occurred while retrieving the points for this agreement.',
       });
     });
   });
@@ -279,6 +355,126 @@ describe('deletePointById', () => {
       expect(res.json).toHaveBeenCalledWith({
         message: 'An error occurred while deleting all points.',
       });
+    });
+
+    it('should call handleControllerError and return correct message on error', async () => {
+      const mockError = new Error('DB error');
+      vi.spyOn(models.Point, 'destroy').mockRejectedValueOnce(mockError);
+      const req = {};
+      const res = createRes();
+
+      await deleteAllPoints(req, res);
+
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res,
+        mockError,
+        'An error occurred while deleting all points.'
+      );
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'An error occurred while deleting all points.',
+      });
+    });
+  });
+
+  describe('updatePointByComputationGroup', () => {
+    beforeEach(() => {
+      // Reset mocks before each test to avoid interference
+      vi.clearAllMocks();
+      // Restore the default behavior of uuid.validate
+      uuidValidate.mockImplementation(() => true);
+    });
+
+    it('should update points by computation group with status 200', async () => {
+      const mockPoints = [
+        { id: '1', value: 100, computationGroup: computationGroupId },
+        { id: '2', value: 200, computationGroup: computationGroupId }
+      ];
+      const updateData = { status: 'completed' };
+      const updatedMockPoints = mockPoints.map(point => ({ ...point, ...updateData }));
+      
+      vi.spyOn(models.Point, 'findAll')
+        .mockResolvedValueOnce(mockPoints)      // First call for validation
+        .mockResolvedValueOnce(updatedMockPoints); // Second call to return updated points
+        
+      vi.spyOn(models.Point, 'update').mockResolvedValue([2]); // 2 rows updated
+      
+      const req = { 
+        params: { computationGroup: computationGroupId },
+        body: updateData 
+      };
+      const res = createRes();
+      
+      await updatePointByComputationGroup(req, res);
+      
+      expect(models.Point.findAll).toHaveBeenCalledTimes(2);
+      expect(models.Point.update).toHaveBeenCalledWith(
+        updateData,
+        { where: { computationGroup: computationGroupId } }
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Points updated successfully',
+        points: updatedMockPoints
+      });
+    });
+    
+    it('should return 400 for invalid computation group id', async () => {
+      // Force uuid.validate to return false for this specific test
+      uuidValidate.mockReturnValue(false);
+      
+      const req = { params: { computationGroup: 'invalid-id' }, body: {} };
+      const res = createRes();
+      
+      await updatePointByComputationGroup(req, res);
+      
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid computation group id' });
+      expect(models.Point.findAll).not.toHaveBeenCalled();
+    });
+    
+    it('should return 404 when no points found with computation group', async () => {
+      // Ensure UUID validation passes
+      uuidValidate.mockReturnValue(true);
+      
+      // Mock findAll to return empty array (no points)
+      vi.spyOn(models.Point, 'findAll').mockResolvedValue([]);
+      
+      // Spy on update to verify it's not called
+      vi.spyOn(models.Point, 'update');
+      
+      const req = { 
+        params: { computationGroup: computationGroupId },
+        body: { status: 'completed' } 
+      };
+      const res = createRes();
+      
+      await updatePointByComputationGroup(req, res);
+      
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ 
+        message: `No points found with computation group ${computationGroupId}`
+      });
+      expect(models.Point.update).not.toHaveBeenCalled();
+    });
+    
+    it('should handle errors gracefully', async () => {
+      const mockError = new Error('Database error');
+      vi.spyOn(models.Point, 'findAll').mockRejectedValueOnce(mockError);
+      
+      const req = { 
+        params: { computationGroup: computationGroupId },
+        body: { status: 'completed' } 
+      };
+      const res = createRes();
+      
+      await updatePointByComputationGroup(req, res);
+      
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res, 
+        mockError, 
+        'An error occurred while updating the points.'
+      );
     });
   });
 });

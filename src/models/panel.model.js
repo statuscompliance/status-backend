@@ -20,7 +20,7 @@ export default (sequelize) => sequelize.define(
     },
   },
   {
-    tableName: 'panel',
+    tableName: 'panels',
     timestamps: false,
   }
 );
