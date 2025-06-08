@@ -61,7 +61,23 @@ describe('Computation API Routes', () => {
       expect(response.body.length).toBeGreaterThan(0);
       expect(response.body[0]).toHaveProperty('value', true);
     });
+    it('should return 500 if there is an error retrieving computations', async () => {
+      const errorSpy = vi
+        .spyOn(models.Computation, 'findAll')
+        .mockRejectedValue(new Error('Database error'));
+
+      const response = await getResponse('/computations', getToken);
+
+      expect(errorSpy).toHaveBeenCalled();
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty(
+        'message', 'Failed to get computations',
+        'error', 'Database error');
+
+      errorSpy.mockRestore();
+    });
   });
+
   describe('GET /computations/:id', () => {
     const path = (id) => `/computations/${id}`;
     it('should return 202 if computations aren’t ready', async () => {
@@ -89,6 +105,7 @@ describe('Computation API Routes', () => {
         path(computation1.computationGroup),
         getToken
       );
+      console.log('Response Body:', response.body);
       expect(complianceSpy).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
@@ -99,9 +116,38 @@ describe('Computation API Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('computations', computation1);
     });
+    it('should return 500 if there is an error retrieving computations', async () => {
+      vi.spyOn(redis, 'get').mockResolvedValue('true');
+
+      const errorSpy = vi
+        .spyOn(models.Computation, 'findAll')
+        .mockRejectedValue(new Error('Database error'));
+
+      const response = await getResponse(
+        path(computation1.computationGroup),
+        getToken
+      );
+
+      expect(errorSpy).toHaveBeenCalled();
+      expect(response.status).toBe(500);
+
+      expect(response.body).toHaveProperty(
+        'message', 'Failed to get computation by ID',
+        'error', 'Database error')
+
+      errorSpy.mockRestore();
+    })
   });
 
+
   describe('POST /computations', () => {
+    const postResponse = (payload) => {
+      return request
+        .post('/computations')
+        .set('Cookie', `accessToken=${getToken}`)
+        .send(payload);
+    }
+
     let noderedPostSpy;
     const basePayload = {
       metric: {
@@ -118,17 +164,25 @@ describe('Computation API Routes', () => {
       // Mock Node-RED for POST tests
       noderedPostSpy = vi
         .spyOn(nodered, 'post')
-        .mockResolvedValue({ status: 201, data: {} });
+        .mockResolvedValue({ status: 200, data: {} });
     });
     afterEach(() => {
       noderedPostSpy.mockRestore();
     });
 
     it('should return 201 after creating a computation', async () => {
-      const response = await request
-        .post('/computations')
-        .set('Cookie', `accessToken=${getToken}`)
-        .send(basePayload);
+      const basePayload = {
+        metric: {
+          endpoint: '/example',
+          params: { param1: 'value1' },
+          scope: 'global',
+          window: { start: '2023-01-01', end: '2023-01-31' },
+        },
+        config: {
+          backendUrl: 'http://localhost:3000',
+        },
+      };
+      const response = await postResponse(basePayload);
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('code', 201);
@@ -145,11 +199,7 @@ describe('Computation API Routes', () => {
           backendUrl: 'http://localhost:3000',
         },
       };
-
-      const response = await request
-        .post('/computations')
-        .set('Cookie', `accessToken=${getToken}`)
-        .send(payload);
+      const response = await postResponse(payload);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty(
@@ -168,10 +218,7 @@ describe('Computation API Routes', () => {
         },
       };
 
-      const response = await request
-        .post('/computations')
-        .set('Cookie', `accessToken=${getToken}`)
-        .send(payload);
+      const response = await postResponse(payload);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty(
@@ -188,11 +235,7 @@ describe('Computation API Routes', () => {
           backendUrl: 'http://localhost:3000',
         },
       };
-
-      const response = await request
-        .post('/computations')
-        .set('Cookie', `accessToken=${getToken}`)
-        .send(payload);
+      const response = await postResponse(payload);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty(
@@ -205,10 +248,7 @@ describe('Computation API Routes', () => {
         status: 400,
         data: { message: 'Node-RED error' },
       });
-      const response = await request
-        .post('/computations')
-        .set('Cookie', `accessToken=${getToken}`)
-        .send(basePayload);
+      const response = await postResponse(basePayload);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty(
@@ -217,22 +257,25 @@ describe('Computation API Routes', () => {
       );
     });
     it('should return 500 if there is an error during computation creation', async () => {
-      
+
       noderedPostSpy.mockRejectedValue(new Error('Failed to get token'));
-      
-      const response = await request
-        .post('/computations')
-        .set('Cookie', `accessToken=${getToken}`)
-        .send(basePayload);
+
+      const response = await postResponse(basePayload);
 
       expect(response.status).toBe(500);
-      expect(response.body.message).toMatch(
-        /^Failed to create computation, error: .*$/
-      );
+      expect(response.body).toHaveProperty(
+        'message', 'Failed to create computation',
+        'error', 'Database error')
     });
   });
 
   describe('POST /computations/bulk', () => {
+    const postResponseBulk = (bulkPayload) => {
+      return request
+        .post('/computations/bulk')
+        .set('Cookie', `accessToken=${getToken}`)
+        .send(bulkPayload);
+    }
     it('should return 201 when bulk creating computations', async () => {
       const bulkPayload = {
         computations: [
@@ -248,12 +291,10 @@ describe('Computation API Routes', () => {
         done: true,
       };
 
-      const response = await request
-        .post('/computations/bulk')
-        .set('Cookie', `accessToken=${getToken}`)
-        .send(bulkPayload);
+      const response = await postResponseBulk(bulkPayload);
 
       expect(response.status).toBe(201);
+
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBe(bulkPayload.computations.length);
       response.body.forEach((computation, index) => {
@@ -272,10 +313,7 @@ describe('Computation API Routes', () => {
       });
     });
     it('should return 400 with invalid payload', async () => {
-      const response = await request
-        .post('/computations/bulk')
-        .set('Cookie', `accessToken=${getToken}`)
-        .send({ computations: [] });
+      const response = await postResponseBulk({ computations: [] });
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error', 'Invalid computations');
@@ -287,10 +325,7 @@ describe('Computation API Routes', () => {
           { value: true }, // Missing computationGroup
         ],
       };
-      const response = await request
-        .post('/computations/bulk')
-        .set('Cookie', `accessToken=${getToken}`)
-        .send(payload);
+      const response = await postResponseBulk(payload);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty(
@@ -314,34 +349,35 @@ describe('Computation API Routes', () => {
         .spyOn(models.Computation, 'bulkCreate')
         .mockRejectedValue(new Error('Database error'));
 
-      const response = await request
-        .post('/computations/bulk')
-        .set('Cookie', `accessToken=${getToken}`)
-        .send(payload);
+      const response = await postResponseBulk(payload);
 
+      expect(bulkCreateSpy).toHaveBeenCalledWith(payload.computations);
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty(
-        'message',
-        'Failed to create computations, error: Database error'
-      );
+        'message', 'Failed to create computations',
+        'error', 'Database error')
 
       bulkCreateSpy.mockRestore();
     });
   });
   describe('DELETE /computations', () => {
+    const deleteResponse = () => {
+      return  request
+        .delete('/computations')
+        .set('Cookie', `accessToken=${getToken}`);
+    }
+
     it('should return 500 if there is a database error during deletion', async () => {
       const destroySpy = vi
         .spyOn(models.Computation, 'destroy')
         .mockRejectedValue(new Error('Database error during deletion'));
 
-      const response = await request
-        .delete('/computations')
-        .set('Cookie', `accessToken=${getToken}`);
+      const response = await deleteResponse()
 
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty(
-        'message',
-        'Failed to delete computations, error: Database error during deletion'
+        'message', 'Failed to delete computations',
+        'error', 'Database error during deletion'
       );
 
       destroySpy.mockRestore();
@@ -350,9 +386,8 @@ describe('Computation API Routes', () => {
       const initialCount = await models.Computation.count();
       expect(initialCount).toBeGreaterThan(0);
 
-      const response = await request
-        .delete('/computations')
-        .set('Cookie', `accessToken=${getToken}`);
+      const response = await deleteResponse();
+
       expect(response.status).toBe(204);
       expect(response.body).toEqual({}); // 204 responses usually have an empty body
 
@@ -360,4 +395,5 @@ describe('Computation API Routes', () => {
       expect(finalCount).toBe(0);
     });
   });
+
 });
