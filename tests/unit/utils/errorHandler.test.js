@@ -1,14 +1,23 @@
 import { expect, describe, it, beforeEach, vi } from 'vitest';
 import { handleControllerError } from '../../../src/utils/errorHandler';
+import * as logger from '../../../src/config/logger.js';
 
 describe('handleControllerError', () => {
   let res;
   
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(logger, 'logError').mockImplementation(() => {});
+    
     res = {
       status: vi.fn().mockReturnThis(),
-      json: vi.fn().mockReturnThis()
+      json: vi.fn().mockReturnThis(),
+      req: {
+        requestId: 'test-request-id',
+        user: { id: 'test-user-id' },
+        ip: '127.0.0.1',
+        originalUrl: '/api/test',
+        method: 'GET'
+      }
     };
   });
 
@@ -27,7 +36,8 @@ describe('handleControllerError', () => {
         expectedStatus: 404,
         expectedJson: {
           message: 'API Error: Not Found',
-          error: 'Resource not found'
+          error: 'Resource not found',
+          requestId: 'test-request-id'
         },
         testName: 'should handle external error with status text and data message'
       },
@@ -44,7 +54,8 @@ describe('handleControllerError', () => {
         expectedStatus: 403,
         expectedJson: {
           message: 'Authorization Error: Forbidden',
-          error: 'Access denied'
+          error: 'Access denied',
+          requestId: 'test-request-id'
         },
         testName: 'should handle external error with status text but no data message'
       },
@@ -60,7 +71,8 @@ describe('handleControllerError', () => {
         expectedStatus: 500,
         expectedJson: {
           message: 'Service Error',
-          error: 'Internal server error in external service'
+          error: 'Internal server error in external service',
+          requestId: 'test-request-id'
         },
         testName: 'should handle external error without status text but with data message'
       },
@@ -76,7 +88,8 @@ describe('handleControllerError', () => {
         expectedStatus: 400,
         expectedJson: {
           message: 'Request Error',
-          error: 'Bad request parameters'
+          error: 'Bad request parameters',
+          requestId: 'test-request-id'
         },
         testName: 'should handle external error without status text and data message'
       }
@@ -85,6 +98,13 @@ describe('handleControllerError', () => {
       
       expect(res.status).toHaveBeenCalledWith(expectedStatus);
       expect(res.json).toHaveBeenCalledWith(expectedJson);
+      expect(logger.logError).toHaveBeenCalledWith(error, expect.objectContaining({
+        requestId: 'test-request-id',
+        userId: 'test-user-id',
+        ip: '127.0.0.1',
+        url: '/api/test',
+        method: 'GET'
+      }));
     });
   });
 
@@ -95,7 +115,8 @@ describe('handleControllerError', () => {
         defaultMessage: 'Database Error',
         expectedJson: {
           message: 'Database Error',
-          error: 'Database connection failed'
+          error: 'Database connection failed',
+          requestId: 'test-request-id'
         },
         testName: 'should handle internal error with custom message'
       },
@@ -104,7 +125,8 @@ describe('handleControllerError', () => {
         defaultMessage: undefined,
         expectedJson: {
           message: 'Internal server error',
-          error: 'Runtime exception'
+          error: 'Runtime exception',
+          requestId: 'test-request-id'
         },
         testName: 'should use default message when none is provided'
       },
@@ -113,7 +135,8 @@ describe('handleControllerError', () => {
         defaultMessage: 'Validation Error',
         expectedJson: {
           message: 'Validation Error',
-          error: 'Custom error object'
+          error: 'Custom error object',
+          requestId: 'test-request-id'
         },
         testName: 'should handle plain object with message property'
       }
@@ -122,11 +145,33 @@ describe('handleControllerError', () => {
       
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith(expectedJson);
+      expect(logger.logError).toHaveBeenCalledWith(error, expect.any(Object));
     });
   });
 
   it('should return the response object for chaining', () => {
     const result = handleControllerError(res, new Error('Test error'));
     expect(result).toBe(res);
+  });
+
+  it('should handle missing req object gracefully', () => {
+    const resNoReq = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis()
+    };
+    
+    const error = new Error('Test error');
+    handleControllerError(resNoReq, error);
+    
+    expect(resNoReq.status).toHaveBeenCalledWith(500);
+    expect(resNoReq.json).toHaveBeenCalledWith({
+      message: 'Internal server error',
+      error: 'Test error',
+      requestId: undefined
+    });
+    expect(logger.logError).toHaveBeenCalledWith(error, expect.objectContaining({
+      requestId: undefined,
+      userId: 'anonymous'
+    }));
   });
 });
