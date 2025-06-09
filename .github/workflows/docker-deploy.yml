@@ -54,11 +54,15 @@ jobs:
         image: statuscompliance/node-red-status:latest
         ports:
           - 1880:1880
+          
         env:
+          NODE_RED_HOST: localhost
+          NODE_RED_PORT: 1880
           NODE_RED_USERNAME: admin
           NODE_RED_PASSWORD: admin
           NODE_RED_ENABLE_PROJECTS: false
           TZ: Europe/Madrid
+
         options: >-
           --health-cmd "curl -f http://localhost:1880/auth/login || exit 1"
           --health-interval 5s
@@ -76,12 +80,6 @@ jobs:
       #     --health-timeout 5s
       #     --health-retries 10
 
-    env:
-      NODE_RED_HOST: localhost
-      NODE_RED_PORT: 1880
-      NODE_RED_USER: admin
-      NODE_RED_PASSWORD: admin
-      
     steps:
       - name: Checkout ⬇️
         uses: actions/checkout@v4.2.2
