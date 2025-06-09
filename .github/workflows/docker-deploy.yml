@@ -56,11 +56,9 @@ jobs:
           - 1880:1880
           
         env:
-          NODE_RED_HOST: node-red
-          NODE_RED_PORT: 1880
+          NODE_RED_URL: http://localhost:1880
           NODE_RED_USERNAME: admin
           NODE_RED_PASSWORD: admin
-          NODE_RED_ENABLE_PROJECTS: false
           TZ: Europe/Madrid
 
         options: >-

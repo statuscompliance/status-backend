@@ -2,9 +2,7 @@ import axios from 'axios';
 import logger from '../../../src/config/logger';
 import 'dotenv/config';
 
-const NODE_RED_HOST = process.env.NODE_RED_HOST || 'node-red'; // Change to your Node-RED host if not running locally
-const NODE_RED_PORT = process.env.NODE_RED_PORT || '1880'; // Default Node-RED port
-const NODE_RED_URL = `http://${NODE_RED_HOST}:${NODE_RED_PORT}`;
+const NODE_RED_URL = process.env.NODE_RED_URL || 'http://localhost:1880';
 // Default credentials for Node-RED Admin API
 const NODE_RED_USER = process.env.NODE_RED_USER || 'admin';
 const NODE_RED_PASSWORD = process.env.NODE_RED_PASSWORD || 'admin';
