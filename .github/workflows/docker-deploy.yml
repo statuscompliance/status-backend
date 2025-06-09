@@ -57,7 +57,7 @@ jobs:
           
         env:
           NODE_RED_URL: http://localhost:1880
-          NODE_RED_USERNAME: admin
+          NODE_RED_USER: admin
           NODE_RED_PASSWORD: admin
           TZ: Europe/Madrid
 
