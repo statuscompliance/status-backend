@@ -1,7 +1,7 @@
 import { describe, beforeAll, afterAll, expect, it } from 'vitest';
-import { testFlow, updatedFlow, endpoint } from '../../utils/node-red/sampleNodeRedData.js';
-import { createFlow, getFlow, deleteFlow, connectNodeRed, clearAllFlows, getAllFlows, executeEndpointFlow, updateFlow } from '../../utils/node-red/nodeRedUtils.js'
-import logger from '../../../src/config/logger.js';
+import { testFlow, updatedFlow, endpoint } from '../utils/node-red/sampleNodeRedData.js';
+import { createFlow, getFlow, deleteFlow, connectNodeRed, clearAllFlows, getAllFlows, executeEndpointFlow, updateFlow } from '../utils/node-red/nodeRedUtils.js'
+import logger from '../../src/config/logger.js';
 
 
 describe('Node-RED Connection and Basic Flow Deployment Tests', () => {

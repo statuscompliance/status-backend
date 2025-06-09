@@ -11,6 +11,7 @@
     "test:unit": "cross-env NODE_NO_WARNINGS=1 VITE_TEST_TYPE=unit vitest run tests/unit",
     "test:integration": "cross-env NODE_NO_WARNINGS=1 vitest run tests/integration",
     "test:watch": "cross-env NODE_NO_WARNINGS=1 vitest --watch",
+    "test:nodered": "cross-env NODE_NO_WARNINGS=1 vitest run tests/node-red/nodered.test.js",
     "coverage": "cross-env NODE_NO_WARNINGS=1 vitest run --coverage --coverage.reporter=text",
     "coverage:ci": "cross-env NODE_NO_WARNINGS=1 vitest run --coverage --coverage.reporter=lcov",
     "test:ui": "cross-env NODE_NO_WARNINGS=1 vitest --coverage.enabled=true --ui",

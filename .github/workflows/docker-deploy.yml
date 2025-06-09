@@ -20,35 +20,36 @@ env:
   COMMIT_SHA: ${{ github.sha }}
 
 jobs:
-  # --- Job 1: Unit Tests ---
-  unit-tests:
+  #--- Job 1: Running all tests ---#
+  test:
+      runs-on: ubuntu-latest
+      strategy:
+        matrix:
+          test-type: [unit, integration]
+      
+      steps:
+        - name: Checkout ⬇️
+          uses: actions/checkout@v4.2.2
+          with:
+            show-progress: false
+            
+        - name: Setup Node.js 🔧
+          uses: actions/setup-node@v4
+          with:
+            node-version: '22'
+            cache: 'npm'
+            
+        - name: Install dependencies 📦
+          run: npm ci
+          
+        - name: Run ${{ matrix.test-type }} tests 🧪
+          run: npm run test:${{ matrix.test-type }}
+  
+  # --- Job 2: Node Red API Tests ---
+  node-red-test:
+    needs: test
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout ⬇️
-        uses: actions/checkout@v4.2.2
-        with:
-          show-progress: false
-          
-      - name: Setup Node.js 🔧
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          
-      - name: Install dependencies 📦
-        run: npm ci # Installs dependencies consistently
-
-      - name: Run Unit Tests 🧪
-        # Executes only your unit tests, which do not depend on external services.
-        run: npm run test:unit 
-
-  # --- Job 2: Integration Tests ---
-  integration-tests:
-    needs: unit-tests
-    runs-on: ubuntu-latest
-
-    # --- Define Docker Services for Integration Tests ---
     services:
       node-red:
         image: statuscompliance/node-red-status:latest
@@ -66,17 +67,6 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-
-      # Add other services your integration tests depend on here
-      # service-name:
-      #   image: docker-image-uri
-      #   ports:
-      #     - 9090:9090
-      #   options: >-
-      #     --health-cmd "curl -f http://localhost:9090/-/healthy || exit 1"
-      #     --health-interval 5s
-      #     --health-timeout 5s
-      #     --health-retries 10
 
     steps:
       - name: Checkout ⬇️
@@ -93,15 +83,14 @@ jobs:
       - name: Install dependencies 📦
         run: npm ci
         
-      - name: Run Integration Tests 🧪
-        run: npm run test:integration 
+      - name: Run Node Red Tests 🧪
+        run: npm run test:nodered 
 
   # --- Job 3: Coverage Report ---
   coverage:
-    needs: [unit-tests, integration-tests] 
+    needs: test 
     runs-on: ubuntu-latest
 
-    # --- Define Docker Services for Integration Tests ---
     services:
       node-red:
         image: statuscompliance/node-red-status:latest
@@ -119,17 +108,6 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-
-      # Add other services your integration tests depend on here
-      # service-name:
-      #   image: docker-image-uri
-      #   ports:
-      #     - 9090:9090
-      #   options: >-
-      #     --health-cmd "curl -f http://localhost:9090/-/healthy || exit 1"
-      #     --health-interval 5s
-      #     --health-timeout 5s
-      #     --health-retries 10
 
     steps:
       - name: Checkout Repository
