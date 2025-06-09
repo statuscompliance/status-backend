@@ -77,7 +77,7 @@ jobs:
       #     --health-retries 10
 
     env:
-      NODE_RED_HOST: node-red
+      NODE_RED_HOST: localhost
       NODE_RED_PORT: 1880
       NODE_RED_USER: admin
       NODE_RED_PASSWORD: admin
