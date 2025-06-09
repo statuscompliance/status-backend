@@ -1,15 +1,12 @@
 import { describe, beforeAll, afterAll, expect, it } from 'vitest';
 import { testFlow, updatedFlow, endpoint } from '../../utils/node-red/sampleNodeRedData.js';
 import { createFlow, getFlow, deleteFlow, connectNodeRed, clearAllFlows, getAllFlows, executeEndpointFlow, updateFlow } from '../../utils/node-red/nodeRedUtils.js'
-import { setupNodeRed, teardownNodeRed } from '../../setup/node-red/setupNodered.js'
-
 import logger from '../../../src/config/logger.js';
 
 
 describe('Node-RED Connection and Basic Flow Deployment Tests', () => {
 
   beforeAll(async () => {
-    await setupNodeRed();
     logger.debug('\n--- Test Suite: Running Node-RED Connection Tests ---');
     const ready = await connectNodeRed();
     expect(ready).toBe(true);
@@ -20,7 +17,6 @@ describe('Node-RED Connection and Basic Flow Deployment Tests', () => {
   afterAll(async () => {
     logger.debug('--- Test Suite: Node-RED Connection Tests Finished ---');
     await clearAllFlows();
-    await teardownNodeRed();
   });
 
   describe('Node-Red /flows tests', () => {

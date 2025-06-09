@@ -11,6 +11,10 @@ export default defineConfig({
     setupTimeout: 30000,
     hookTimeout:90000,
     testTimeout: 30000,
+    exclude: [
+      '**/src/config/load-env.js',
+      '**/node_modules/**'
+    ],
     coverage: {
       provider: 'istanbul',
       reporter: ['html', 'text', 'lcov'],
@@ -19,6 +23,10 @@ export default defineConfig({
         text: 'coverage/text',
       },
       include: ['src/**/*.{js,ts}'],
+      exclude: [
+        'src/config/load-env.js',
+        '**/node_modules/**'
+      ],
     },
   },
   resolve: {

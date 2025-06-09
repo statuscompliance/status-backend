@@ -1,11 +1,10 @@
 import { models } from '../../src/models/models.js';
 import { v4 as uuidv4 } from 'uuid';
+import logger from '../../src/config/logger.js';
 
 async function populatePoints() {
   try {
-    console.log('__________________________________');
-    console.log('Starting points population...');
-    console.log('__________________________________');
+    logger.info('[DATA INITIALIZATION] Starting monitoring points population process');
 
     // Predefined computation groups for reuse
     const computationGroups = [
@@ -340,11 +339,11 @@ async function populatePoints() {
       // Try to create the point
       try {
         await models.Point.create(pointData);
-        console.log(`Point for agreement "${pointData.agreementId}" (${pointData.guaranteeId}) successfully created.`);
+        logger.info(`[POINT CREATED] Monitoring point for agreement "${pointData.agreementId}" (${pointData.guaranteeId}) successfully initialized`);
         created++;
       } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
-          console.log(`Point for agreement "${pointData.agreementId}" (${pointData.guaranteeId}) already exists.`);
+          logger.info(`[POINT SKIPPED] Monitoring point for agreement "${pointData.agreementId}" (${pointData.guaranteeId}) already exists in the system`);
           existing++;
         } else {
           throw error;
@@ -352,9 +351,9 @@ async function populatePoints() {
       }
     }
 
-    console.log(`Points population completed. Created: ${created}, Already existing: ${existing}`);
+    logger.info(`[DATA INITIALIZATION] Monitoring points population completed successfully | Created: ${created} | Existing: ${existing}`);
   } catch (error) {
-    console.error('Error during points population:', error);
+    logger.error('[DATA INITIALIZATION ERROR] Failed to populate monitoring points', { error, stack: error.stack });
   }
 }
 
