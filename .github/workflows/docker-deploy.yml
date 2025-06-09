@@ -101,6 +101,36 @@ jobs:
     needs: [unit-tests, integration-tests] 
     runs-on: ubuntu-latest
 
+    # --- Define Docker Services for Integration Tests ---
+    services:
+      node-red:
+        image: statuscompliance/node-red-status:latest
+        ports:
+          - 1880:1880
+          
+        env:
+          NODE_RED_URL: http://localhost:1880
+          NODE_RED_USER: admin
+          NODE_RED_PASSWORD: admin
+          TZ: Europe/Madrid
+
+        options: >-
+          --health-cmd "curl -f http://localhost:1880/auth/login || exit 1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      # Add other services your integration tests depend on here
+      # service-name:
+      #   image: docker-image-uri
+      #   ports:
+      #     - 9090:9090
+      #   options: >-
+      #     --health-cmd "curl -f http://localhost:9090/-/healthy || exit 1"
+      #     --health-interval 5s
+      #     --health-timeout 5s
+      #     --health-retries 10
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4.2.2
