@@ -1,3 +1,5 @@
+import { logError } from '../config/logger.js';
+
 /**
  * Handles standard errors for API controllers
  * @param {Response} res - Express response object
@@ -6,7 +8,18 @@
  * @returns {Response} HTTP response with the formatted error
  */
 export const handleControllerError = (res, error, defaultMessage = 'Internal server error') => {
-  console.error(error);
+  // Log the error with context
+  const errorInfo = {
+    requestId: res.req?.requestId,
+    userId: res.req?.user?.id || 'anonymous',
+    ip: res.req?.ip || res.req?.headers?.['x-forwarded-for'] || res.req?.socket?.remoteAddress,
+    url: res.req?.originalUrl,
+    method: res.req?.method,
+    functionName: error.functionName || '',
+    lineNumber: error.lineNumber || 0,
+  };
+  
+  logError(error, errorInfo);
   
   // Handle external API errors with response property
   if (error.response) {
@@ -18,13 +31,15 @@ export const handleControllerError = (res, error, defaultMessage = 'Internal ser
 
     return res.status(status).json({
       message,
-      error: errorMessage
+      error: errorMessage,
+      requestId: res.req?.requestId,
     });
   }
   
   // Handle internal errors
   return res.status(500).json({
     message: defaultMessage,
-    error: error.message
+    error: error.message,
+    requestId: res.req?.requestId,
   });
 };
