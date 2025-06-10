@@ -4,6 +4,7 @@ import { Sequelize } from 'sequelize';
 import { newDb } from 'pg-mem';
 import { registerDB } from '../../src/db/database';
 import { models } from '../../src/models/models.js';
+import logger from '../../src/config/logger.js';
 
 // moment is imported from pg-mem to avoid deprecation warnings
 import moment from 'moment';
@@ -27,12 +28,12 @@ export const closeDatabase = async () => {
     await mongoose.connection.dropDatabase();
     await mongoose.connection.close();
     await mongoServer?.stop();
-    console.log('[database] In-memory MongoDB closed');
+    logger.debug('In-memory MongoDB closed');
   }
 
   if (sequelize) {
     await sequelize.close();
-    console.log('[database] In-memory SQLite (PG mem) closed');
+    logger.debug('In-memory SQLite (PG mem) closed');
   }
 };
 
@@ -43,18 +44,18 @@ export const clearDatabase = async () => {
       await collection.deleteMany();
     })
   );
-  console.log('[database] In-memory MongoDB cleared');
+  logger.debug('In-memory MongoDB cleared');
 
   if (sequelize) {
     await sequelize.drop({ cascade: true });
-    console.log('[database] In-memory SQLite (PG mem) cleared');
+    logger.debug('In-memory SQLite (PG mem) cleared');
   }
 };
 
 async function initMongoDB() {
   mongoServer = await MongoMemoryServer.create();
   await mongoose.connect(mongoServer.getUri());
-  console.log('[database] In-memory MongoDB connected');
+  logger.debug('In-memory MongoDB connected');
 }
 
 async function initPostgres() {
@@ -73,7 +74,7 @@ async function initPostgres() {
   });
 
   await sequelize.authenticate();
-  console.log('[database] In-memory SQLite (PG mem) connected');
+  logger.debug('In-memory SQLite (PG mem) connected');
   return sequelize;
 }
 
@@ -92,5 +93,5 @@ async function setupEndpointConfigurations() {
     });
   }
   
-  console.log('[database] Endpoint configurations created');
+  logger.debug('Endpoint configurations created');
 }

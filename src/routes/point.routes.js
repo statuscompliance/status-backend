@@ -4,16 +4,18 @@ import {
   getPointById, 
   deletePointById,
   getPointsByAgreementId,
-  deleteAllPoints
+  deleteAllPoints,
+  updatePointByComputationGroup
 } from '../controllers/point.controller';
 
 export default function () {
   const router = Router();
   router.get('', getPoints);
   router.delete('', deleteAllPoints);
+  router.get('/catalog/:tpaId', getPointsByAgreementId); 
   router.get('/:id', getPointById);
   router.delete('/:id', deletePointById);
-  router.get('/catalog/:tpaId', getPointsByAgreementId);
+  router.put('/computationGroup/:computationGroup', updatePointByComputationGroup);
 
   return router;
 }
@@ -162,6 +164,81 @@ export default function () {
  *                   type: string
  *       500:
  *         description: Failed to get Point
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /point/computationGroup/{computationGroup}:
+ *   put:
+ *     summary: Updates points by computation group ID
+ *     tags: [Points]
+ *     parameters:
+ *       - in: path
+ *         name: computationGroup
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         required: true
+ *         description: The computation group ID
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               guaranteeValue:
+ *                 type: number
+ *                 format: float
+ *               guaranteeResult:
+ *                 type: boolean
+ *               metrics:
+ *                 type: object
+ *               scope:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Points updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 points:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Point'
+ *       400:
+ *         description: Invalid computation group ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: No points found with the specified computation group
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Failed to update points
  *         content:
  *           application/json:
  *             schema:
