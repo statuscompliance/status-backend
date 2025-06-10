@@ -49,9 +49,7 @@ export async function getComputationsByControlId(req, res) {
     });
     res.status(200).json(computations);
   } catch (error) {
-    res.status(500).json({
-      message: `Failed to get computations, error: ${error.message}`,
-    });
+    handleControllerError(res, error, 'Failed to get computations by control ID');
   }
 }
 
@@ -81,10 +79,10 @@ export async function getComputationsByControlIdAndCreationDate(req, res) {
 }
 
 export async function setComputeIntervalBytControlIdAndCreationDate(req, res) {
-  const { controlId } = req.params;
-  const { from, to } = req.body;
-
   try {
+    const { controlId } = req.params;
+    const { from, to } = req.body;
+
     if (!from || !to) {
       return res.status(400).json({ error: '"from" and "to" are required in body' });
     }
@@ -114,8 +112,8 @@ export async function setComputeIntervalBytControlIdAndCreationDate(req, res) {
     }
 
     return res.status(204).json({ message: `${updated} computations updated.` });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+  } catch (error) {
+    handleControllerError(res, error, 'Failed to update computation interval');
   }
 };
 

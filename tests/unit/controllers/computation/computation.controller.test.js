@@ -49,6 +49,7 @@ describe('Computation Controller', () => {
     vi.clearAllMocks();
     res = createRes();
     mockComputations = [mockComputation1, mockComputation2];
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -153,7 +154,8 @@ describe('Computation Controller', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        message: `Failed to get computations, error: ${error.message}`,
+        message: 'Failed to get computations by control ID',
+        error: 'DB error'
       });
     });
   });
@@ -228,6 +230,26 @@ describe('Computation Controller', () => {
       });
     });
 
+    it('should return 400 if from is missing', async () => {
+      const reqMissing = { ...reqBase, body: { to: reqBase.body.to } };
+      await setComputeIntervalBytControlIdAndCreationDate(reqMissing, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: '"from" and "to" are required in body',
+      });
+    });
+
+    it('should return 400 if body is empty', async () => {
+      const reqEmpty = { ...reqBase, body: {} };
+      await setComputeIntervalBytControlIdAndCreationDate(reqEmpty, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: '"from" and "to" are required in body',
+      });
+    });
+
     it('should return 404 if no computations are updated', async () => {
       mockController(models.Computation, 'update', [0]);
       await setComputeIntervalBytControlIdAndCreationDate(reqBase, res);
@@ -248,18 +270,15 @@ describe('Computation Controller', () => {
     });
 
     it('should return 500 if update fails', async () => {
-
       const error = new Error('Update failed');
-      vi.spyOn(models.Computation, 'update').mockImplementation(() => {
-        throw new Error('Unexpected error');
-      });
-
-      mockController(models.Computation, 'update', mockComputation2, error);
+      mockController(models.Computation, 'update', null, error);
+      
       await setComputeIntervalBytControlIdAndCreationDate(reqBase, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        error: error.message,
+        message: 'Failed to update computation interval',
+        error: 'Update failed',
       });
     });
   });
@@ -287,9 +306,6 @@ describe('Computation Controller', () => {
       };
     });
     it('should return 201 and computation url on success', async () => {
-      const UUID_PATTERN = '[0-9a-fA-F-]{36}';
-      const COMPUTATION_URL_REGEX = new RegExp(`^undefined/computations/${UUID_PATTERN}$`);
-
       vi.spyOn(nodered, 'post').mockResolvedValue({ status: 200 });
 
       await createComputation(req, res);
@@ -298,8 +314,12 @@ describe('Computation Controller', () => {
       expect(res.json).toHaveBeenCalledWith({
         code: 201,
         message: 'OK',
-        computation: expect.stringMatching(COMPUTATION_URL_REGEX),
+        computation: expect.stringContaining('undefined/computations/'),
       });
+      
+      // Verify the computation URL format more specifically
+      const response = res.json.mock.calls[0][0];
+      expect(response.computation).toMatch(/^undefined\/computations\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     });
 
     it('should return 400 if required fields are missing', async () => {
@@ -356,6 +376,29 @@ describe('Computation Controller', () => {
         error: 'Invalid computations',
       });
     });
+
+    it('should return 400 if computations is empty array', async () => {
+      const req = { body: { computations: [] } };
+
+      await bulkCreateComputations(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Invalid computations',
+      });
+    });
+
+    it('should return 400 if computations is not an array', async () => {
+      const req = { body: { computations: 'not-an-array' } };
+
+      await bulkCreateComputations(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Invalid computations',
+      });
+    });
+
     it('should return 400 if required fields are missing', async () => {
       const req = { body: { computations: mockComputations } };
 
@@ -487,7 +530,8 @@ describe('Computation Controller', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         message: 'Failed to delete computation by control ID',
-        error: 'DB error'});
+        error: 'DB error'
+      });
     });
   });
 });
