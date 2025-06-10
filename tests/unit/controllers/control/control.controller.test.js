@@ -403,7 +403,7 @@ describe('Control Controller', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        message: 'Failed to panel to control',
+        message: 'Failed to add panel to control',
         error: 'Database write failed',
       });
     });

@@ -228,7 +228,7 @@ export async function addPanelToControl(req, res) {
       data: panel,
     });
   } catch (error) {
-    handleControllerError(res, error, 'Failed to panel to control');
+    handleControllerError(res, error, 'Failed to add panel to control');
   }
 }
 
