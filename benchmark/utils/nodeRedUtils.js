@@ -2,13 +2,11 @@ import axios from 'axios';
 import logger from '../../src/config/logger.js';
 import 'dotenv/config';
 
-const NODE_RED_HOST = process.env.NODE_RED_HOST; // Change to your Node-RED host if not running locally
-const NODE_RED_PORT = process.env.NODE_RED_PORT; // Default Node-RED port
-const NODE_RED_URL = `http://${NODE_RED_HOST}:${NODE_RED_PORT}`;
-// Default credentials for Node-RED Admin API
-const NODE_RED_USER = process.env.NODE_RED_USER;
-const NODE_RED_PASSWORD = process.env.NODE_RED_PASSWORD;
-// Basic Auth header for Node-RED Admin API
+const NODE_RED_URL = process.env.NODE_RED_URL || 'http://localhost:1880';
+
+const NODE_RED_USER = process.env.USER_STATUS;
+const NODE_RED_PASSWORD = process.env.PASS_STATUS;
+
 const BASIC_AUTH_HEADER = 'Basic ' + Buffer.from(`${NODE_RED_USER}:${NODE_RED_PASSWORD}`).toString('base64');
 
 let nodeRedAuthToken = '';
@@ -19,10 +17,8 @@ let nodeRedApi = null;
  * @returns {Promise<boolean>} True if Node-RED is reachable and responds with a 200 status, false otherwise.
  */
 export async function connectNodeRed() {
-  logger.debug('Connecting to Node-RED Admin API...');
   try {
     nodeRedAuthToken = await authenticateNodeRed();
-    logger.debug('Node-RED authentication token obtained:', nodeRedAuthToken);
     nodeRedApi = axios.create({
       baseURL: NODE_RED_URL,
       headers: {
@@ -32,8 +28,7 @@ export async function connectNodeRed() {
     });
     const response = await nodeRedApi.get('/');
     return response.status === 200;
-  } catch (error) {
-    logger.error('Error connecting to Node-RED Admin API:', error.message);
+  } catch {
     return false;
   }
 }
@@ -42,39 +37,33 @@ async function authenticateNodeRed() {
   const MAX_RETRIES = 3;
   const RETRY_DELAY_MS = 3000;
 
+  // Create a temporary axios instance for authentication
+  const authApi = axios.create({
+    baseURL: NODE_RED_URL,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    timeout: 10000
+  });
+
   for (let i = 0; i < MAX_RETRIES; i++) {
-    logger.debug(`Attempting to authenticate with Node-RED Admin API... (Attempt ${i + 1}/${MAX_RETRIES})`);
     try {
-      const tokenResponse = await axios.post(`${NODE_RED_URL}/auth/token`, new URLSearchParams({
+      const tokenResponse = await authApi.post('/auth/token', new URLSearchParams({
         client_id: 'node-red-admin',
         grant_type: 'password',
         scope: '*',
         username: NODE_RED_USER,
         password: NODE_RED_PASSWORD,
-      }).toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        timeout: 10000
-      });
+      }).toString());
 
       if (tokenResponse.data && tokenResponse.data.access_token) {
-        logger.debug('Node-RED authentication successful. Token obtained.');
         return tokenResponse.data.access_token;
-      } else {
-        logger.warn(`Authentication attempt ${i + 1} failed: No access_token found in response data. Retrying...`);
       }
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        logger.warn(`Authentication attempt ${i + 1} failed. Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}. Retrying...`);
         if (error.response.status === 401 || error.response.status === 403) {
-          logger.error('Authentication failed due to incorrect credentials or permissions. Aborting retries.');
           throw new Error(`Node-RED authentication failed: Invalid credentials or insufficient permissions. Status: ${error.response.status}`);
         }
-      } else if (axios.isAxiosError(error) && error.request) {
-        logger.warn(`Authentication attempt ${i + 1} failed: No response received. Retrying...`);
-      } else {
-        logger.error(`Error during authentication attempt ${i + 1}: ${error.message}. Retrying...`);
       }
     }
     if (i < MAX_RETRIES - 1) {
@@ -96,32 +85,24 @@ async function authenticateNodeRed() {
  */
 async function waitForFlowEndpointReady(endpointUrl, timeoutMs = 90000, intervalMs = 3000) {
   const startTime = Date.now();
-  const fullUrl = `${NODE_RED_URL}${endpointUrl}`;
-  logger.debug(`[Flow Endpoint Check] Waiting for flow endpoint '${fullUrl}' to be ready...`);
-
+  const fullUrl = `/api/v1${endpointUrl}`;
+  
   while (Date.now() - startTime < timeoutMs) {
     try {
-      const response = await axios.get(fullUrl, { timeout: 90000 });
-      logger.debug(`[Flow Endpoint Check] Endpoint '${fullUrl}' responded with status: ${response.status}. Considering it ready.`);
+      await nodeRedApi.post(fullUrl, { timeout: 90000 });
       return true;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         if (error.response.status === 404) {
-          logger.debug(`[Flow Endpoint Check] Endpoint '${fullUrl}' still 404. Retrying...`);
+          // Continue retrying for 404
         } else {
-          logger.debug(`[Flow Endpoint Check] Endpoint '${fullUrl}' responded with ${error.response.status}. Assuming it's active. Data: ${JSON.stringify(error.response.data)}`);
           return true;
         }
-      } else if (axios.isAxiosError(error) && error.request) {
-        logger.debug(`[Flow Endpoint Check] Endpoint '${fullUrl}' no response. Retrying...`);
-      } else {
-        logger.warn(`[Flow Endpoint Check] Unexpected error checking endpoint '${fullUrl}': ${error.message}. Retrying...`);
       }
     }
     await new Promise(resolve => setTimeout(resolve, intervalMs));
   }
 
-  logger.error(`[Flow Endpoint Check] Flow endpoint '${fullUrl}' did not become ready within ${timeoutMs / 1000} seconds.`);
   return false;
 }
 
@@ -136,35 +117,21 @@ async function waitForFlowEndpointReady(endpointUrl, timeoutMs = 90000, interval
  * @throws {Error} If the HTTP request fails or the response status is not OK.
  */
 export async function executeEndpointFlow(endpointUrl, msg) {
-  logger.debug(`Executing flow at endpoint: ${NODE_RED_URL}${endpointUrl}`);
-  try {
-
-    const endpointReady = await waitForFlowEndpointReady(endpointUrl);
-    if (!endpointReady) {
-      throw new Error(`Flow endpoint ${endpointUrl} did not become ready before execution.`);
-    }
-    nodeRedApi = axios.create({
-      baseURL: NODE_RED_URL,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': BASIC_AUTH_HEADER
-      },
-    });
-    const response = await nodeRedApi.post(`${NODE_RED_URL}${endpointUrl}`, msg, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    logger.debug('Endpoint flow executed successfully.');
-    return response.data;
-  } catch (error) {
-    logger.error('Error executing endpoint flow:', error.message);
-    if (axios.isAxiosError(error) && error.response) {
-      logger.error(`HTTP error! Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`);
-    }
-    throw error;
+  const endpointReady = await waitForFlowEndpointReady(endpointUrl);
+  if (!endpointReady) {
+    throw new Error(`Flow endpoint ${endpointUrl} did not become ready before execution.`);
   }
+    
+  // Update nodeRedApi headers for basic auth
+  nodeRedApi.defaults.headers.Authorization = BASIC_AUTH_HEADER;
+    
+  const response = await nodeRedApi.post(endpointUrl, msg, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  return response.data;
 }
 
 /**
@@ -173,29 +140,20 @@ export async function executeEndpointFlow(endpointUrl, msg) {
  * @returns {Promise<object|null>} The flow object if found, null otherwise.
  */
 export async function getFlow(flowId) {
-  logger.debug(`Attempting to get flow with ID: ${flowId}`);
   try {
-    await connectNodeRed();
     const response = await nodeRedApi.get(`/flow/${flowId}`);
     if (response.status === 200) {
-      logger.debug(`Flow "${flowId}" retrieved successfully.`);
       return response.data;
     } else if (response.status === 404) {
-      logger.warn(`Flow "${flowId}" not found (status 404).`);
       return null;
     } else {
-      const errorText = JSON.stringify(response.data);
-      logger.error(`Failed to get flow "${flowId}". Status: ${response.status}, Response: ${errorText}`);
       return null;
     }
   } catch (error) {
-    logger.error(`Error getting flow ${flowId}:`, error.message);
     if (axios.isAxiosError(error) && error.response) {
       if (error.response.status === 404) {
-        logger.warn(`Flow "${flowId}" not found (Axios 404).`);
         return null;
       }
-      logger.error('Node-RED API error:', error.response.status, error.response.data);
     }
     return null;
   }
@@ -208,28 +166,19 @@ export async function getFlow(flowId) {
  * @returns {Promise<boolean>} True if the flow was deleted successfully or not found (404), false otherwise.
  */
 export async function deleteFlow(flowId) {
-  logger.debug(`Attempting to delete Node-RED flow: ${flowId}`);
   try {
-    await connectNodeRed();
     const response = await nodeRedApi.delete(`/flow/${flowId}`);
 
     if (response.status === 200 || response.status === 204) {
-      logger.debug(`Flow "${flowId}" deleted successfully.`);
       return true;
     } else {
-      const errorText = JSON.stringify(response.data);
-      logger.error(`Failed to delete flow "${flowId}". Status: ${response.status}, Response: ${errorText}`);
       return false;
     }
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       if (error.response.status === 404) {
-        logger.warn(`Flow "${flowId}" not found (already deleted or never existed). Considering as success.`);
         return true;
       }
-      logger.error(`Node-RED API error deleting flow ${flowId}: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`);
-    } else {
-      logger.error('Error deleting Node-RED flow:', error.message);
     }
     return false;
   }
@@ -242,30 +191,21 @@ export async function deleteFlow(flowId) {
  * @returns {Promise<boolean>} True if the flow was deployed successfully, false otherwise.
  */
 export async function createFlow(flow) {
-  const flowId = flow[0].id;
-  logger.debug(`Deploying single flow with ID: ${flowId}...`);
   try {
-    await connectNodeRed();
     const response = await nodeRedApi.post('/flows', flow, {
       headers: {
         'Content-Type': 'application/json',
         'Node-RED-Deployment-Type': 'full',
       },
     });
-
+    logger.debug(`Flow created: ${JSON.stringify(response.data)}`);
+    logger.debug(`Response status: ${response.status}`);
     if (response.status <= 300) {
-      logger.debug(`Single flow with ID "${flowId}" deployed successfully.`);
       return true;
     } else {
-      logger.error(`Single flow deployment failed with status: ${response.status}`);
       return false;
     }
-  } catch (error) {
-    logger.error('Error deploying single flow:', error.message);
-    if (axios.isAxiosError(error) && error.response) {
-      logger.error('Node-RED API error:', error.response.status, error.response.data);
-      logger.error('Node-RED API response data:', error.response.data);
-    }
+  } catch {
     return false;
   }
 }

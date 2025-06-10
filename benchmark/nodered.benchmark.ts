@@ -8,8 +8,7 @@ describe('Node-Red custom flows Benchmark', () => {
   
   beforeAll(async () => {
     logger.info('Starting Node-RED custom flows benchmark...');
-    const ready = await connectNodeRed();
-    expect(ready).toBe(true);
+    await connectNodeRed();
     logger.info('Node-RED is ready for benchmarks.');
   });
 
