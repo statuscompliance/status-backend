@@ -1,7 +1,8 @@
+import { v4 as uuidv4 } from 'uuid';
 export function createComputationExample(overrides = {}) {
   return {
-    id: 'computationId',
-    computationGroup: 'computationGroupId',
+    id: uuidv4(),
+    computationGroup: uuidv4(),
     value: true,
     scope: {
       project: 'showcase-status-monitoring',

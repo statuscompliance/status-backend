@@ -1,21 +1,11 @@
 import { models } from '../models/models.js';
 import { checkRequiredProperties } from '../utils/checkRequiredProperties.js';
 import { mapPanelsToDTO } from '../utils/panelUtils.js';
+import { buildWhereClause } from '../utils/buildWhereClause.js';
+import { handleControllerError } from '../utils/errorHandler.js';
 
-// Function to build the where clause for controls
-const buildControlWhereClause = (query) => {
-  const { status, ...otherFilters } = query;
-  const whereClause = { ...otherFilters };
-
-  if (status === 'finalized' || status === 'draft') {
-    whereClause.status = status;
-  } else if (status) {
-    throw new Error(
-      `Invalid status filter: ${status}. Allowed values are "finalized" or "draft".`
-    );
-  }
-
-  return whereClause;
+const validFilters = {
+  status: ['draft', 'finalized'],
 };
 
 // Function to check if a model instance exists by ID
@@ -30,17 +20,14 @@ export async function getModelById(res, model, id, { name = 'Resource' } = {}) {
 
 export const getControls = async (req, res) => {
   try {
-    const whereClause = buildControlWhereClause(req.query);
+    const whereClause = buildWhereClause(req.query, validFilters);
     const controls = await models.Control.findAll({ where: whereClause });
     res.status(200).json(controls);
   } catch (error) {
-    if (error.message.startsWith('Invalid status filter')) {
+    if (error.message.startsWith('Invalid value for')) {
       return res.status(400).json({ error: error.message });
     }
-    res.status(500).json({
-      message: 'Failed to retrieve controls',
-      error: error.message,
-    });
+    handleControllerError(res, error, 'Failed to retrieve controls');
   }
 };
 
@@ -55,10 +42,7 @@ export const getControl = async (req, res) => {
 
     res.status(200).json(control);
   } catch (error) {
-    res.status(500).json({
-      message: 'Failed to retrieve control',
-      error: error.message,
-    });
+    handleControllerError(res, error, 'Failed to retrieve control');
   }
 };
 
@@ -66,18 +50,15 @@ export const getCatalogControls = async (req, res) => {
   try {
     const { catalogId } = req.params;
     const query = { ...req.query, catalogId };
-    const whereClause = buildControlWhereClause(query);
+    const whereClause = buildWhereClause(query, validFilters);
     const controls = await models.Control.findAll({ where: whereClause });
 
     res.status(200).json(controls);
   } catch (error) {
-    if (error.message.startsWith('Invalid status filter')) {
+    if (error.message.startsWith('Invalid value for')) {
       return res.status(400).json({ error: error.message });
     }
-    res.status(500).json({
-      message: 'Failed to retrieve catalog controls',
-      error: error.message,
-    });
+    handleControllerError(res, error, 'Failed to retrieve catalog controls');
   }
 };
 
@@ -128,10 +109,7 @@ export const createControl = async (req, res) => {
     res.status(201).json(newControl);
   } catch (error) {
     console.error('Error creating control:', error);
-    res.status(500).json({
-      message: 'Failed to create control',
-      error: error.message,
-    });
+    handleControllerError(res, error, 'Failed to create control');
   }
 };
 
@@ -170,11 +148,9 @@ export const updateControl = async (req, res) => {
         ['endpoint', 'threshold']
       );
       if (!validation) {
-        return res
-          .status(400)
-          .json({
-            error: `Invalid parameters for finalized control: ${textError}`,
-          });
+        return res.status(400).json({
+          error: `Invalid parameters for finalized control: ${textError}`,
+        });
       }
     }
 
@@ -207,10 +183,7 @@ export const updateControl = async (req, res) => {
     const control = await models.Control.findByPk(id);
     res.status(200).json(control);
   } catch (error) {
-    res.status(500).json({
-      message: 'Failed to update control',
-      error: error.message,
-    });
+    handleControllerError(res, error, 'Failed to update control');
   }
 };
 
@@ -229,10 +202,7 @@ export const deleteControl = async (req, res) => {
 
     res.status(204).send(); // No content for successful deletion
   } catch (error) {
-    res.status(500).json({
-      message: 'Failed to delete control',
-      error: error.message,
-    });
+    handleControllerError(res, error, 'Failed to delete control');
   }
 };
 
@@ -256,13 +226,9 @@ export async function addPanelToControl(req, res) {
       data: panel,
     });
   } catch (error) {
-    res.status(500).json({
-      message: 'Failed to add panel to control',
-      error: error.message,
-    });
+    handleControllerError(res, error, 'Failed to add panel to control');
   }
 }
-
 
 export async function getPanelsByControlId(req, res) {
   const { id } = req.params;
@@ -281,7 +247,7 @@ export async function getPanelsByControlId(req, res) {
     });
     // Map to enriched DTOs
     const panelsDTO = await mapPanelsToDTO(panels);
-   
+
     res.status(200).json(panelsDTO);
   } catch (error) {
     const message = 'Failed to get panels from control, error in Grafana API';
@@ -301,18 +267,13 @@ export async function deletePanelFromControl(req, res) {
       },
     });
     if (deletedCount === 0) {
-      return res
-        .status(404)
-        .json({
-          message: `Panel with ID ${panelId} not found for control ID ${id}.`,
-        });
+      return res.status(404).json({
+        message: `Panel with ID ${panelId} not found for control ID ${id}.`,
+      });
     }
     res.status(204).send(); // No content for successful deletion
   } catch (error) {
-    res.status(500).json({
-      message: 'Failed to delete panel from control',
-      error: error.message,
-    });
+    handleControllerError(res, error, 'Failed to delete panel from control');
   }
 }
 
@@ -372,10 +333,7 @@ export const createDraftControl = async (req, res) => {
 
     res.status(201).json(newControl);
   } catch (error) {
-    res.status(500).json({
-      message: 'Failed to create draft control',
-      error: error.message,
-    });
+    handleControllerError(res, error, 'Failed to create draft control');
   }
 };
 
@@ -435,10 +393,7 @@ export const finalizeControl = async (req, res) => {
 
     res.status(200).json(updatedControl[1][0]);
   } catch (error) {
-    res.status(500).json({
-      message: 'Failed to finalize control',
-      error: error.message,
-    });
+    handleControllerError(res, error, 'Failed to finalize control');
   }
 };
 
