@@ -242,6 +242,9 @@ describe('Control Controller', () => {
       mockController(models.Control, 'findByPk', null);
       await control.updateControl({ params: { id: invalidId }, body: {} }, res);
       expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: `Control with ID ${invalidId} not found.`,
+      });
     });
 
     it('should return 400 if attempting to change status from finalized to draft', async () => {
@@ -256,7 +259,32 @@ describe('Control Controller', () => {
         message: 'Cannot change status from finalized to draft',
       });
     });
+    it('should return 400 if a finalized control is updated with invalid params (no status change)', async () => {
+      const updatedControl = createControlExample({
+        name: 'Updated Control',
+        description: 'Updated Description',
+        status: 'finalized'})
 
+      utils.checkRequiredProperties.mockReturnValueOnce({
+        validation: false,
+        textError: 'any error',
+      });
+      vi.spyOn(models.Control, 'findByPk')
+        .mockResolvedValueOnce(currentControl)
+        .mockResolvedValueOnce(updatedControl);
+
+      await control.updateControl(
+        { params: { id: controlId },
+          body: updatedControl,
+        },
+        res
+      );
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Invalid parameters for finalized control: any error',
+      });
+    });
     it('should return 400 if a finalized control is updated with invalid params (no status change)', async () => {
       const finalizedControl = createControlExample({
         id: controlId,
@@ -282,6 +310,31 @@ describe('Control Controller', () => {
       expect(utils.checkRequiredProperties).toHaveBeenCalledWith(
         {some_invalid_param: 'value' },
         ['endpoint', 'threshold']
+      );
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Invalid parameters for finalized control: missing endpoint',
+      });
+    });
+
+    it('should return 400 if a finalized control is updated with invalid params (no status change)', async () => {
+      const updatedControl = {
+        ...currentControl,
+        name: 'Updated Control',
+        status: 'finalized',
+      };
+
+      vi.spyOn(utils, 'checkRequiredProperties')
+        .mockReturnValueOnce({ validation: false, textError: 'missing endpoint' });
+
+      vi.spyOn(models.Control, 'findByPk')
+        .mockResolvedValueOnce(currentControl)
+        .mockResolvedValueOnce(updatedControl);
+      mockController(models.Control, 'update', [1]);
+
+      await control.updateControl(
+        { params: { id: controlId }, body: updatedControl },
+        res
       );
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
@@ -331,6 +384,64 @@ describe('Control Controller', () => {
         message: 'Failed to update control',
         error: 'Database connection lost',
       });
+    });
+    it('should return 200 when startDate is null and endDate is null in body', async () => {
+      const controlWithoutDates = {
+        ...currentControl,
+        startDate: undefined,
+        endDate: undefined,
+      };
+      const createdControl = {
+        ...controlWithoutDates,
+        id: 'newId',
+        startDate: null,
+        endDate: null,
+      };
+      mockController(models.Control, 'create', createdControl);
+
+      await control.createControl({ body: controlWithoutDates }, res);
+
+      expect(models.Control.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDate: null,
+          endDate: null,
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(createdControl);
+    });
+    it('should preserve currentControl.endDate if endDate is not provided in body', async () => {
+      const newControl = createControlExample({
+        id: controlId,
+        status: 'draft',
+      });
+
+      const updatedBodyWithoutEndDate = {
+        ...newControl,
+        name: 'Updated Name',
+        description: 'New Description',
+        endDate: null,
+        startDate: null,
+        status: null,
+      };
+
+      const expectedUpdatedControl = {
+        ...newControl, // Preserving the original startDate and endDate
+        name: 'Updated Control',
+        //description: 'Updated Description',
+        status: 'finalized', // Assuming status is set to finalized
+
+      };
+      mockController(models.Control, 'findByPk', newControl);
+
+      mockController(models.Control, 'update', [1]);
+      await control.updateControl(
+        { params: { id: controlId }, body: updatedBodyWithoutEndDate },
+        res
+      );
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(expectedUpdatedControl);
     });
   });
 
@@ -432,6 +543,9 @@ describe('Control Controller', () => {
       await control.getPanelsByControlId({ params: { id: invalidId } }, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: `Control with ID ${invalidId} not found.`,
+      });
     });
 
     it('should return 500 if mapping panels fails', async () => {
