@@ -1,24 +1,20 @@
 import { describe, bench, beforeAll, expect } from 'vitest';
-import { deleteFlow, executeEndpointFlow, connectNodeRed, createFlow } from './utils/nodeRedUtils.js';
+import { deleteFlow, executeEndpointFlow, createNodeRedApi, createFlow } from './utils/nodeRedUtils.js';
 import { simpleFLow, sampleStatusFlow1, sampleStatusFlow2, endpoint } from './flows/sampleFlows.js';
 import logger from '../src/config/logger.js';
 
+describe('Node-Red custom flows Benchmark', async () => {
 
-describe('Node-Red custom flows Benchmark', () => {
-  
-  beforeAll(async () => {
-    logger.info('Starting Node-RED custom flows benchmark...');
-    await connectNodeRed();
-    logger.info('Node-RED is ready for benchmarks.');
-  });
+  logger.info('Starting Node-RED custom flows benchmark...');
 
   bench('Simple Default Flow Benchmark', async () => {
+    const nodeRedApi = await createNodeRedApi();
+    console.log("Defined Node Red Api:", nodeRedApi);
     try {
       logger.debug(`[Benchmark] Deploying ${simpleFLow.flow[0].id}`);
-      const deployed = await createFlow(simpleFLow.flow);
-      if (!deployed) {
-        throw new Error(`Failed to deploy flow for benchmark: ${simpleFLow.flow[0].id}`);
-      }
+      const createResponse = await createFlow(simpleFLow.flow, nodeRedApi);
+      console.log('Debug Creation Response: ', createResponse);
+
 
       const msg = { payload: 'Sample Message for Benchmarks', timestamp: Date.now() };
 
@@ -29,17 +25,20 @@ describe('Node-Red custom flows Benchmark', () => {
       throw error;
     } finally {
       logger.debug(`[Benchmark] Deleting ${simpleFLow.flow[0].id}`);
-      const deleted = await deleteFlow(simpleFLow.flow[0].id);
+      const deleted = await deleteFlow(nodeRedApi, simpleFLow.flow[0].id);
       if (!deleted) {
         logger.warn(`Failed to delete flow after benchmark: ${simpleFLow.flow[0].id}. Manual cleanup might be needed.`);
       }
     }
   });
 
-  bench('Sample Status Flow1 Benchmark', async () => {
+  bench('Sample Status Flow1 Benchmark', async () => {    
+    const nodeRedApi = await createNodeRedApi();
     try {
+
+      const nodeRedApi = await createNodeRedApi();
       logger.debug(`[Benchmark] Deploying ${sampleStatusFlow1.flow[0].id}`);
-      const deployed = await createFlow(sampleStatusFlow1.flow);
+      const deployed = await createFlow(nodeRedApi, sampleStatusFlow1.flow);
       if (!deployed) {
         throw new Error(`Failed to deploy flow for benchmark: ${sampleStatusFlow1.flow[0].id}`);
       }
@@ -49,27 +48,27 @@ describe('Node-Red custom flows Benchmark', () => {
         { message: 'Another test message.', timestamp: new Date().toISOString() }
       ];
 
-      await executeEndpointFlow(endpoint, payload);
+      await executeEndpointFlow( endpoint, payload);
 
     } catch (error) {
       logger.error('Unexpected error occurred while executing the flow: ', error);
       throw error;
     } finally {
       logger.debug(`[Benchmark] Deleting ${sampleStatusFlow1.flow[0].id}`);
-      const deleted = await deleteFlow(sampleStatusFlow1.flow[0].id);
+      const deleted = await deleteFlow(nodeRedApi, sampleStatusFlow1.flow[0].id);
       if (!deleted) {
         logger.warn(`Failed to delete flow after benchmark: ${sampleStatusFlow1.flow[0].id}. Manual cleanup might be needed.`);
       }
     }
   });
 
-  bench('Sample Status Flow2 Benchmark', async () => {
+  bench('Sample Status Flow2 Benchmark', async () => {    
+    const nodeRedApi = await createNodeRedApi();
     try {
+      const nodeRedApi = await createNodeRedApi();
       logger.debug(`[Benchmark] Deploying ${sampleStatusFlow2.flow[0].id}`);
-      const deployed = await createFlow(sampleStatusFlow2.flow);
-      if (!deployed) {
-        throw new Error(`Failed to deploy flow for benchmark: ${sampleStatusFlow2.flow[0].id}`);
-      }
+      const createResponse = await createFlow(nodeRedApi, sampleStatusFlow2.flow);
+      logger.debug('Debug Error: ', JSON.stringify(createResponse, null, 2));
 
       const payload = [
         { message: 'Hello, this is a test message.', timestamp: new Date().toISOString(), status: 'success' },
@@ -83,7 +82,7 @@ describe('Node-Red custom flows Benchmark', () => {
       throw error;
     } finally {
       logger.debug(`[Benchmark] Deleting ${sampleStatusFlow2.flow[0].id}`);
-      const deleted = await deleteFlow(sampleStatusFlow2.flow[0].id);
+      const deleted = await deleteFlow(nodeRedApi, sampleStatusFlow2.flow[0].id);
       if (!deleted) {
         logger.warn(`Failed to delete flow after benchmark: ${sampleStatusFlow2.flow[0].id}. Manual cleanup might be needed.`);
       }

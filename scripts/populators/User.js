@@ -1,11 +1,10 @@
 import bcrypt from 'bcrypt';
 import { models } from '../../src/models/models.js';
+import logger from '../../src/config/logger.js';
 
 async function populateUsers() {
   try {
-    console.log('__________________________________');
-    console.log('Starting user population...');
-    console.log('__________________________________');
+    logger.info('[DATA INITIALIZATION] Starting user accounts population process');
 
     // Hash passwords before saving them
     const saltRounds = 10;
@@ -44,15 +43,14 @@ async function populateUsers() {
         defaults: userData
       });
       if (created) {
-        console.log(`User ${userData.username} with role ${userData.authority} successfully created.`);
+        logger.info(`[USER CREATED] Account "${userData.username}" with role "${userData.authority}" successfully initialized`);
       } else {
-        console.log(`User ${userData.username} already exists.`);
+        logger.info(`[USER SKIPPED] Account "${userData.username}" already exists in the system`);
       }
     }
-    console.log('User population completed.');
-    console.log('__________________________________');
+    logger.info('[DATA INITIALIZATION] User accounts population process completed successfully');
   } catch (error) {
-    console.error('Error during user population:', error);
+    logger.error('[DATA INITIALIZATION ERROR] Failed to populate user accounts', { error, stack: error.stack });
   }
 }
 
