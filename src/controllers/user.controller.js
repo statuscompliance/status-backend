@@ -3,10 +3,63 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { verifyAccessToken } from '../utils/tokenUtils.js';
 import { getNodeRedToken } from '../utils/nodeRedToken.js';
+import { handleControllerError } from '../utils/errorHandler.js';
+import logger from '../config/logger.js';
 
 const token_expiration = parseInt(process.env.JWT_EXPIRATION) || 3600;
 const refreshToken_expiration =
   parseInt(process.env.JWT_REFRESH_EXPIRATION) || 3600 * 24 * 30;
+
+// Helper function to set cookie options based on environment
+export const getCookieOptions = (maxAge) => {
+  if (process.env.NODE_ENV === 'development') {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      maxAge: maxAge * 1000 
+    };
+  } else if (process.env.NODE_ENV === 'production') {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      maxAge: maxAge * 1000, 
+      sameSite: 'none', 
+      secure: true, 
+      partitioned: true 
+    };
+  } else {
+    // Default for test or other environments
+    return { 
+      httpOnly: true, 
+      path: '/',
+      maxAge: maxAge * 1000, 
+      sameSite: 'lax' 
+    };
+  }
+};
+
+// Helper function to get cookie clear options
+export const getClearCookieOptions = () => {
+  if (process.env.NODE_ENV === 'development') {
+    return { 
+      httpOnly: true, 
+      path: '/' 
+    };
+  } else if (process.env.NODE_ENV === 'production') {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      sameSite: 'none', 
+      secure: true 
+    };
+  } else {
+    return { 
+      httpOnly: true, 
+      path: '/',
+      sameSite: 'lax' 
+    };
+  }
+};
 
 export async function signUp(req, res) {
   const { username, authority = 'USER', password, email } = req.body;
@@ -40,11 +93,14 @@ export async function signUp(req, res) {
     res.status(201).json({
       message: `User ${username} created successfully with authority ${authority}`,
     });
-  } catch (error) {
-    console.error('Error in signUp:', error);
-    res.status(500).json({
-      message: 'Failed to create user, error',
+    
+    logger.info(`User ${username} created with authority ${authority}`, {
+      userId: 'system',
+      action: 'user_create',
+      email: email
     });
+  } catch (error) {
+    return handleControllerError(res, error, 'Failed to create user');
   }
 }
 
@@ -96,27 +152,43 @@ export async function signIn(req, res) {
         { refresh_token: refreshToken },
         { where: { username } }
       );
+      
       let nodeRedToken = '';
       if (user.authority === 'DEVELOPER' || user.authority === 'ADMIN') {
-        nodeRedToken = await getNodeRedToken(username, password);
+        try {
+          nodeRedToken = await getNodeRedToken(username, password);
+        } catch (nodeRedError) {
+          // If the error is authentication-related (403), handle it specifically
+          if (nodeRedError.statusCode === 403) {
+            logger.warn(`Node-RED authentication failed for user: ${username}`, {
+              userId: user.id,
+              statusCode: 403
+            });
+            
+            // Do not interrupt the flow, simply do not send Node-RED token
+            res.cookie('accessToken', accessToken, getCookieOptions(token_expiration));
+            res.cookie('refreshToken', refreshToken, getCookieOptions(refreshToken_expiration));
+            
+            return res.status(200).json({
+              username: user.username,
+              email: user.email,
+              authority: user.authority,
+              accessToken: accessToken,
+              refreshToken: refreshToken,
+              nodeRedAccess: false,
+              message: 'Logged in successfully, but Node-RED access was denied. Check Node-RED credentials.'
+            });
+          }
+          // Rethrow any other type of error to be handled by the outer catch
+          throw nodeRedError;
+        }
       }
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        path: '/',
-        maxAge: token_expiration * 1000,
-      });
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        path: '/',
-        maxAge: refreshToken_expiration * 1000,
-      });
-      if (nodeRedToken !== '') {
-        res.cookie('nodeRedToken', nodeRedToken, {
-          httpOnly: true,
-          path: '/',
-          maxAge: refreshToken_expiration * 1000,
-        });
+      res.cookie('accessToken', accessToken, getCookieOptions(token_expiration));
+      res.cookie('refreshToken', refreshToken, getCookieOptions(refreshToken_expiration));
+      
+      if (nodeRedToken !== '' && nodeRedToken !== null) {
+        res.cookie('nodeRedToken', nodeRedToken, getCookieOptions(refreshToken_expiration));
       }
 
       res.status(200).json({
@@ -126,11 +198,24 @@ export async function signIn(req, res) {
         accessToken: accessToken,
         refreshToken: refreshToken,
         nodeRedToken: nodeRedToken,
+        nodeRedAccess: nodeRedToken !== '' && nodeRedToken !== null,
       });
     }
   } catch (error) {
-    console.error('Error in signIn:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    // Check if the error has a specific status code
+    const statusCode = error.statusCode || 500;
+    const errorMessage = error.message || 'Internal server error';
+    
+    logger.error(`Error during sign in: ${errorMessage}`, {
+      userId: req.body.username || 'unknown',
+      statusCode,
+      error
+    });
+    
+    return res.status(statusCode).json({ 
+      message: errorMessage,
+      details: statusCode === 403 ? 'Node-RED authentication failed' : undefined
+    });
   }
 }
 
@@ -147,21 +232,9 @@ export async function signOut(req, res) {
     });
 
     if (user.length === 0) {
-      res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
-      res.clearCookie('accessToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
-      res.clearCookie('nodeRedToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
+      res.clearCookie('refreshToken', getClearCookieOptions());
+      res.clearCookie('accessToken', getClearCookieOptions());
+      res.clearCookie('nodeRedToken', getClearCookieOptions());
       return res
         .status(404)
         .json({ message: 'No user found for provided refresh token' });
@@ -174,28 +247,13 @@ export async function signOut(req, res) {
       }
     );
 
-    res.clearCookie('refreshToken', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
-    res.clearCookie('accessToken', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
-    res.clearCookie('nodeRedToken', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
+    res.clearCookie('refreshToken', getClearCookieOptions());
+    res.clearCookie('accessToken', getClearCookieOptions());
+    res.clearCookie('nodeRedToken', getClearCookieOptions());
 
     return res.status(204).json({ message: 'Signed out successfully' });
   } catch (error) {
-    console.error('Error in signOut:', error);
-    return res
-      .status(500)
-      .json({ message: 'Internal server error', error: error.message });
+    return handleControllerError(res, error, 'Error during sign out process');
   }
 }
 
@@ -203,10 +261,14 @@ export async function getUsers(req, res) {
   // THIS IS A TEST FUNCTION
   try {
     const users = await models.User.findAll();
+    
+    logger.debug('Retrieved all users', {
+      count: users.length
+    });
+    
     res.status(200).json(users);
   } catch (error) {
-    console.error('Error in getUsers:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return handleControllerError(res, error, 'Failed to retrieve users');
   }
 }
 
@@ -219,10 +281,17 @@ export async function getAuthority(req, res) {
 
   const { decoded, error } = await verifyAccessToken(accessToken);
   if (error) {
-    console.error('Error in getAuthority:', error);
+    logger.warn('Invalid token attempt', {
+      error: error.message
+    });
     return res.status(403).json({ message: 'Invalid token' });
   }
 
+  logger.debug('Authority check successful', {
+    userId: decoded.user_id,
+    authority: decoded.authority
+  });
+  
   return res.status(200).json({ authority: decoded.authority });
 }
 
@@ -236,7 +305,10 @@ export async function refreshToken(req, res) {
 
     jwt.verify(refreshToken, process.env.REFRESH_JWT_SECRET, async (err, decoded) => {
       if (err) {
-        console.error('Error verifying refresh token:', err);
+        logger.warn('Token verification failed', {
+          error: err.message,
+          tokenType: 'refresh'
+        });
         return res.status(403).json({ message: 'Invalid or expired refresh token' });
       }
       
@@ -248,6 +320,9 @@ export async function refreshToken(req, res) {
       });
 
       if (!user) {
+        logger.warn('Token claimed by non-existent user', {
+          userId: decoded.user_id
+        });
         return res.status(403).json({ message: 'Invalid refresh token' });
       }
 
@@ -261,10 +336,11 @@ export async function refreshToken(req, res) {
         { expiresIn: '1h' }
       );
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        path: '/',
-        maxAge: token_expiration * 1000,
+      res.cookie('accessToken', accessToken, getCookieOptions(token_expiration));
+
+      logger.info('Access token refreshed', {
+        userId: user.id,
+        username: user.username
       });
 
       return res.status(200).json({
@@ -272,8 +348,7 @@ export async function refreshToken(req, res) {
       });
     });
   } catch (error) {
-    console.error('Error in refreshToken:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return handleControllerError(res, error, 'Failed to refresh access token');
   }
 }
 
@@ -282,12 +357,21 @@ export async function deleteUserById(req, res) {
   try {
     const user = await models.User.findByPk(id);
     if (!user) {
+      logger.warn('Attempted to delete non-existent user', {
+        userId: id
+      });
       return res.status(404).json({ message: 'User not found' });
     }
+    
     await user.destroy();
+    
+    logger.info('User deleted successfully', {
+      userId: id,
+      username: user.username
+    });
+    
     return res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error in deleteUserById:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return handleControllerError(res, error, 'Failed to delete user');
   }
 }

@@ -8,7 +8,10 @@ export default defineConfig({
     setupFiles: './tests/setup/setup.js',
     testMatch: ['**/*.test.js'],
     isolate: true,
-    hookTimeout: 120000,
+    exclude: [
+      '**/src/config/load-env.js',
+      '**/node_modules/**'
+    ],
     coverage: {
       provider: 'istanbul',
       reporter: ['html', 'text', 'lcov'],
@@ -16,7 +19,11 @@ export default defineConfig({
         html: 'coverage/html',
         text: 'coverage/text',
       },
-      include: ['src/**/*.{js,ts}']
+      include: ['src/**/*.{js,ts}'],
+      exclude: [
+        'src/config/load-env.js',
+        '**/node_modules/**'
+      ],
     },
     benchmark: {
       include: ['**/*.benchmark.ts']

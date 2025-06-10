@@ -3,16 +3,24 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import mongoose from 'mongoose';
 import { sequelize } from '../src/db/database.js';
+import logger, { initLogDB } from '../src/config/logger.js';
 
 const runPopulators = async () => {
+  // Inicializar la conexión para los logs si es necesario
+  await initLogDB();
+  
+  logger.info('[SYSTEM INITIALIZATION] Starting database population sequence');
+  
   const populators = await readdir(join(import.meta.dirname, 'populators'));
   for (const populatorsFile of populators) {
+    logger.info(`[POPULATOR EXECUTION] Running data initialization module: ${populatorsFile}`);
     await import(`./populators/${populatorsFile}`);
   }
-  //Close the database connection
+  
+  // Close the database connections
   sequelize.close();
   mongoose.connection.close();
-  console.log('[database] Connections closed.');
+  logger.info('[SYSTEM INITIALIZATION] Database population sequence completed | Connections closed');
 }
 
 await runPopulators();
