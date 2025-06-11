@@ -3,8 +3,7 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-      - main
-      - develop
+      - 'test-e2e/**'
     tags:
       - "*.*.*"
   pull_request:
@@ -20,33 +19,10 @@ env:
   COMMIT_SHA: ${{ github.sha }}
 
 jobs:
-  test:
+  # --- Job 1: E2E Tests ---
+  e2e-tests:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test-type: [unit, integration]
-    
-    steps:
-      - name: Checkout ⬇️
-        uses: actions/checkout@v4.2.2
-        with:
-          show-progress: false
-          
-      - name: Setup Node.js 🔧
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          
-      - name: Install dependencies 📦
-        run: npm ci
-        
-      - name: Run ${{ matrix.test-type }} tests 🧪
-        run: npm run test:${{ matrix.test-type }}
-
-  coverage:
-    needs: test
-    runs-on: ubuntu-latest
+    timeout-minutes: 3
 
     #Define here your service list
     services:
@@ -63,7 +39,7 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-          
+
     #GLOBAL JOB .ENV CONFIGURATION
     env:
       NODE_RED_HOST: node-red
@@ -72,44 +48,34 @@ jobs:
       NODE_RED_PASSWORD: admin
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout ⬇️
         uses: actions/checkout@v4.2.2
-        with:
-          show-progress: false
 
-      - name: Set Up Node.js
+      - name: Setup Node.js 🔧
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: Install dependencies 📦
         run: npm ci
 
-      - name: Run Tests with Coverage
-        run: npm run coverage:ci
+      - name: Run E2E Tests 🧪
+        run: npm run test:e2e
 
-      - name: Submit Coverage to Coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./coverage/lcov.info
-  
+  # --- Job 2: Build and Push Docker Image ---
   build:
-    needs: coverage
+    needs: e2e-tests
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-    
+
     steps:
       - name: Checkout ⬇️
         uses: actions/checkout@v4.2.2
-        with:
-          show-progress: false
 
       - name: Configure QEMU ⚙️
         uses: docker/setup-qemu-action@v3.6.0
