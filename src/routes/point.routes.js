@@ -29,7 +29,7 @@ export default function () {
 
 /**
  * @swagger
- * /point:
+ * /points:
  *   get:
  *     summary: Retrieves all points
  *     tags: [Points]
@@ -57,7 +57,7 @@ export default function () {
 
 /**
  * @swagger
- * /point/{id}:
+ * /points/{id}:
  *   get:
  *     summary: Retrieves a Point by computationGroup
  *     tags: [Points]
@@ -133,7 +133,7 @@ export default function () {
 
 /**
  * @swagger
- * /point/catalog/{tpaId}:
+ * /points/catalog/{tpaId}:
  *   get:
  *     summary: Retrieves a Point by tpaId
  *     tags: [Points]
@@ -175,7 +175,7 @@ export default function () {
 
 /**
  * @swagger
- * /point/computationGroup/{computationGroup}:
+ * /points/computationGroup/{computationGroup}:
  *   put:
  *     summary: Updates points by computation group ID
  *     tags: [Points]
