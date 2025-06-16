@@ -272,7 +272,7 @@ describe('Computation Controller', () => {
     it('should return 500 if update fails', async () => {
       const error = new Error('Update failed');
       mockController(models.Computation, 'update', null, error);
-
+      
       await setComputeIntervalBytControlIdAndCreationDate(reqBase, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
@@ -316,7 +316,7 @@ describe('Computation Controller', () => {
         message: 'OK',
         computation: expect.stringContaining('undefined/computations/'),
       });
-
+      
       // Verify the computation URL format more specifically
       const response = res.json.mock.calls[0][0];
       expect(response.computation).toMatch(/^undefined\/computations\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);

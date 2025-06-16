@@ -388,12 +388,12 @@ describe('Control API Routes', () => {
 describe('Draft Controls', () => {
   let controlWithCatalog;
   beforeAll(async () => {
-
-    [controlDraftStatus, controlFinalizedStatus, controlInvalidParam] =  await models.Control.bulkCreate([
-      createControlExample({ status: 'draft' }),
-      createControlExample({ status: 'finalized' }),
-      createControlExample({ param: 'invalidParam' }),
-    ]);
+    [controlDraftStatus, controlFinalizedStatus, controlInvalidParam] =
+      await models.Control.bulkCreate([
+        createControlExample({ status: 'draft' }),
+        createControlExample({ status: 'finalized' }),
+        createControlExample({ param: 'invalidParam' }),
+      ]);
 
     // catalog required any startDate
     const startFormatDate = new Date('2024-01-01T00:00:00.000Z');
@@ -425,7 +425,6 @@ describe('Draft Controls', () => {
     });
 
     await models.Control.destroy({ where: { name: 'Test Control Name' } });
-
   });
   // Helper to post via API
   const postResponse = (token, control) => {
@@ -480,7 +479,6 @@ describe('Draft Controls', () => {
     );
   });
 
-
   describe('FinalizeControl, /:id/finalize', () => {
     const getPath = (controlId) => `/controls/${controlId}/finalize`;
 
@@ -489,13 +487,9 @@ describe('Draft Controls', () => {
     };
 
     it('should return 404 if control does not exist', async () => {
-      controlWithCatalog = createControlExample({
-        catalogId: 3,
-      });
       const res = await finalizeResponse(
         controlDraftStatus.id,
         sampleToken,
-        controlWithCatalog
       );
       expect(res.status).toBe(404);
       expect(res.body).toHaveProperty(
@@ -506,7 +500,7 @@ describe('Draft Controls', () => {
     it('should return 400 if control is not in draft status', async () => {
       const res = await finalizeResponse(
         controlFinalizedStatus.id,
-        sampleToken,
+        sampleToken
       );
 
       expect(res.status).toBe(400);
@@ -521,51 +515,62 @@ describe('Draft Controls', () => {
 describe('GET /controls/:controlId/computations', () => {
   const FIXED_TS = new Date('2024-10-10T09:00:00.000Z');
 
-  let mockComputationDraft1
-  let mockComputationDraft2
+  let mockComputationDraft1;
+  let mockComputationDraft2;
   let mockComputationFinalized;
-  let sampleComputations
+  let sampleComputations;
 
   beforeAll(async () => {
-
-    [controlDraftStatus, controlFinalizedStatus] = await models.Control.bulkCreate([
-      createControlExample({ status: 'draft'}),
-      createControlExample({ status: 'finalized'}),
-    ]);
+    [controlDraftStatus, controlFinalizedStatus] =
+      await models.Control.bulkCreate([
+        createControlExample({ status: 'draft' }),
+        createControlExample({ status: 'finalized' }),
+      ]);
 
     mockComputationDraft1 = {
       ...createComputationExample({ controlId: controlDraftStatus.id }),
       createdAt: FIXED_TS,
-      updatedAt: FIXED_TS
+      updatedAt: FIXED_TS,
     };
-    mockComputationDraft2 = createComputationExample({ controlId: controlDraftStatus.id });
+    mockComputationDraft2 = createComputationExample({
+      controlId: controlDraftStatus.id,
+    });
     //mockComputationFinalized = createComputationExample({ controlId: controlTestFinalized.id });
     mockComputationFinalized = {
       ...createComputationExample({ controlId: controlFinalizedStatus.id }),
       createdAt: FIXED_TS,
-      updatedAt: FIXED_TS
+      updatedAt: FIXED_TS,
     };
-    sampleComputations = [mockComputationDraft1, mockComputationDraft2, mockComputationFinalized];
+    sampleComputations = [
+      mockComputationDraft1,
+      mockComputationDraft2,
+      mockComputationFinalized,
+    ];
     await models.Computation.bulkCreate(sampleComputations);
-
   });
   afterAll(async () => {
     await models.Control.destroy({ where: { name: 'Test Control Name' } });
   });
   const getComputations = (path, token) => {
     return request.get(path).set(authHeader(token));
-
   };
   const getPath = (controlId) => `/controls/controls/${controlId}/computations`;
-  const getPathWithDate = (controlId, date) => `/controls/controls/${controlId}/computations/${date}`;
+  const getPathWithDate = (controlId, date) =>
+    `/controls/controls/${controlId}/computations/${date}`;
 
   const getComputationWithQuery = (path, token, from, to) => {
-    return request.get(path).set(authHeader(token)).query({ from: from, to: to } );
+    return request
+      .get(path)
+      .set(authHeader(token))
+      .query({ from: from, to: to });
   };
 
   describe('GET /controls/:controlId/computations/', () => {
     it('should return computations for a given controlId', async () => {
-      const res = await getComputations(getPath(controlDraftStatus.id), sampleToken)
+      const res = await getComputations(
+        getPath(controlDraftStatus.id),
+        sampleToken
+      );
 
       expect(res.status).toBe(200);
       expect(res.body.length).toBe(2);
@@ -573,44 +578,70 @@ describe('GET /controls/:controlId/computations', () => {
       expect(res.body[0]).toHaveProperty('createdAt', FIXED_TS.toISOString());
     });
     it('should handle errors when retrieving computations by controlId', async () => {
-      vi.spyOn(models.Computation, 'findAll').mockRejectedValue(new Error('DB error'));
+      vi.spyOn(models.Computation, 'findAll').mockRejectedValue(
+        new Error('DB error')
+      );
 
-      const res = await getComputations(getPath(controlDraftStatus.id), sampleToken)
+      const res = await getComputations(
+        getPath(controlDraftStatus.id),
+        sampleToken
+      );
 
       expect(res.status).toBe(500);
-      expect(res.body).toHaveProperty('message', 'Failed to get computations by control ID');
+      expect(res.body).toHaveProperty(
+        'message',
+        'Failed to get computations by control ID'
+      );
       vi.restoreAllMocks();
     });
     it('should return 500 on internal error', async () => {
-      vi.spyOn(models.Computation, 'findAll').mockRejectedValue(new Error('DB error'));
+      vi.spyOn(models.Computation, 'findAll').mockRejectedValue(
+        new Error('DB error')
+      );
       const date = new Date().toISOString().split('T')[0];
 
-      const res = await getComputationWithQuery(getPathWithDate(controlDraftStatus.id, date), sampleToken)
+      const res = await getComputationWithQuery(
+        getPathWithDate(controlDraftStatus.id, date),
+        sampleToken
+      );
 
       expect(res.status).toBe(500);
-      expect(res.body).toHaveProperty('message', 'Failed to get computation by control ID and creation date');
+      expect(res.body).toHaveProperty(
+        'message',
+        'Failed to get computation by control ID and creation date'
+      );
       vi.restoreAllMocks();
     });
   });
 
   describe('PATCH /controls/:controlId/computations', () => {
-
     const putResponse = (path, token, from, to) => {
-      return request.put(path).set(authHeader(token)).send({ from: from, to: to } );
+      return request
+        .put(path)
+        .set(authHeader(token))
+        .send({ from: from, to: to });
     };
 
     const from = new Date('2024-04-06T08:00:00.000Z').toISOString();
     const to = new Date('2024-06-08T10:00:00.000Z').toISOString();
 
     it('should update computations in interval', async () => {
-
-      const res = await putResponse(getPath(controlDraftStatus.id ), sampleToken, from, to);
+      const res = await putResponse(
+        getPath(controlDraftStatus.id),
+        sampleToken,
+        from,
+        to
+      );
       expect(res.status).toBe(204);
     });
 
     it('should return 400 if query params are missing', async () => {
-
-      const res = await putResponse(getPath(controlDraftStatus.id ), sampleToken, null, null);
+      const res = await putResponse(
+        getPath(controlDraftStatus.id),
+        sampleToken,
+        null,
+        null
+      );
       expect(res.status).toBe(400);
 
       expect(res.body).toHaveProperty(
@@ -620,10 +651,15 @@ describe('GET /controls/:controlId/computations', () => {
     });
 
     it('should return 404 if no computations were updated', async () => {
-      const to   = new Date(Date.now() + 1000 * 60 * 5).toISOString();
-      const from   = new Date(Date.now() - 1000 * 60 * 5).toISOString();
+      const to = new Date(Date.now() + 1000 * 60 * 5).toISOString();
+      const from = new Date(Date.now() - 1000 * 60 * 5).toISOString();
 
-      const res = await putResponse(getPath(controlDraftStatus.id ), sampleToken, from, to);
+      const res = await putResponse(
+        getPath(controlDraftStatus.id),
+        sampleToken,
+        from,
+        to
+      );
       expect(res.status).toBe(404);
       expect(res.body).toHaveProperty(
         'message',
@@ -663,7 +699,10 @@ describe('GET /controls/:controlId/computations', () => {
         .set(authHeader(sampleToken));
 
       expect(res.status).toBe(404);
-      expect(res.body).toHaveProperty('message', 'No computations found to delete');
+      expect(res.body).toHaveProperty(
+        'message',
+        'No computations found to delete'
+      );
     });
 
     it('should return 500 for an invalid controlId format', async () => {
