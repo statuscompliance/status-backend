@@ -11,7 +11,7 @@ import {
   createDraftControl,
   finalizeControl,
 } from '../controllers/control.controller.js';
-import { 
+import {
   getComputationsByControlId,
   deleteComputationByControlId,
   getComputationsByControlIdAndCreationDate,
@@ -36,7 +36,7 @@ export default function () {
   router.post('/:id/panel/:panelId', addPanelToControl);
   router.delete('/:id/panels/:panelId', deletePanelFromControl);
 
-  // Controls computations 
+  // Controls computations
   router.get('/controls/:controlId/computations', getComputationsByControlId);
   router.get(
     '/controls/:controlId/computations/:createdAt',
