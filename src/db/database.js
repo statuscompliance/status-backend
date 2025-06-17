@@ -17,7 +17,7 @@ const getPostgresConfig = async () => {
     ssl: false,
     logging: (msg) => logger.database(msg),
   });
-  logger.info('Connecting to Postgres...', { 
+  logger.debug('Connecting to Postgres...', { 
     host: process.env.DB_HOST || 'localhost',
     database: process.env.DB_NAME || 'statusdb'
   });
@@ -28,6 +28,7 @@ const getPostgresConfig = async () => {
 
 const initMongoDB = async () => {
   try {
+    logger.debug('Connecting to MongoDB...');
     await mongoose.connect(
       process.env.MONGO_URI || 'mongodb://root:root@localhost:27017/statusdb?authSource=admin'
     );
@@ -40,6 +41,7 @@ const initMongoDB = async () => {
 };
 
 const initDB = async () => {
+  logger.debug('Initializing database connections');
   await initMongoDB();
   return await getPostgresConfig();
 };
