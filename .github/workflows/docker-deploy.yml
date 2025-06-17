@@ -71,10 +71,73 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./coverage/lcov.info
-  
+      
   build:
     needs: coverage
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: statususer
+          POSTGRES_PASSWORD: statuspass
+          POSTGRES_DB: statusdb
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      mongo-registry:
+        image: mongo
+        ports:
+          - 5001:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: USER
+          MONGO_INITDB_ROOT_PASSWORD: PASS
+        options: >-
+          --health-cmd="mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      dragonfly:
+        image: ghcr.io/dragonflydb/dragonfly:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli -h 127.0.0.1 ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout ⬇️
+        uses: actions/checkout@v4.2.2
+        with:
+          show-progress: false
+
+      - name: Set up Node.js 🔧
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Dependencies 📦
+        run: npm ci
+      
+      - name: Set Environment Variables 🌍
+        run: cp .env.example .env && echo "NODE_ENV=production" >> .env
+
+      - name: Start the server 🚀
+        run: npm start &
+      
+      - name: Check server is running 🏃
+        run: curl -f http://localhost:3001 || exit 1
+  
+  push:
+    needs: build
+    runs-on: ubuntu-latest
+    if: (github.event.pull_request && github.event.label.name == '🐳 Dockerize')  || (github.event_name == 'push' && github.event.label.name == '🐳 Dockerize') || github.event_name == 'push'
 
     permissions:
       contents: read

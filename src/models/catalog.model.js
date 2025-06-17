@@ -2,7 +2,7 @@ import { DataTypes } from 'sequelize';
 
 export default (sequelize) => sequelize.define('Catalog', {
   id: {
-    type: import.meta.env?.VITEST ? DataTypes.STRING(50) :DataTypes.INTEGER,
+    type: DataTypes.INTEGER,
     primaryKey: true,
     allowNull: false,
     autoIncrement:  !import.meta.env?.VITEST,

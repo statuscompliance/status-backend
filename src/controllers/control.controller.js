@@ -148,11 +148,9 @@ export const updateControl = async (req, res) => {
         ['endpoint', 'threshold']
       );
       if (!validation) {
-        return res
-          .status(400)
-          .json({
-            error: `Invalid parameters for finalized control: ${textError}`,
-          });
+        return res.status(400).json({
+          error: `Invalid parameters for finalized control: ${textError}`,
+        });
       }
     }
 
@@ -228,10 +226,9 @@ export async function addPanelToControl(req, res) {
       data: panel,
     });
   } catch (error) {
-    handleControllerError(res, error, 'Failed to panel to control');
+    handleControllerError(res, error, 'Failed to add panel to control');
   }
 }
-
 
 export async function getPanelsByControlId(req, res) {
   const { id } = req.params;
@@ -270,11 +267,9 @@ export async function deletePanelFromControl(req, res) {
       },
     });
     if (deletedCount === 0) {
-      return res
-        .status(404)
-        .json({
-          message: `Panel with ID ${panelId} not found for control ID ${id}.`,
-        });
+      return res.status(404).json({
+        message: `Panel with ID ${panelId} not found for control ID ${id}.`,
+      });
     }
     res.status(204).send(); // No content for successful deletion
   } catch (error) {
