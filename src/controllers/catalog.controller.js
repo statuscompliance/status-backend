@@ -117,12 +117,22 @@ export async function calculatePoints(req, res) {
     const agreementId = req.params.tpaId;
     const { from, to } = req.query;
 
+    // Validate agreementId format
+    if (!/^tpa-[a-f0-9-]{36}$/.test(agreementId)) {
+      return res.status(400).json({ message: 'Invalid agreementId format' });
+    }
+
     const catalog = await models.Catalog.findOne({ where: {tpaId: agreementId}});
     const controls = await models.Control.findAll({where: {catalogId: catalog.id}});
 
     await updateOrCreateAgreement(catalog, controls, agreementId);
-    
-    const guaranteesStates = await registry.get(`api/v6/states/${agreementId}/guarantees`, {
+
+    // Construct the URL for fetching guarantees
+    const basePath = 'api/v6/states/';
+    const safeAgreementId = encodeURIComponent(agreementId);
+    const url = `${basePath}${safeAgreementId}/guarantees`;
+
+    const guaranteesStates = await registry.get(url, {
       params: { from, to, newPeriodsFromGuarantees: false },
       headers: { 'x-access-token': req.cookies.accessToken }
     });
@@ -144,7 +154,7 @@ export async function calculatePoints(req, res) {
   }
 }
 
-async function updateOrCreateAgreement(catalog, controls, agreementId) {
+export async function updateOrCreateAgreement(catalog, controls, agreementId) {
   const agreement = await agreementBuilder(catalog, controls, { id: agreementId });
   try {
     const response = await registry.get(`api/v6/agreements/${agreementId}`);
@@ -226,13 +236,16 @@ export const finalizeCatalog = async (req, res) => {
     const controlsResult = await finalizeControlsByCatalogId(id);
     
     // Return the updated catalog and the number of finalized controls
+    const finalizedCount = Array.isArray(controlsResult?.updated) ? controlsResult.updated.length : 0;
     res.status(200).json({
       catalog: updatedCatalog[1],
       controls: {
-        finalized: controlsResult.updated.length,
+        finalized: finalizedCount,
       }
     });
   } catch (error) {
     res.status(500).json({ message: `Failed to finalize catalog, error: ${error.message}` });
   }
 };
+
+export { finalizeControlsByCatalogId } from './control.controller.js';
