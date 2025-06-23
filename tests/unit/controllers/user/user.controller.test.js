@@ -371,10 +371,9 @@ describe('User Controller Tests', () => {
     }
 
     function mockSuccessfulAuth(user = DEFAULT_USER) {
-      setupUserMocks({ 
-        findOneValue: user, 
-        compareValue: true 
-      });
+      // Alternative implementation: setup mocks individually
+      vi.spyOn(models.User, 'findOne').mockResolvedValue(user);
+      vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       vi.spyOn(jwt, 'sign').mockReturnValue(MOCK_TOKEN);
     }
 

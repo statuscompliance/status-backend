@@ -535,7 +535,7 @@ describe('GET /controls/:controlId/computations', () => {
     mockComputationDraft2 = createComputationExample({
       controlId: controlDraftStatus.id,
     });
-    //mockComputationFinalized = createComputationExample({ controlId: controlTestFinalized.id });
+    
     mockComputationFinalized = {
       ...createComputationExample({ controlId: controlFinalizedStatus.id }),
       createdAt: FIXED_TS,
