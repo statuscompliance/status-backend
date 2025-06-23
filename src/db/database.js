@@ -1,6 +1,7 @@
 import { Sequelize } from 'sequelize';
 import mongoose from 'mongoose';
-export let sequelize;
+let _sequelize;
+export const getSequelize = () => _sequelize;
 import { initModels } from '../models/models.js';
 import logger from '../config/logger.js';
 
@@ -47,9 +48,9 @@ const initDB = async () => {
 };
 
 export const registerDB = async (instance) => {
-  if(!sequelize) {
-    sequelize = instance;
-    await initModels(sequelize);
+  if(!_sequelize) {
+    _sequelize = instance;
+    await initModels(_sequelize);
     logger.debug('Database models initialized');
   }
 }

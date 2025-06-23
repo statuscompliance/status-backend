@@ -12,11 +12,13 @@ import moment from 'moment';
 moment.suppressDeprecationWarnings = true;
 
 let mongoServer;
-export let sequelize;
+let _sequelize;
+
+export const getSequelize = () => _sequelize;
 
 export const connect = async () => {
   await registerDB(await initPostgres());
-  await sequelize.sync({ force: true });
+  await _sequelize.sync({ force: true });
   await initMongoDB();
 
   await setupEndpointConfigurations();
@@ -31,8 +33,8 @@ export const closeDatabase = async () => {
     logger.debug('In-memory MongoDB closed');
   }
 
-  if (sequelize) {
-    await sequelize.close();
+  if (_sequelize) {
+    await _sequelize.close();
     logger.debug('In-memory SQLite (PG mem) closed');
   }
 };
@@ -46,8 +48,8 @@ export const clearDatabase = async () => {
   );
   logger.debug('In-memory MongoDB cleared');
 
-  if (sequelize) {
-    await sequelize.drop({ cascade: true });
+  if (_sequelize) {
+    await _sequelize.drop({ cascade: true });
     logger.debug('In-memory SQLite (PG mem) cleared');
   }
 };
@@ -67,15 +69,15 @@ async function initPostgres() {
   });
   const adapter = pgMem.adapters.createPg();
 
-  sequelize = new Sequelize('postgres://user:pass@localhost:5432/dbname', {
+  _sequelize = new Sequelize('postgres://user:pass@localhost:5432/dbname', {
     dialect: 'postgres',
     logging: false,
     dialectModule: adapter,
   });
 
-  await sequelize.authenticate();
+  await _sequelize.authenticate();
   logger.debug('In-memory SQLite (PG mem) connected');
-  return sequelize;
+  return _sequelize;
 }
 
 async function setupEndpointConfigurations() {

@@ -1,4 +1,4 @@
-import { sequelize } from '../db/database.js';
+import { getSequelize } from '../db/database.js';
 
 /**
    * Generates the SQL query string that Sequelize would use for a specific query.
@@ -15,6 +15,7 @@ import { sequelize } from '../db/database.js';
    */
 export async function getSQLFromSequelize(model, action, ...params) {
   let sqlString;
+  const sequelize = getSequelize();
   const t = await sequelize.transaction();
 
   const callParams = [];
