@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import mongoose from 'mongoose';
-import { sequelize } from '../src/db/database.js';
+import { getSequelize } from '../src/db/database.js';
 import logger, { initLogDB } from '../src/config/logger.js';
 
 const runPopulators = async () => {
@@ -18,6 +18,7 @@ const runPopulators = async () => {
   }
   
   // Close the database connections
+  const sequelize = getSequelize();
   sequelize.close();
   mongoose.connection.close();
   logger.info('[SYSTEM INITIALIZATION] Database population sequence completed | Connections closed');

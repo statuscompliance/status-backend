@@ -17,7 +17,7 @@ import { verifyAuthority } from './middleware/verifyAuth.js';
 import { endpointAvailable } from './middleware/endpoint.js';
 import cookieParser from 'cookie-parser';
 import { models } from './models/models.js';
-import { sequelize } from './db/database.js';
+import { getSequelize } from './db/database.js';
 import { verifyAdmin } from './middleware/verifyAdmin.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
@@ -110,6 +110,7 @@ async function insertEndpointsToConfig() {
     'api-docs',
   ];
   try {
+    const sequelize = getSequelize();
     await sequelize.sync({ alter: true });
     for (const endpoint of endpoints) {
       if (endpoint === `${API_PREFIX}/assistant`) {

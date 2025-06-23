@@ -29,12 +29,12 @@ export async function endpointAvailable(req, res, next) {
   );
   if (matchingConfig === undefined) {
     return res.status(404).json({ message: 'Endpoint not found' });
+  }
+  
+  if (matchingConfig.dataValues.available) {
+    next();
   } else {
-    if (matchingConfig.dataValues.available) {
-      next();
-    } else {
-      res.status(404).send('Endpoint not available');
-    }
+    res.status(404).send('Endpoint not available');
   }
 }
 
