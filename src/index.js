@@ -131,6 +131,7 @@ async function insertEndpointsToConfig() {
 }
 
 // Only start the server if we are not in a test environment
+/* istanbul ignore if */ 
 if (!isTestEnvironment) {
   const app = configureApp();
   
@@ -150,3 +151,4 @@ if (!isTestEnvironment) {
 }
 
 export default configureApp;
+export { insertEndpointsToConfig };
