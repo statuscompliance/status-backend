@@ -1,9 +1,8 @@
 import { models } from '../models/models.js';
 import { storeGuaranteePoints } from '../utils/storeGuaranteePoints.js';
 import registry from '../config/registry.js';
-import { agreementBuilder } from '../utils/agreementBuilder.js';
+import { updateOrCreateAgreement } from '../utils/updateOrCreateAgreement.js';
 import { v4 as uuidv4 } from 'uuid';
-import _ from 'lodash';
 import { finalizeControlsByCatalogId } from './control.controller.js';
 
 export const getCatalogs = async (req, res) => {
@@ -138,7 +137,6 @@ export async function calculatePoints(req, res) {
     } else {
       controls = await models.Control.findAll({ where: { catalogId: catalog.id } });
     }
-
     await updateOrCreateAgreement(catalog, controls, agreementId);
 
     // Construct the URL for fetching guarantees
@@ -166,6 +164,7 @@ export async function calculatePoints(req, res) {
     }
 
     const { storedPoints, error } = await storeGuaranteePoints(guaranteesStates.data, agreementId);
+
     if (error.length > 0) {
       const points = await models.Point.findAll({ where: { agreementId } });
       if (points.length > 0) {
@@ -180,27 +179,6 @@ export async function calculatePoints(req, res) {
     res.status(500).json({
       message: `Failed to get points, error: ${error.message}`,
     });
-  }
-}
-
-export async function updateOrCreateAgreement(catalog, controls, agreementId) {
-  const agreement = await agreementBuilder(catalog, controls, { id: agreementId });
-  try {
-    const response = await registry.get(`api/v6/agreements/${agreementId}`);
-
-    const oldAgreement = response.data;
-
-    if (!_.isEqual(agreement, oldAgreement)) {
-
-      await registry.put(`api/v6/agreements/${agreementId}`, agreement);
-    }
-  } catch (error) {
-    if (error.response?.status === 404) {
-
-      await registry.post('api/v6/agreements', agreement);
-    } else {
-      throw error; // Rethrow other errors
-    }
   }
 }
 

@@ -9,7 +9,6 @@ describe('Catalog Controller Exports', () => {
     expect(catalogController.updateCatalog).toBeDefined();
     expect(catalogController.deleteCatalog).toBeDefined();
     expect(catalogController.calculatePoints).toBeDefined();
-    expect(catalogController.updateOrCreateAgreement).toBeDefined();
     expect(catalogController.createDraftCatalog).toBeDefined();
     expect(catalogController.finalizeCatalog).toBeDefined();
     expect(catalogController.finalizeControlsByCatalogId).toBeDefined();
