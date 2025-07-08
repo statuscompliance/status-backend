@@ -3,6 +3,7 @@ import { checkRequiredProperties } from '../utils/checkRequiredProperties.js';
 import { mapPanelsToDTO } from '../utils/panelUtils.js';
 import { buildWhereClause } from '../utils/buildWhereClause.js';
 import { handleControllerError } from '../utils/errorHandler.js';
+import { Op } from 'sequelize';
 
 const validFilters = {
   status: ['draft', 'finalized'],
@@ -125,6 +126,7 @@ export const updateControl = async (req, res) => {
     catalogId,
     params,
     status,
+    lastComputed,
   } = req.body;
 
   try {
@@ -172,6 +174,7 @@ export const updateControl = async (req, res) => {
         catalogId,
         params,
         status,
+        lastComputed,
       },
       {
         where: {
@@ -428,5 +431,27 @@ export const finalizeControlsByCatalogId = async (catalogId) => {
       error
     );
     throw error;
+  }
+};
+
+export const getPendingControls = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0]; // format 'YYYY-MM-DD'
+
+    const controls = await models.Control.findAll({
+      where: {
+        startDate: { [Op.lte]: today },
+        endDate: { [Op.gte]: today },
+        [Op.or]: [
+          { lastComputed: null },
+          { lastComputed: { [Op.lt]: today } }
+        ],
+        status: 'finalized',
+      },
+    });
+
+    res.status(200).json(controls);
+  } catch (error) {
+    handleControllerError(res, error, 'Failed to get pending controls');
   }
 };

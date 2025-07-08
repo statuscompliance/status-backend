@@ -10,6 +10,7 @@ import {
   deletePanelFromControl,
   createDraftControl,
   finalizeControl,
+  getPendingControls,
 } from '../controllers/control.controller.js';
 import {
   getComputationsByControlId,
@@ -26,6 +27,7 @@ export default function () {
   router.patch('/:id/finalize', finalizeControl);
 
   // Controls
+  router.get('/pending', getPendingControls);
   router.get('', getControls);
   router.get('/:id', checkIdParam, getControl);
   router.post('', createControl);
@@ -35,6 +37,7 @@ export default function () {
   router.get('/:id/panels', getPanelsByControlId);
   router.post('/:id/panel/:panelId', addPanelToControl);
   router.delete('/:id/panels/:panelId', deletePanelFromControl);
+
 
   // Controls computations
   router.get('/controls/:controlId/computations', getComputationsByControlId);
@@ -563,6 +566,40 @@ export default function () {
  *                   type: string
  *       500:
  *         description: Failed to finalize control
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /controls/pending:
+ *   get:
+ *     summary: Retrieves all controls
+ *     tags: [Controls]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [finalized, draft]
+ *         required: false
+ *         description: Filter controls by status. If not provided, returns all controls.
+ *     responses:
+ *       200:
+ *         description: A list of controls
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Control'
+ *       500:
+ *         description: Failed to get all controls
  *         content:
  *           application/json:
  *             schema:
