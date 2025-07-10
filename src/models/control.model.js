@@ -35,6 +35,11 @@ export default (sequelize) => sequelize.define(
       type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('draft', 'finalized'),
       defaultValue: 'finalized'
     },
+    lastComputed: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Date of the last compliance calculation for this control',
+    },
   },
   {
     tableName: 'controls',
@@ -77,6 +82,10 @@ export default (sequelize) => sequelize.define(
  *           type: string
  *           enum: [draft, finalized]
  *           description: The status of the control
+ *         lastComputed:
+ *           type: string
+ *           format: date-time
+ *           description: The start date of the control
  *       required:
  *         - name
  *         - description
@@ -91,4 +100,5 @@ export default (sequelize) => sequelize.define(
  *         mashupId: abc123
  *         params: { "threshold": 10, "endpoint": "/bpi" }
  *         status: finalized
+ *         lastComputed: 2023-10-01T12:00:00.000Z
  */

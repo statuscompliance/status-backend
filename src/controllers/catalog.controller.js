@@ -1,20 +1,19 @@
 import { models } from '../models/models.js';
 import { storeGuaranteePoints } from '../utils/storeGuaranteePoints.js';
 import registry from '../config/registry.js';
-import { agreementBuilder } from '../utils/agreementBuilder.js';
+import { updateOrCreateAgreement } from '../utils/updateOrCreateAgreement.js';
 import { v4 as uuidv4 } from 'uuid';
-import _ from 'lodash';
 import { finalizeControlsByCatalogId } from './control.controller.js';
 
 export const getCatalogs = async (req, res) => {
   try {
     const { status } = req.query;
-    
+
     let where = {};
     if (status === 'finalized' || status === 'draft') {
       where = { status };
     }
-    
+
     const catalogs = await models.Catalog.findAll({ where });
     res.status(200).json(catalogs);
   } catch (error) {
@@ -113,32 +112,61 @@ export const deleteCatalog = async (req, res) => {
 };
 
 export async function calculatePoints(req, res) {
+
   try {
     const agreementId = req.params.tpaId;
     const { from, to } = req.query;
+    const { controlIds } = req.body || {};
 
     // Validate agreementId format
     if (!/^tpa-[a-f0-9-]{36}$/.test(agreementId)) {
       return res.status(400).json({ message: 'Invalid agreementId format' });
     }
 
-    const catalog = await models.Catalog.findOne({ where: {tpaId: agreementId}});
-    const controls = await models.Control.findAll({where: {catalogId: catalog.id}});
+    const catalog = await models.Catalog.findOne({ where: { tpaId: agreementId } });
 
+    let controls = [];
+
+    if (Array.isArray(controlIds) && controlIds.length > 0) {
+      controls = await models.Control.findAll({
+        where: {
+          catalogId: catalog.id,
+          id: controlIds
+        }
+      });
+    } else {
+      controls = await models.Control.findAll({ where: { catalogId: catalog.id } });
+    }
     await updateOrCreateAgreement(catalog, controls, agreementId);
 
     // Construct the URL for fetching guarantees
     const basePath = 'api/v6/states/';
     const safeAgreementId = encodeURIComponent(agreementId);
+
     const url = `${basePath}${safeAgreementId}/guarantees`;
+
 
     const guaranteesStates = await registry.get(url, {
       params: { from, to, newPeriodsFromGuarantees: false },
       headers: { 'x-access-token': req.cookies.accessToken }
     });
+
+    // Update lastComputed
+    const now = new Date();
+    if (controls.length > 0) {
+      const controlIdsToUpdate = controls.map(c => c.id);
+
+      const [updatedCount] = await models.Control.update(
+        { lastComputed: now },
+        { where: { id: controlIdsToUpdate } }
+      );
+      res.status(200).json(updatedCount);
+    }
+
     const { storedPoints, error } = await storeGuaranteePoints(guaranteesStates.data, agreementId);
+
     if (error.length > 0) {
-      const points = await models.Point.findAll({where: {agreementId}});
+      const points = await models.Point.findAll({ where: { agreementId } });
       if (points.length > 0) {
         res.status(200).json(points);
       } else {
@@ -154,35 +182,14 @@ export async function calculatePoints(req, res) {
   }
 }
 
-export async function updateOrCreateAgreement(catalog, controls, agreementId) {
-  const agreement = await agreementBuilder(catalog, controls, { id: agreementId });
-  try {
-    const response = await registry.get(`api/v6/agreements/${agreementId}`);
-    const oldAgreement = response.data;
-
-    if (!_.isEqual(agreement, oldAgreement)) {
-      console.log(`Updating agreement ${agreementId}`);
-      await registry.put(`api/v6/agreements/${agreementId}`, agreement);
-    }
-  } catch (error) {
-    if (error.response?.status === 404) {
-      console.log(`Creating agreement ${agreementId}`);
-      await registry.post('api/v6/agreements', agreement);
-    } else {
-      throw error; // Rethrow other errors
-    }
-  }
-}
-
 // Draft Catalogs
-
 export const createDraftCatalog = async (req, res) => {
   try {
     const { name, description, startDate, endDate, dashboard_id } = req.body;
     if (!name || !startDate) {
       return res.status(400).json({ message: 'Missing required fields: name and/or startDate' });
     }
-    
+
     const rows = await models.Catalog.create({
       name,
       description,
@@ -201,22 +208,22 @@ export const createDraftCatalog = async (req, res) => {
 export const finalizeCatalog = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const currentCatalog = await models.Catalog.findByPk(id);
     if (!currentCatalog) {
       return res.status(404).json({ message: 'Catalog not found' });
     }
-    
+
     if (currentCatalog.status !== 'draft') {
       return res.status(400).json({ message: 'Only draft catalogs can be finalized' });
     }
-    
+
     if (!currentCatalog.startDate || !currentCatalog.endDate) {
       return res.status(400).json({ message: 'Catalog must have startDate and endDate to be finalized' });
     }
-    
+
     const tpaId = `tpa-${uuidv4()}`;
-    
+
     // First we update the catalog status and TPA ID
     const updatedCatalog = await models.Catalog.update(
       {
@@ -231,10 +238,10 @@ export const finalizeCatalog = async (req, res) => {
         plain: true,
       }
     );
-    
+
     // Then we finalize the controls
     const controlsResult = await finalizeControlsByCatalogId(id);
-    
+
     // Return the updated catalog and the number of finalized controls
     const finalizedCount = Array.isArray(controlsResult?.updated) ? controlsResult.updated.length : 0;
     res.status(200).json({

@@ -5,6 +5,7 @@ import * as utils from '../../../../src/utils/checkRequiredProperties.js';
 import * as panelUtils from '../../../../src/utils/panelUtils.js';
 import { createControlExample } from '../../../utils/createControlExample.js';
 import { mockController } from '../../../utils/mockController.js';
+import { Op } from 'sequelize';
 
 // --- Helpers ---
 function createRes() {
@@ -794,4 +795,57 @@ describe('Control Controller', () => {
       });
     });
   });
+  //Pemdinf
+  describe('getPendingControls', () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    it('should return 200 with the list of pending controls', async () => {
+      const mockControls = [{ id: 'ctrl-1' }, { id: 'ctrl-2' }];
+
+      const spy = mockController(models.Control, 'findAll', mockControls);
+
+      await control.getPendingControls({}, res);
+
+      expect(spy).toHaveBeenCalledWith({
+        where: {
+          startDate: { [Op.lte]: today },
+          endDate: { [Op.gte]: today },
+          [Op.or]: [
+            { lastComputed: null },
+            { lastComputed: { [Op.lt]: today } },
+          ],
+          status: 'finalized',
+        },
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(mockControls);
+    });
+
+    it('should return 200 with empty list when no pending controls found', async () => {
+      mockController(models.Control, 'findAll', []);
+
+      await control.getPendingControls({}, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([]);
+    });
+
+    it('should return 500 on internal server error', async () => {
+      mockController(
+        models.Control,
+        'findAll',
+        null,
+        new Error('DB error')
+      );
+
+      await control.getPendingControls({}, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Failed to get pending controls',
+        error: 'DB error',
+      });
+    });
+  });
+
 });
