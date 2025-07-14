@@ -7,10 +7,10 @@ describe('insertEndpointsToConfig Function', () => {
   beforeEach(async () => {
     // Clear the Configuration table before each test
     await models.Configuration.destroy({ where: {}, truncate: true });
-    
+
     // Mock sequelize.sync to avoid pg-mem compatibility issues
     vi.spyOn(getSequelize(), 'sync').mockResolvedValue();
-    
+
     // Mock findOrCreate to use find + create instead for pg-mem compatibility
     vi.spyOn(models.Configuration, 'findOrCreate').mockImplementation(async ({ where, defaults }) => {
       const existing = await models.Configuration.findOne({ where });
@@ -33,7 +33,7 @@ describe('insertEndpointsToConfig Function', () => {
     await insertEndpointsToConfig();
 
     const configurations = await models.Configuration.findAll();
-    expect(configurations.length).toBe(15); // Total number of endpoints
+    expect(configurations.length).toBe(16); // Total number of endpoints
 
     // Check that all expected endpoints are present
     const endpointNames = configurations.map(config => config.endpoint);
@@ -50,6 +50,7 @@ describe('insertEndpointsToConfig Function', () => {
     expect(endpointNames).toContain('/computations');
     expect(endpointNames).toContain('/points');
     expect(endpointNames).toContain('/scopes');
+    expect(endpointNames).toContain('/secrets');
     expect(endpointNames).toContain('docs');
     expect(endpointNames).toContain('api-docs');
   });
@@ -84,7 +85,7 @@ describe('insertEndpointsToConfig Function', () => {
     await insertEndpointsToConfig(); // Call again
 
     const configurations = await models.Configuration.findAll();
-    expect(configurations.length).toBe(15); // Should still be 15, no duplicates
+    expect(configurations.length).toBe(16); // Should still be 16, no duplicates
 
     // Verify no duplicates exist
     const endpointCounts = configurations.reduce((acc, config) => {
@@ -104,9 +105,9 @@ describe('insertEndpointsToConfig Function', () => {
 
     // The function catches errors and logs them, but doesn't re-throw
     await insertEndpointsToConfig();
-    
+
     expect(consoleSpy).toHaveBeenCalledWith('[server] Error inserting endpoints:', expect.any(Error));
-    
+
     consoleSpy.mockRestore();
   });
 });

@@ -7,6 +7,7 @@ import {
   getAuthority,
   deleteUserById,
   refreshToken,
+  whoami,
 } from '../controllers/user.controller.js';
 import { verifyAdmin } from '../middleware/verifyAdmin.js';
 import { verifyAuthority } from '../middleware/verifyAuth.js';
@@ -14,6 +15,7 @@ import { verifyAuthority } from '../middleware/verifyAuth.js';
 export default function () {
   const router = Router();
   router.get('', getUsers);
+
 
   router.post('/signIn', signIn);
   router.get('/signOut', signOut);
@@ -23,7 +25,7 @@ export default function () {
   router.get('/auth/refresh', refreshToken);
 
   router.delete('/:id', deleteUserById); //TODO: add auth middleware
-
+  router.get('/whoami', verifyAuthority, whoami);
   return router;
 }
 
@@ -229,4 +231,42 @@ export default function () {
  *               properties:
  *                 message:
  *                   type: string
+ */
+
+/**
+ * @swagger
+ * /users/whoami:
+ *   get:
+ *     summary: Returns info about the currently authenticated user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Authenticated user info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 username:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 authority:
+ *                   type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *       401:
+ *         description: Unauthorized - No token or invalid
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
  */
