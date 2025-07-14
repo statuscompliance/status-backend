@@ -19,6 +19,7 @@ const supportedModels = [
   'Panel',
   'Point',
   'Scope',
+  'Secret',
   'Thread',
   'User',
 ]
