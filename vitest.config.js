@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: './tests/setup/setup.js',
+    setupFiles: process.env.TEST_TYPE === 'e2e' ? './tests/e2e/setup.js' : './tests/setup/setup.js',
     testMatch: ['**/*.test.js'],
     isolate: true,
     exclude: [
