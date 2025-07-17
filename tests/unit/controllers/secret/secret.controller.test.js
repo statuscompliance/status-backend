@@ -264,6 +264,7 @@ describe('Secret Controller', () => {
       await secret.createSecret(req, res);
 
       // Check that the create function was called with the right parameters
+      // In test environment, the controller automatically adds an id field
       expect(models.Secret.create).toHaveBeenCalledWith({
         name: secretData.name,
         type: secretData.type,
@@ -273,6 +274,7 @@ describe('Secret Controller', () => {
         version: 1,
         rotatedAt: expect.any(Date),
         ownerId: userId,
+        id: expect.any(Number), // ID is automatically added in test environment
       });
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({
