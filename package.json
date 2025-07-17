@@ -53,6 +53,7 @@
     "@stylistic/eslint-plugin-js": "4.4.0",
     "@vitest/coverage-istanbul": "3.1.4",
     "@vitest/ui": "3.1.4",
+    "chai": "5.2.1",
     "commitlint": "19.8.1",
     "cross-env": "7.0.3",
     "eslint": "9.28.0",
