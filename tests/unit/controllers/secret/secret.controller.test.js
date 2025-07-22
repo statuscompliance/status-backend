@@ -292,6 +292,24 @@ describe('Secret Controller', () => {
       });
     });
 
+    it('should return 409 if a secret with the same name already exists for the user', async () => {
+      const mockExistingSecret = createSecretExample({
+        id: secretId,
+        name: secretData.name,
+        ownerId: userId,
+      });
+
+      mockController(models.Secret, 'findOne', mockExistingSecret);
+      const req = createReq({ body: secretData });
+
+      await secret.createSecret(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(409);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'A secret with this name already exists.',
+      });
+    });
+
     it('should return 500 on database error', async () => {
       const mockError = new Error('Database error');
       mockController(models.Secret, 'create', null, mockError);
