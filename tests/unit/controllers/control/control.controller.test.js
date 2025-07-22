@@ -5,6 +5,7 @@ import * as utils from '../../../../src/utils/checkRequiredProperties.js';
 import * as panelUtils from '../../../../src/utils/panelUtils.js';
 import { createControlExample } from '../../../utils/createControlExample.js';
 import { mockController } from '../../../utils/mockController.js';
+import { Op } from 'sequelize';
 
 // --- Helpers ---
 function createRes() {
@@ -48,12 +49,16 @@ describe('Control Controller', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         error: `Invalid value for "status": "${statusInvalid}". Allowed values are draft or finalized.`,
-
       });
     });
 
     it('should return 500 for internal server error', async () => {
-      mockController(models.Control, 'findAll', null, new Error('Internal error'));
+      mockController(
+        models.Control,
+        'findAll',
+        null,
+        new Error('Internal error')
+      );
       await control.getControls({ query: {} }, res);
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
@@ -84,7 +89,12 @@ describe('Control Controller', () => {
     });
 
     it('should return 500 for internal server error', async () => {
-      mockController(models.Control, 'findByPk', null, new Error('Internal error'));
+      mockController(
+        models.Control,
+        'findByPk',
+        null,
+        new Error('Internal error')
+      );
 
       await control.getControl({ params: { id: '1' } }, res);
       expect(res.status).toHaveBeenCalledWith(500);
@@ -98,7 +108,9 @@ describe('Control Controller', () => {
   describe('getCatalogControls', () => {
     const catalogId = 'catalog-1';
     it('should return 200 with controls filtered by catalogId', async () => {
-      const getControls = mockController(models.Control, 'findAll', [{ any: 'clause' }]);
+      const getControls = mockController(models.Control, 'findAll', [
+        { any: 'clause' },
+      ]);
       const req = { params: { catalogId: catalogId }, query: { foo: 'bar' } };
 
       await control.getCatalogControls(req, res);
@@ -118,7 +130,12 @@ describe('Control Controller', () => {
     });
 
     it('should return 500 for internal server error', async () => {
-      mockController(models.Control, 'findAll', null, new Error('Internal error'));
+      mockController(
+        models.Control,
+        'findAll',
+        null,
+        new Error('Internal error')
+      );
       await control.getCatalogControls(
         { params: { catalogId: catalogId }, query: {} },
         res
@@ -217,7 +234,12 @@ describe('Control Controller', () => {
       });
     });
     it('should return 500 for internal server error during creation', async () => {
-      mockController(models.Control, 'create', null, new Error('Internal error'));
+      mockController(
+        models.Control,
+        'create',
+        null,
+        new Error('Internal error')
+      );
       await control.createControl({ body: bodyControl }, res);
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
@@ -271,7 +293,8 @@ describe('Control Controller', () => {
       });
 
       await control.updateControl(
-        { params: { id: controlId },
+        {
+          params: { id: controlId },
           body: {
             name: 'Updated Name',
           },
@@ -280,7 +303,7 @@ describe('Control Controller', () => {
       );
 
       expect(utils.checkRequiredProperties).toHaveBeenCalledWith(
-        {some_invalid_param: 'value' },
+        { some_invalid_param: 'value' },
         ['endpoint', 'threshold']
       );
       expect(res.status).toHaveBeenCalledWith(400);
@@ -294,7 +317,7 @@ describe('Control Controller', () => {
         ...currentControl,
         name: 'Updated Control',
         description: 'New Description',
-        params: { },
+        params: {},
       };
 
       vi.spyOn(models.Control, 'findByPk')
@@ -313,7 +336,6 @@ describe('Control Controller', () => {
     });
 
     it('should return 500 for internal server error during update', async () => {
-
       mockController(models.Control, 'findByPk', controlId);
 
       // Mock the update method to throw an error, simulating a database failure
@@ -403,7 +425,7 @@ describe('Control Controller', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        message: 'Failed to panel to control',
+        message: 'Failed to add panel to control',
         error: 'Database write failed',
       });
     });
@@ -488,7 +510,10 @@ describe('Control Controller', () => {
   });
 
   describe('createDraftControl', () => {
-    const controlCatalog = createControlExample({ catalogId: 'catalog-1', status: 'draft' });
+    const controlCatalog = createControlExample({
+      catalogId: 'catalog-1',
+      status: 'draft',
+    });
 
     it('should return 400 if required fields are missing', async () => {
       await control.createDraftControl({ body: {} }, res);
@@ -534,7 +559,10 @@ describe('Control Controller', () => {
       };
       mockController(models.Control, 'create', createdControlResult);
 
-      await control.createDraftControl({ body: controlDataWithoutDescription }, res);
+      await control.createDraftControl(
+        { body: controlDataWithoutDescription },
+        res
+      );
 
       expect(models.Control.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -550,7 +578,7 @@ describe('Control Controller', () => {
         name: 'Control without period',
         catalogId: 'catalog-1',
         description: 'Some description',
-        params: { }, // Provide valid params to pass initial validation
+        params: {}, // Provide valid params to pass initial validation
       };
 
       vi.spyOn(models.Catalog, 'findByPk').mockResolvedValueOnce({
@@ -584,7 +612,6 @@ describe('Control Controller', () => {
     });
 
     it('should return 500 for internal server error during draft control creation', async () => {
-
       // Ensure catalog exists and is draft
       vi.spyOn(models.Catalog, 'findByPk').mockResolvedValueOnce({
         id: 'catalog-1',
@@ -621,13 +648,19 @@ describe('Control Controller', () => {
         catalogId: 'nonExistentCatalogId', // Point to a missing catalog
         status: 'draft',
       };
-      mockController(models.Control, 'findByPk', draftControlWithMissingCatalog);
+      mockController(
+        models.Control,
+        'findByPk',
+        draftControlWithMissingCatalog
+      );
 
       vi.spyOn(models.Catalog, 'findByPk').mockResolvedValueOnce(null);
 
       await control.finalizeControl({ params: { id: controlId } }, res);
 
-      expect(models.Catalog.findByPk).toHaveBeenCalledWith('nonExistentCatalogId');
+      expect(models.Catalog.findByPk).toHaveBeenCalledWith(
+        'nonExistentCatalogId'
+      );
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({
         message: 'Associated catalog with ID nonExistentCatalogId not found.',
@@ -731,7 +764,12 @@ describe('Control Controller', () => {
       expect(result).toBe(updated);
     });
     it('should throw an error if an internal error occurs', async () => {
-      mockController(models.Control, 'findAll', null, new Error('Internal error'));
+      mockController(
+        models.Control,
+        'findAll',
+        null,
+        new Error('Internal error')
+      );
       await expect(
         control.finalizeControlsByCatalogId('catalog-1')
       ).rejects.toThrow('Internal error');
@@ -743,12 +781,71 @@ describe('Control Controller', () => {
       const mockRes = createRes(); // Use your helper to create a mock res
 
       // Call getModelById directly, omitting the 'name' option
-      const result = await control.getModelById(mockRes, models.Control, 'nonExistentId');
+      const result = await control.getModelById(
+        mockRes,
+        models.Control,
+        'nonExistentId'
+      );
 
       expect(result).toBeNull();
       expect(mockRes.status).toHaveBeenCalledWith(404);
       // Crucially, expect the message to use the default 'Resource' name
-      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Resource with ID nonExistentId not found.' });
+      expect(mockRes.json).toHaveBeenCalledWith({
+        message: 'Resource with ID nonExistentId not found.',
+      });
     });
   });
+  //Pemdinf
+  describe('getPendingControls', () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    it('should return 200 with the list of pending controls', async () => {
+      const mockControls = [{ id: 'ctrl-1' }, { id: 'ctrl-2' }];
+
+      const spy = mockController(models.Control, 'findAll', mockControls);
+
+      await control.getPendingControls({}, res);
+
+      expect(spy).toHaveBeenCalledWith({
+        where: {
+          startDate: { [Op.lte]: today },
+          endDate: { [Op.gte]: today },
+          [Op.or]: [
+            { lastComputed: null },
+            { lastComputed: { [Op.lt]: today } },
+          ],
+          status: 'finalized',
+        },
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(mockControls);
+    });
+
+    it('should return 200 with empty list when no pending controls found', async () => {
+      mockController(models.Control, 'findAll', []);
+
+      await control.getPendingControls({}, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([]);
+    });
+
+    it('should return 500 on internal server error', async () => {
+      mockController(
+        models.Control,
+        'findAll',
+        null,
+        new Error('DB error')
+      );
+
+      await control.getPendingControls({}, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Failed to get pending controls',
+        error: 'DB error',
+      });
+    });
+  });
+
 });

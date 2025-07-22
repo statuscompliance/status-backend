@@ -12,12 +12,13 @@ import computationRoutes from './routes/computation.routes.js';
 import scriptRoutes from './routes/script.routes.js';
 import pointRoutes from './routes/point.routes.js';
 import scopeRoutes from './routes/scope.routes.js';
+import secretRoutes from './routes/secret.routes.js';
 import cors from 'cors';
 import { verifyAuthority } from './middleware/verifyAuth.js';
 import { endpointAvailable } from './middleware/endpoint.js';
 import cookieParser from 'cookie-parser';
 import { models } from './models/models.js';
-import { sequelize } from './db/database.js';
+import { getSequelize } from './db/database.js';
 import { verifyAdmin } from './middleware/verifyAdmin.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
@@ -76,6 +77,7 @@ const configureApp = () => {
   app.use(`${API_PREFIX}`, ghAccess());
   app.use(`${API_PREFIX}/users`, userRoutes());
   app.use(`${API_PREFIX}/scripts`, scriptRoutes());
+  app.use(`${API_PREFIX}/secrets`, secretRoutes());
   app.use(verifyAuthority);
   app.use(`${API_PREFIX}/scopes`, scopeRoutes());
   app.use(`${API_PREFIX}/points`, pointRoutes());
@@ -85,6 +87,7 @@ const configureApp = () => {
   app.use(`${API_PREFIX}/computations`, computationRoutes());
   app.use(`${API_PREFIX}/assistant`, assistantRoutes());
   app.use(`${API_PREFIX}/thread`, threadRoutes());
+
   app.use(verifyAdmin);
   app.use(`${API_PREFIX}/config`, configRoutes());
 
@@ -106,10 +109,12 @@ async function insertEndpointsToConfig() {
     `${API_PREFIX}/computations`,
     `${API_PREFIX}/points`,
     `${API_PREFIX}/scopes`,
+    `${API_PREFIX}/secrets`,
     'docs',
     'api-docs',
   ];
   try {
+    const sequelize = getSequelize();
     await sequelize.sync({ alter: true });
     for (const endpoint of endpoints) {
       if (endpoint === `${API_PREFIX}/assistant`) {
@@ -130,6 +135,7 @@ async function insertEndpointsToConfig() {
 }
 
 // Only start the server if we are not in a test environment
+/* istanbul ignore if */ 
 if (!isTestEnvironment) {
   const app = configureApp();
   
@@ -149,3 +155,4 @@ if (!isTestEnvironment) {
 }
 
 export default configureApp;
+export { insertEndpointsToConfig };

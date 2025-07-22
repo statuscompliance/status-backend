@@ -1,6 +1,7 @@
 import { Sequelize } from 'sequelize';
 import mongoose from 'mongoose';
-export let sequelize;
+let _sequelize;
+export const getSequelize = () => _sequelize;
 import { initModels } from '../models/models.js';
 import logger from '../config/logger.js';
 
@@ -17,7 +18,7 @@ const getPostgresConfig = async () => {
     ssl: false,
     logging: (msg) => logger.database(msg),
   });
-  logger.info('Connecting to Postgres...', { 
+  logger.debug('Connecting to Postgres...', { 
     host: process.env.DB_HOST || 'localhost',
     database: process.env.DB_NAME || 'statusdb'
   });
@@ -28,6 +29,7 @@ const getPostgresConfig = async () => {
 
 const initMongoDB = async () => {
   try {
+    logger.debug('Connecting to MongoDB...');
     await mongoose.connect(
       process.env.MONGO_URI || 'mongodb://root:root@localhost:27017/statusdb?authSource=admin'
     );
@@ -40,14 +42,15 @@ const initMongoDB = async () => {
 };
 
 const initDB = async () => {
+  logger.debug('Initializing database connections');
   await initMongoDB();
   return await getPostgresConfig();
 };
 
 export const registerDB = async (instance) => {
-  if(!sequelize) {
-    sequelize = instance;
-    await initModels(sequelize);
+  if(!_sequelize) {
+    _sequelize = instance;
+    await initModels(_sequelize);
     logger.debug('Database models initialized');
   }
 }

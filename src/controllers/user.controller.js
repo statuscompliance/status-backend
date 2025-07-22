@@ -261,11 +261,11 @@ export async function getUsers(req, res) {
   // THIS IS A TEST FUNCTION
   try {
     const users = await models.User.findAll();
-    
+
     logger.debug('Retrieved all users', {
       count: users.length
     });
-    
+
     res.status(200).json(users);
   } catch (error) {
     return handleControllerError(res, error, 'Failed to retrieve users');
@@ -291,7 +291,7 @@ export async function getAuthority(req, res) {
     userId: decoded.user_id,
     authority: decoded.authority
   });
-  
+
   return res.status(200).json({ authority: decoded.authority });
 }
 
@@ -311,7 +311,7 @@ export async function refreshToken(req, res) {
         });
         return res.status(403).json({ message: 'Invalid or expired refresh token' });
       }
-      
+
       const user = await models.User.findOne({
         where: {
           id: decoded.user_id,
@@ -362,16 +362,45 @@ export async function deleteUserById(req, res) {
       });
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     await user.destroy();
-    
+
     logger.info('User deleted successfully', {
       userId: id,
       username: user.username
     });
-    
+
     return res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
     return handleControllerError(res, error, 'Failed to delete user');
+  }
+}
+
+export async function whoami(req, res) {
+
+  try {
+    const { user } = req;
+
+    if (!user) {
+      return res.status(401).json({ message: 'Unauthorized: No user in request' });
+    }
+
+    const dbUser = await models.User.findByPk(user.user_id, {
+      attributes: ['id', 'username', 'email', 'authority', 'createdAt', 'updatedAt']
+    });
+    if (!dbUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      id: dbUser.id,
+      username: dbUser.username,
+      email: dbUser.email,
+      authority: dbUser.authority,
+      createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt
+    });
+  } catch (error) {
+    return handleControllerError(res, error, 'Failed to fetch user info');
   }
 }
