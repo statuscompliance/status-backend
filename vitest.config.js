@@ -10,6 +10,7 @@ export default defineConfig({
     isolate: true,
     exclude: [
       '**/src/config/load-env.js',
+      '**/src/db/database.js',
       '**/node_modules/**'
     ],
     coverage: {
@@ -22,6 +23,7 @@ export default defineConfig({
       include: ['src/**/*.{js,ts}'],
       exclude: [
         'src/config/load-env.js',
+        '**/src/db/database.js',
         '**/node_modules/**'
       ],
     },

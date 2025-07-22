@@ -58,6 +58,7 @@ export async function verifyAuthority(req, res, next) {
     }
     const authority = decoded.authority;
     if (['ADMIN', 'USER', 'DEVELOPER'].includes(authority)) {
+      req.user = decoded;
       return next();
     } else {
       return res.status(403).json({ message: 'Forbidden' });

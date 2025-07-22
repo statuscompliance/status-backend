@@ -23,7 +23,8 @@ export default function () {
   router.post('', createCatalog);
   router.patch('/:id', updateCatalog);
   router.delete('/:id', deleteCatalog);
-  router.get('/:tpaId/points', calculatePoints);
+
+  router.post('/:tpaId/points', calculatePoints);
   router.get('/:catalogId/controls', getCatalogControls);
 
   return router;
@@ -253,7 +254,7 @@ export default function () {
 /**
  * @swagger
  * /catalogs/{tpaId}/points:
- *   get:
+ *   post:
  *     summary: Calculates and retrieves points for a computation by tpaId
  *     tags: [Catalogs]
  *     parameters:
@@ -277,6 +278,20 @@ export default function () {
  *           format: date-time
  *         required: false
  *         description: The end date for the points calculation
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               controlIds:
+ *                 description: Array or comma-separated string of control IDs to calculate
+ *                 oneOf:
+ *                   - type: array
+ *                     items:
+ *                       type: string
+ *                   - type: string
  *     security:
  *       - bearerAuth: []
  *     responses:

@@ -161,18 +161,10 @@ export async function createDashboardTemplate(req, res) {
   }
 }
 
-export async function createTemporaryDashboard(req, res) {
-  try {
-    const { panelConfig, baseDashboardUid, timeRange, autoCleanup } = req.body;
-    let title = req.body.title;
-    
-    if (baseDashboardUid) {
-      title = `tmp-${baseDashboardUid}`;
-    } else {
-      title = title || `tmp-${new Date().toISOString()}`;
-    }
-    
-    let dashboardTemplate = {
+// Auxiliar function to get a base dashboard template
+async function getBaseDashboardTemplate({ baseDashboardUid, timeRange, title }) {
+  if (!baseDashboardUid) {
+    return {
       annotations: { list: [] },
       editable: true,
       fiscalYearStartMonth: 0,
@@ -184,54 +176,84 @@ export async function createTemporaryDashboard(req, res) {
       time: timeRange || { from: 'now-6h', to: 'now' },
       timepicker: {},
       timezone: 'browser',
-      title: title,
+      title: title || `tmp-${new Date().toISOString()}`,
       version: 0,
       weekStart: '',
       refresh: '5s'
     };
-
-    if (baseDashboardUid) {
-      try {
-        const baseResponse = await methods.dashboard.getDashboardByUID(baseDashboardUid);
-        if (baseResponse.data && baseResponse.data.dashboard) {
-          const baseDashboard = baseResponse.data.dashboard;
-          dashboardTemplate = {
-            ...baseDashboard,
-            id: null,
-            uid: null,
-            title: title,
-            tags: [...(baseDashboard.tags || []), 'temp', 'preview'],
-            panels: []
-          };
-        }
-      } catch (error) {
-        console.warn('Error while fetching base dashboard', error.message);
-      }
+  }
+  try {
+    const baseResponse = await methods.dashboard.getDashboardByUID(baseDashboardUid);
+    if (baseResponse.data && baseResponse.data.dashboard) {
+      const baseDashboard = baseResponse.data.dashboard;
+      return {
+        ...baseDashboard,
+        id: null,
+        uid: null,
+        title: `tmp-${baseDashboardUid}`,
+        tags: [...(baseDashboard.tags || []), 'temp', 'preview'],
+        panels: []
+      };
     }
+  } catch (error) {
+    console.warn('Error while fetching base dashboard', error.message);
+  }
+  // fallback if base dashboard is not found or an error occurs
+  return {
+    annotations: { list: [] },
+    editable: true,
+    fiscalYearStartMonth: 0,
+    graphTooltip: 0,
+    panels: [],
+    schemaVersion: 27,
+    tags: ['temp', 'preview'],
+    templating: { list: [] },
+    time: timeRange || { from: 'now-6h', to: 'now' },
+    timepicker: {},
+    timezone: 'browser',
+    title: title || `tmp-${new Date().toISOString()}`,
+    version: 0,
+    weekStart: '',
+    refresh: '5s'
+  };
+}
+
+// Auxiliar function to create a new panel based on the provided configuration
+async function createPanel(panelConfig) {
+  const newPanel = createPanelTemplate(panelConfig.type || 'gauge');
+  newPanel.id = 1;
+  newPanel.title = panelConfig.title || 'Panel Preview';
+  newPanel.gridPos = panelConfig.gridPos || { x: 0, y: 0, w: 24, h: 15 };
+  if (panelConfig.displayName) {
+    newPanel.fieldConfig.defaults.displayName = panelConfig.displayName;
+  }
+  if (panelConfig.targets) {
+    newPanel.targets = panelConfig.targets;
+  } else if (panelConfig.sqlQuery && newPanel.targets && newPanel.targets.length > 0) {
+    const { model, operation, options } = panelConfig.sqlQuery;
+    const generatedSQLquery = await getSQLFromSequelize(
+      models[model],
+      operation,
+      options
+    );
+    newPanel.targets[0].rawSql = typeof panelConfig.sqlQuery === 'string'
+      ? panelConfig.sqlQuery
+      : generatedSQLquery;
+    newPanel.targets[0].table = panelConfig.table || 'Points';
+  }
+  return newPanel;
+}
+
+export async function createTemporaryDashboard(req, res) {
+  try {
+    const { panelConfig, baseDashboardUid, timeRange, autoCleanup } = req.body;
+    let title = req.body.title;
+
+    const dashboardTemplate = await getBaseDashboardTemplate({ baseDashboardUid, timeRange, title });
 
     if (panelConfig) {
       try {
-        const newPanel = createPanelTemplate(panelConfig.type || 'gauge');
-        newPanel.id = 1;
-        newPanel.title = panelConfig.title || 'Panel Preview';
-        newPanel.gridPos = panelConfig.gridPos || { x: 0, y: 0, w: 24, h: 15 };
-        if (panelConfig.displayName) {
-          newPanel.fieldConfig.defaults.displayName = panelConfig.displayName;
-        }
-        if (panelConfig.targets) {
-          newPanel.targets = panelConfig.targets;
-        } else if (panelConfig.sqlQuery && newPanel.targets && newPanel.targets.length > 0) {
-          const { model, operation, options } = panelConfig.sqlQuery;
-          const generatedSQLquery = await getSQLFromSequelize(
-            models[model],
-            operation,
-            options
-          );
-          newPanel.targets[0].rawSql = typeof panelConfig.sqlQuery === 'string'
-            ? panelConfig.sqlQuery
-            : generatedSQLquery;
-          newPanel.targets[0].table = panelConfig.table || 'Points';
-        }
+        const newPanel = await createPanel(panelConfig);
         dashboardTemplate.panels.push(newPanel);
       } catch (error) {
         return res.status(400).json({

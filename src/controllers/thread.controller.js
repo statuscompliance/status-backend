@@ -1,5 +1,5 @@
 import { models } from '../models/models.js';
-import { sequelize } from '../db/database.js';
+import { getSequelize } from '../db/database.js';
 import OpenAI from 'openai';
 import jwt from 'jsonwebtoken';
 
@@ -93,6 +93,7 @@ export async function createThread(req, res) {
       if (!validMsg(content)) {
         return res.status(400).json({ error: 'Por favor, haz el mensaje un poco más detallado' });
       }
+      const sequelize = getSequelize();
       await sequelize.transaction(async (transaction) => {
         const runThread = await openai.beta.threads.createAndRun({
           assistant_id: assistantId,
@@ -124,6 +125,7 @@ export async function addNewMessage(req, res) {
       return res.status(400).json({ error: 'El mensaje debe tener al menos 15 palabras' });
     }
 
+    const sequelize = getSequelize();
     await sequelize.transaction(async (transaction) => {
       await openai.beta.threads.messages.create(gptId, { role: 'user', content: content });
 
@@ -169,7 +171,7 @@ export async function deleteUserThreads(req,res){
   const decoded = jwt.verify(accessToken, process.env.JWT_SECRET)
   const userId = decoded.user_id
   try {
-
+    const sequelize = getSequelize();
     await sequelize.transaction(async (transaction) => {
       await models.Message.destroy({
         where: {

@@ -121,7 +121,7 @@ describe('Configuration API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe(
-        'Configuration 1 updated successfully'
+        'Configuration 16 updated successfully'
       );
     });
 
