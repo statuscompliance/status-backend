@@ -299,7 +299,6 @@ describe('Secret Controller', () => {
         ownerId: userId,
       });
 
-      // Simula que ya existe un secreto con ese nombre para el usuario
       mockController(models.Secret, 'findOne', mockExistingSecret);
       const req = createReq({ body: secretData });
 
