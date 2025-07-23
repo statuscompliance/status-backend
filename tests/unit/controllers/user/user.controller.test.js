@@ -690,14 +690,14 @@ describe('User Controller Tests', () => {
     it('should return 204 and clear all cookies when sign out successfully', async () => {
       const token = 'validToken';
       const mockUser = [{ id: 1, username: 'existingUser', refresh_token: token }];
-      setupUserMocks({ findAllValue: mockUser });
+      setupUserMocks({ findOneValue: mockUser });
       
       const req = { cookies: { refreshToken: token } };
       const res = createRes();
 
       await userController.signOut(req, res);
 
-      expect(models.User.findAll).toHaveBeenCalledWith({ where: { refresh_token: token } });
+      expect(models.User.findOne).toHaveBeenCalledWith({ where: { refresh_token: token } });
       expect(models.User.update).toHaveBeenCalledWith(
         { refresh_token: '' },
         { where: { refresh_token: token } }
@@ -708,7 +708,7 @@ describe('User Controller Tests', () => {
     });
 
     it('should return 404 and clear all cookies if user not found for refreshToken', async () => {
-      setupUserMocks({ findAllValue: [] });
+      setupUserMocks({ findOneValue: [] });
       
       const req = { cookies: { refreshToken: 'invalidToken' } };
       const res = createRes();
@@ -728,7 +728,7 @@ describe('User Controller Tests', () => {
       
       for (const env of environments) {
         process.env.NODE_ENV = env;
-        setupUserMocks({ findAllValue: [] });
+        setupUserMocks({ findOneValue: [] });
         
         const req = { cookies: { refreshToken: 'invalidToken' } };
         const res = createRes();
@@ -745,14 +745,14 @@ describe('User Controller Tests', () => {
 
     it('should handle database error during signOut process', async () => {
       const error = new Error('Database error during signout');
-      vi.spyOn(models.User, 'findAll').mockRejectedValue(error);
+      vi.spyOn(models.User, 'findOne').mockRejectedValue(error);
       
       const req = { cookies: { refreshToken: 'someToken' } };
       const res = createRes();
 
       await userController.signOut(req, res);
 
-      expect(models.User.findAll).toHaveBeenCalledWith({
+      expect(models.User.findOne).toHaveBeenCalledWith({
         where: { refresh_token: 'someToken' },
       });
       expect(errorHandler.handleControllerError).toHaveBeenCalledWith(

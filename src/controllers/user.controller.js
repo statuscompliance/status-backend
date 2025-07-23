@@ -5,6 +5,8 @@ import { verifyAccessToken } from '../utils/tokenUtils.js';
 import { getNodeRedToken } from '../utils/nodeRedToken.js';
 import { handleControllerError } from '../utils/errorHandler.js';
 import logger from '../config/logger.js';
+import { generate2FASecret, generateQRCode, verifyOTP } from '../utils/twofaGenerator.js';
+import { encrypt, decrypt } from '../config/encryption.js';
 
 const token_expiration = parseInt(process.env.JWT_EXPIRATION) || 3600;
 const refreshToken_expiration =
@@ -13,27 +15,27 @@ const refreshToken_expiration =
 // Helper function to set cookie options based on environment
 export const getCookieOptions = (maxAge) => {
   if (process.env.NODE_ENV === 'development') {
-    return { 
-      httpOnly: true, 
+    return {
+      httpOnly: true,
       path: '/',
-      maxAge: maxAge * 1000 
+      maxAge: maxAge * 1000
     };
   } else if (process.env.NODE_ENV === 'production') {
-    return { 
-      httpOnly: true, 
+    return {
+      httpOnly: true,
       path: '/',
-      maxAge: maxAge * 1000, 
-      sameSite: 'none', 
-      secure: true, 
-      partitioned: true 
+      maxAge: maxAge * 1000,
+      sameSite: 'none',
+      secure: true,
+      partitioned: true
     };
   } else {
     // Default for test or other environments
-    return { 
-      httpOnly: true, 
+    return {
+      httpOnly: true,
       path: '/',
-      maxAge: maxAge * 1000, 
-      sameSite: 'lax' 
+      maxAge: maxAge * 1000,
+      sameSite: 'lax'
     };
   }
 };
@@ -41,22 +43,22 @@ export const getCookieOptions = (maxAge) => {
 // Helper function to get cookie clear options
 export const getClearCookieOptions = () => {
   if (process.env.NODE_ENV === 'development') {
-    return { 
-      httpOnly: true, 
-      path: '/' 
+    return {
+      httpOnly: true,
+      path: '/'
     };
   } else if (process.env.NODE_ENV === 'production') {
-    return { 
-      httpOnly: true, 
+    return {
+      httpOnly: true,
       path: '/',
-      sameSite: 'none', 
-      secure: true 
+      sameSite: 'none',
+      secure: true
     };
   } else {
-    return { 
-      httpOnly: true, 
+    return {
+      httpOnly: true,
       path: '/',
-      sameSite: 'lax' 
+      sameSite: 'lax'
     };
   }
 };
@@ -93,7 +95,7 @@ export async function signUp(req, res) {
     res.status(201).json({
       message: `User ${username} created successfully with authority ${authority}`,
     });
-    
+
     logger.info(`User ${username} created with authority ${authority}`, {
       userId: 'system',
       action: 'user_create',
@@ -105,8 +107,8 @@ export async function signUp(req, res) {
 }
 
 export async function signIn(req, res) {
-  const { username, password } = req.body;
 
+  const { username, password } = req.body;
   if (!username || !password) {
     return res
       .status(400)
@@ -128,91 +130,107 @@ export async function signIn(req, res) {
 
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid password' });
-    } else {
-      const accessToken = jwt.sign(
-        {
-          user_id: user.id,
-          username: user.username,
-          authority: user.authority,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '1h' }
-      );
-      const refreshToken = jwt.sign(
-        {
-          user_id: user.id,
-          username: user.username,
-          authority: user.authority,
-        },
-        process.env.REFRESH_JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-
-      await models.User.update(
-        { refresh_token: refreshToken },
-        { where: { username } }
-      );
-      
-      let nodeRedToken = '';
-      if (user.authority === 'DEVELOPER' || user.authority === 'ADMIN') {
-        try {
-          nodeRedToken = await getNodeRedToken(username, password);
-        } catch (nodeRedError) {
-          // If the error is authentication-related (403), handle it specifically
-          if (nodeRedError.statusCode === 403) {
-            logger.warn(`Node-RED authentication failed for user: ${username}`, {
-              userId: user.id,
-              statusCode: 403
-            });
-            
-            // Do not interrupt the flow, simply do not send Node-RED token
-            res.cookie('accessToken', accessToken, getCookieOptions(token_expiration));
-            res.cookie('refreshToken', refreshToken, getCookieOptions(refreshToken_expiration));
-            
-            return res.status(200).json({
-              username: user.username,
-              email: user.email,
-              authority: user.authority,
-              accessToken: accessToken,
-              refreshToken: refreshToken,
-              nodeRedAccess: false,
-              message: 'Logged in successfully, but Node-RED access was denied. Check Node-RED credentials.'
-            });
-          }
-          // Rethrow any other type of error to be handled by the outer catch
-          throw nodeRedError;
-        }
-      }
-
-      res.cookie('accessToken', accessToken, getCookieOptions(token_expiration));
-      res.cookie('refreshToken', refreshToken, getCookieOptions(refreshToken_expiration));
-      
-      if (nodeRedToken !== '' && nodeRedToken !== null) {
-        res.cookie('nodeRedToken', nodeRedToken, getCookieOptions(refreshToken_expiration));
-      }
-
-      res.status(200).json({
-        username: user.username,
-        email: user.email,
-        authority: user.authority,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        nodeRedToken: nodeRedToken,
-        nodeRedAccess: nodeRedToken !== '' && nodeRedToken !== null,
-      });
     }
+    // verify 2FA is enabled
+    if (user.twofa_enabled) {
+      const totpToken = req.body.totpToken; // from frontend
+      if (!totpToken) {
+        return res.status(202).json({
+          requires2FA: true,
+          message: 'Two-factor authentication required. Please provide your TOTP.',
+          userId: user.id,
+        });
+      }
+      const secret = decrypt(user.twofa_secret);
+      const valid = verifyOTP(totpToken, secret);
+      if (!valid) {
+        return res.status(401).json({
+          message: 'Invalid 2FA token. Please try again.',
+          requires2FA: true });
+      }
+    }
+    const accessToken = jwt.sign(
+      {
+        user_id: user.id,
+        username: user.username,
+        authority: user.authority,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+    const refreshToken = jwt.sign(
+      {
+        user_id: user.id,
+        username: user.username,
+        authority: user.authority,
+      },
+      process.env.REFRESH_JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    await models.User.update(
+      { refresh_token: refreshToken },
+      { where: { username } }
+    );
+
+    let nodeRedToken = '';
+    if (user.authority === 'DEVELOPER' || user.authority === 'ADMIN') {
+      try {
+        nodeRedToken = await getNodeRedToken(username, password);
+      } catch (nodeRedError) {
+        // If the error is authentication-related (403), handle it specifically
+        if (nodeRedError.statusCode === 403) {
+          logger.warn(`Node-RED authentication failed for user: ${username}`, {
+            userId: user.id,
+            statusCode: 403
+          });
+          // Do not interrupt the flow, simply do not send Node-RED token
+          res.cookie('accessToken', accessToken, getCookieOptions(token_expiration));
+          res.cookie('refreshToken', refreshToken, getCookieOptions(refreshToken_expiration));
+
+          return res.status(200).json({
+            username: user.username,
+            email: user.email,
+            authority: user.authority,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            nodeRedAccess: false,
+            message: 'Logged in successfully, but Node-RED access was denied. Check Node-RED credentials.'
+          });
+        }
+        // Rethrow any other type of error to be handled by the outer catch
+        throw nodeRedError;
+      }
+    }
+    res.cookie('accessToken', accessToken, getCookieOptions(token_expiration));
+    res.cookie('refreshToken', refreshToken, getCookieOptions(refreshToken_expiration));
+
+    if (nodeRedToken !== '' && nodeRedToken !== null) {
+      res.cookie('nodeRedToken', nodeRedToken, getCookieOptions(refreshToken_expiration));
+    }
+
+    res.status(200).json({
+      username: user.username,
+      email: user.email,
+      authority: user.authority,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      nodeRedToken: nodeRedToken,
+      nodeRedAccess: nodeRedToken !== '' && nodeRedToken !== null,
+    });
+
   } catch (error) {
     // Check if the error has a specific status code
     const statusCode = error.statusCode || 500;
     const errorMessage = error.message || 'Internal server error';
-    
+
     logger.error(`Error during sign in: ${errorMessage}`, {
       userId: req.body.username || 'unknown',
       statusCode,
       error
     });
-    
-    return res.status(statusCode).json({ 
+
+    return res.status(statusCode).json({
       message: errorMessage,
       details: statusCode === 403 ? 'Node-RED authentication failed' : undefined
     });
@@ -227,7 +245,7 @@ export async function signOut(req, res) {
     }
 
     const refreshToken = cookies.refreshToken;
-    const user = await models.User.findAll({
+    const user = await models.User.findOne({
       where: { refresh_token: refreshToken },
     });
 
@@ -402,5 +420,93 @@ export async function whoami(req, res) {
     });
   } catch (error) {
     return handleControllerError(res, error, 'Failed to fetch user info');
+  }
+}
+
+export async function setup2FA(req, res) {
+  try {
+    const user = await models.User.findByPk(req.user.user_id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const { base32, otpauth_url } = generate2FASecret(user.email);
+    const qrCode = await generateQRCode(otpauth_url);
+    const encryptedSecret = encrypt(base32);
+
+    await user.update({ twofa_secret: encryptedSecret });
+
+    return res.status(200).json({ qrCode });
+  } catch (error) {
+    return handleControllerError(res, error, 'Failed to setup 2FA');
+  }
+}
+
+export async function verify2FA(req, res) {
+  try {
+    const { totpToken } = req.body;
+    const user = await models.User.findByPk(req.user.user_id);
+    if (!user || !user.twofa_secret) {
+      return res.status(400).json({ message: '2FA not set up' });
+    }
+    const secret = decrypt(user.twofa_secret);
+    const valid = verifyOTP(totpToken, secret);
+
+    if (!valid) {
+      return res.status(401).json({ message: 'Invalid 2FA token' });
+    }
+    await user.update({ twofa_enabled: true });
+
+    return res.status(200).json({ message: '2FA enabled successfully' });
+  } catch (error) {
+    return handleControllerError(res, error, 'Failed to verify 2FA');
+  }
+}
+
+export async function get2FAStatus(req, res) {
+  try {
+    const user = await models.User.findByPk(req.user.user_id, {
+      attributes: ['twofa_enabled']
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({ twofa_enabled: user.twofa_enabled });
+  } catch (error) {
+    return handleControllerError(res, error, 'Failed to fetch 2FA status');
+  }
+}
+
+export async function disable2FA(req, res) {
+  try {
+    const { password, totpToken } = req.body;
+
+    if (!password || !totpToken) {
+      return res.status(400).json({ message: 'Password and 2FA totpToken are required' });
+    }
+
+    const user = await models.User.findByPk(req.user.user_id);
+
+    if (!user && !user.twofa_enabled && !user.twofa_secret) {
+      return res.status(400).json({ message: '2FA is not enabled for this user' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    const secret = decrypt(user.twofa_secret);
+
+    const valid = verifyOTP(totpToken, secret);
+    if (!valid) {
+      return res.status(401).json({ message: 'Invalid 2FA totpToken' });
+    }
+
+    await user.update({ twofa_enabled: false, twofa_secret: null });
+
+    return res.status(200).json({ message: '2FA has been disabled successfully' });
+  } catch (error) {
+    return handleControllerError(res, error, 'Failed to disable 2FA');
   }
 }

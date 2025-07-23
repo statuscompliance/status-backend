@@ -8,6 +8,10 @@ import {
   deleteUserById,
   refreshToken,
   whoami,
+  setup2FA,
+  verify2FA,
+  get2FAStatus,
+  disable2FA,
 } from '../controllers/user.controller.js';
 import { verifyAdmin } from '../middleware/verifyAdmin.js';
 import { verifyAuthority } from '../middleware/verifyAuth.js';
@@ -26,6 +30,12 @@ export default function () {
 
   router.delete('/:id', deleteUserById); //TODO: add auth middleware
   router.get('/whoami', verifyAuthority, whoami);
+
+
+  router.post('/2fa/setup', verifyAdmin, setup2FA);
+  router.post('/2fa/verify', verifyAdmin, verify2FA);
+  router.get('/2fa/status', verifyAuthority, get2FAStatus);
+  router.post('/2fa/disable', verifyAuthority, disable2FA);
   return router;
 }
 
@@ -269,4 +279,91 @@ export default function () {
  *         description: User not found
  *       500:
  *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /users/2fa/setup:
+ *   post:
+ *     summary: Generates a QR code to configure 2FA for the current user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: QR code generated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 qrCode:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /users/2fa/verify:
+ *   post:
+ *     summary: Verifies the 2FA token and enables 2FA
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               totpToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 2FA activated
+ *       401:
+ *         description: Invalid 2FA totpToken
+ */
+
+/**
+ * @swagger
+ * /users/2fa/status:
+ *   get:
+ *     summary: Returns 2FA activation status for the current user
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: 2FA status returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 twofa_enabled:
+ *                   type: boolean
+
+ * /users/2fa/disable:
+ *   post:
+ *     summary: Disables 2FA for the current user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               password:
+ *                 type: string
+ *               totpToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 2FA disabled
+ *       401:
+ *         description: Invalid password or token
+ *       400:
+ *         description: 2FA not enabled
  */

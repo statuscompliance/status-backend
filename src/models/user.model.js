@@ -33,6 +33,13 @@ export default (sequelize) => sequelize.define('User', {
   refresh_token: {
     type: DataTypes.STRING(255),
   },
+  twofa_enabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  twofa_secret: {
+    type: DataTypes.TEXT, // can exceed 255 chars
+  },
 },{
   tableName: 'users',
   freezeTableName: true
@@ -70,6 +77,15 @@ export default (sequelize) => sequelize.define('User', {
  *         refresh_token:
  *           type: string
  *           description: The refresh token of the user
+ *         twofa_enabled:
+ *           type: boolean
+ *           description: Indicates whether Two-Factor Authentication (2FA) is enabled for the user.
+ *           default: false
+ *           example: true
+ *         twofa_secret:
+ *           type: string
+ *           description: Base32 encoded secret key used for TOTP (Time-Based One-Time Password) generation.
+ *           maxLength: 65535 # TEXT can be very long, using a practical max length
  *      required:
  *        - username
  *        - password
@@ -81,4 +97,6 @@ export default (sequelize) => sequelize.define('User', {
  *        authority: USER
  *        email:
  *        refresh_token:
+ *        twofa_enabled: true
+ *        twofa_secret: "JBSWY3DPEHPK3PXP"
  */
