@@ -3,7 +3,7 @@ import * as control from '../../../../src/controllers/control.controller.js';
 import { models } from '../../../../src/models/models.js';
 import * as utils from '../../../../src/utils/checkRequiredProperties.js';
 import * as panelUtils from '../../../../src/utils/panelUtils.js';
-import { createControlExample } from '../../../utils/createControlExample.js';
+import { createControlExample } from '../../../utils/sampleControlsData.js';
 import { mockController } from '../../../utils/mockController.js';
 import { Op } from 'sequelize';
 

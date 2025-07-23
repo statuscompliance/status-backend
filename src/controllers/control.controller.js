@@ -66,6 +66,7 @@ export const getCatalogControls = async (req, res) => {
 export const createControl = async (req, res) => {
   try {
     const {
+      id,
       name,
       description,
       period,
@@ -97,6 +98,7 @@ export const createControl = async (req, res) => {
     const formattedEndDate = endDate ? new Date(endDate) : null;
 
     const newControl = await models.Control.create({
+      id,
       name,
       description,
       period,
@@ -284,6 +286,7 @@ export async function deletePanelFromControl(req, res) {
 
 export const createDraftControl = async (req, res) => {
   const {
+    id,
     name,
     description,
     startDate,
@@ -323,6 +326,7 @@ export const createDraftControl = async (req, res) => {
     }
 
     const newControl = await models.Control.create({
+      id,
       name,
       description: description || '',
       period: period || 'MONTHLY',

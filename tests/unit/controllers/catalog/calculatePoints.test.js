@@ -7,7 +7,7 @@ import { models } from '../../../../src/models/models.js';
 import registry from '../../../../src/config/registry.js';
 import * as guarantees from '../../../../src/utils/storeGuaranteePoints.js';
 import { mockController } from '../../../utils/mockController.js';
-import { createControlExample } from '../../../utils/createControlExample.js';
+import { createControlExample } from '../../../utils/sampleControlsData.js';
 
 function createRes() {
   return {
