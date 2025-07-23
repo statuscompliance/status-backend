@@ -66,9 +66,16 @@ export const createSecret = async (req, res) => {
       return res.status(400).json({ message: 'Secret value is required.' });
     }
 
+    const existing = await models.Secret.findOne({
+      where: { name, ownerId: userId }
+    });
+    if (existing) {
+      return res.status(409).json({ message: 'A secret with this name already exists.' });
+    }
+
     const valueEncrypted = encrypt(value);
 
-    const newSecret = await models.Secret.create({
+    const secretData = {
       name,
       type,
       environment,
@@ -77,7 +84,19 @@ export const createSecret = async (req, res) => {
       version: 1,
       rotatedAt: new Date(),
       ownerId: userId,
-    });
+    };
+
+    // For testing environment, get the next available ID since auto-increment is disabled
+    /* istanbul ignore next */
+    if (import.meta.env?.VITEST) {
+      const lastSecret = await models.Secret.findOne({
+        order: [['id', 'DESC']],
+        attributes: ['id']
+      });
+      secretData.id = lastSecret ? lastSecret.id + 1 : 1;
+    }
+
+    const newSecret = await models.Secret.create(secretData);
 
     const response = sanitizeSecret({ ...newSecret.toJSON(), value }, false);
     res.status(201).json({ message: 'Secret created successfully', ...response });

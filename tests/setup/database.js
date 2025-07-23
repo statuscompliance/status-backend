@@ -84,7 +84,7 @@ async function setupEndpointConfigurations() {
   const endpoints = [
     '/config', '/users', '/scripts', '/controls', '/grafana',
     '/thread', '/catalogs', '/assistant', '/github/auth', '/header',
-    '/computations', '/points', '/scopes', 'docs', 'api-docs',
+    '/computations', '/points', '/scopes', 'docs', 'api-docs', '/secrets'
   ];
 
   for (const endpoint of endpoints) {

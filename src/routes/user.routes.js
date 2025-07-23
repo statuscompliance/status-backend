@@ -31,7 +31,6 @@ export default function () {
   router.delete('/:id', deleteUserById); //TODO: add auth middleware
   router.get('/whoami', verifyAuthority, whoami);
 
-
   router.post('/2fa/setup', verifyAdmin, setup2FA);
   router.post('/2fa/verify', verifyAdmin, verify2FA);
   router.get('/2fa/status', verifyAuthority, get2FAStatus);

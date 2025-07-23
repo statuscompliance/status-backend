@@ -1,5 +1,9 @@
+let controlIdCounter = 1000;
+
 export function createControlExample(overrides = {}) {
+  const id = overrides.id || controlIdCounter++;
   return {
+    id,
     name: 'Test Control Name',
     description: 'Test Control Description',
     period: 'WEEKLY',

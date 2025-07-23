@@ -3,6 +3,12 @@ import { DataTypes } from 'sequelize';
 export default (sequelize) => sequelize.define(
   'Control',
   {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      allowNull: false,
+      autoIncrement:  !import.meta.env?.VITEST,
+    },
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
