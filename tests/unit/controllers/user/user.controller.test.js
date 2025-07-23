@@ -1166,4 +1166,146 @@ describe('User Controller Tests', () => {
       expect(responseData.nodeRedAccess).toBe(false);
     });
   });
+
+  // Test whoami
+  describe('whoami', () => {
+    const mockUser = {
+      id: 1,
+      username: 'testuser',
+      email: 'test@example.com',
+      authority: 'USER',
+      createdAt: '2023-01-01T00:00:00Z',
+      updatedAt: '2023-01-01T00:00:00Z'
+    };
+
+    function createWhoamiReq(user = { user_id: 1 }) {
+      return { user };
+    }
+
+    it('should return user info when user is authenticated', async () => {
+      vi.spyOn(models.User, 'findByPk').mockResolvedValue(mockUser);
+      
+      const req = createWhoamiReq();
+      const res = createRes();
+
+      await userController.whoami(req, res);
+
+      expect(models.User.findByPk).toHaveBeenCalledWith(1, {
+        attributes: ['id', 'username', 'email', 'authority', 'createdAt', 'updatedAt']
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        id: mockUser.id,
+        username: mockUser.username,
+        email: mockUser.email,
+        authority: mockUser.authority,
+        createdAt: mockUser.createdAt,
+        updatedAt: mockUser.updatedAt
+      });
+    });
+
+    it('should return 401 if no user in request', async () => {
+      const req = createWhoamiReq(null);
+      const res = createRes();
+
+      await userController.whoami(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Unauthorized: No user in request' });
+    });
+
+    it('should return 401 if user is undefined', async () => {
+      const req = {}; // No user property at all
+      const res = createRes();
+
+      await userController.whoami(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Unauthorized: No user in request' });
+    });
+
+    it('should return 404 if user not found in database', async () => {
+      vi.spyOn(models.User, 'findByPk').mockResolvedValue(null);
+      
+      const req = createWhoamiReq();
+      const res = createRes();
+
+      await userController.whoami(req, res);
+
+      expect(models.User.findByPk).toHaveBeenCalledWith(1, {
+        attributes: ['id', 'username', 'email', 'authority', 'createdAt', 'updatedAt']
+      });
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ message: 'User not found' });
+    });
+
+    it('should handle database error gracefully', async () => {
+      const error = new Error('Database connection error');
+      vi.spyOn(models.User, 'findByPk').mockRejectedValue(error);
+      
+      const req = createWhoamiReq();
+      const res = createRes();
+
+      await userController.whoami(req, res);
+
+      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
+        res,
+        error,
+        'Failed to fetch user info'
+      );
+    });
+
+    it('should work with different user authorities', async () => {
+      const adminUser = {
+        ...mockUser,
+        id: 2,
+        username: 'adminuser',
+        authority: 'ADMIN'
+      };
+      
+      vi.spyOn(models.User, 'findByPk').mockResolvedValue(adminUser);
+      
+      const req = createWhoamiReq({ user_id: 2 });
+      const res = createRes();
+
+      await userController.whoami(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        id: adminUser.id,
+        username: adminUser.username,
+        email: adminUser.email,
+        authority: adminUser.authority,
+        createdAt: adminUser.createdAt,
+        updatedAt: adminUser.updatedAt
+      });
+    });
+
+    it('should return only specified attributes', async () => {
+      const userWithExtraFields = {
+        ...mockUser,
+        password: 'hashedpassword',
+        refresh_token: 'sometoken',
+        sensitive_data: 'should not be returned'
+      };
+      
+      vi.spyOn(models.User, 'findByPk').mockResolvedValue(userWithExtraFields);
+      
+      const req = createWhoamiReq();
+      const res = createRes();
+
+      await userController.whoami(req, res);
+
+      const responseData = res.json.mock.calls[0][0];
+      expect(responseData).not.toHaveProperty('password');
+      expect(responseData).not.toHaveProperty('refresh_token');
+      expect(responseData).not.toHaveProperty('sensitive_data');
+      expect(responseData).toHaveProperty('id');
+      expect(responseData).toHaveProperty('username');
+      expect(responseData).toHaveProperty('email');
+      expect(responseData).toHaveProperty('authority');
+      expect(responseData).toHaveProperty('createdAt');
+      expect(responseData).toHaveProperty('updatedAt');
+    });
+  });
 });
