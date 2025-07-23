@@ -135,10 +135,9 @@ export async function signIn(req, res) {
     if (user.twofa_enabled) {
       const totpToken = req.body.totpToken; // from frontend
       if (!totpToken) {
-        return res.status(202).json({
+        return res.status(401).json({
           requires2FA: true,
-          message: 'Two-factor authentication required. Please provide your TOTP.',
-          userId: user.id,
+          message: 'Two-factor authentication required. Please provide your TOTP.'
         });
       }
       const secret = decrypt(user.twofa_secret);
