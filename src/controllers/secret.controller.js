@@ -66,6 +66,13 @@ export const createSecret = async (req, res) => {
       return res.status(400).json({ message: 'Secret value is required.' });
     }
 
+    const existing = await models.Secret.findOne({
+      where: { name, ownerId: userId }
+    });
+    if (existing) {
+      return res.status(409).json({ message: 'A secret with this name already exists.' });
+    }
+
     const valueEncrypted = encrypt(value);
 
     const secretData = {
