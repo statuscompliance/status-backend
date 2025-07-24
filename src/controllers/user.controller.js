@@ -486,7 +486,11 @@ export async function disable2FA(req, res) {
 
     const user = await models.User.findByPk(req.user.user_id);
 
-    if (!user && !user.twofa_enabled && !user.twofa_secret) {
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.twofa_enabled || !user.twofa_secret) {
       return res.status(400).json({ message: '2FA is not enabled for this user' });
     }
 
