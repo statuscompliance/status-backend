@@ -5,235 +5,40 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import * as nodeRedTokenModule from '../../../../src/utils/nodeRedToken.js';
 import * as errorHandler from '../../../../src/utils/errorHandler.js';
-import { 
-  DEFAULT_USER, 
+import * as twofaGenerator from '../../../../src/utils/twofaGenerator.js';
+import * as encryption from '../../../../src/config/encryption.js';
+import {
+  MOCK_TOKEN,
+  USER_WITH_2FA_ENABLED,
+  USER_WITHOUT_2FA,
+  MOCK_OTP_TOKEN,
+  MOCK_SECRET,
+  MOCK_ENCRYPTED_SECRET,
+  DEFAULT_USER,
   adminUser,
-  newUserData 
-} from '../../../../tests/utils/sampleUserData.js';
+  newUserData,
+  createRes,
+  createSignInReq,
+  setupUserMocks,
+  mockSuccessfulAuth,
+  mock2FAUtils,
+  expectCookiesCleared,
+  getCookieOptionsForTest,
+  getClearCookieOptionsForTest,
+  setupCommonMocks,
+  restoreEnvironment
+} from './test-helpers.js';
 
-// Constants for reuse
-const MOCK_TOKEN = 'mockToken';
-
-// Save original environment
-const originalEnv = process.env.NODE_ENV;
-
-// Helper to create simple mock req/res objects
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    cookie: vi.fn(),
-    clearCookie: vi.fn(),
-  };
-}
-
-// Helper function to create signin request
-function createSignInReq(username = DEFAULT_USER.username, password = 'correctPassword') {
-  return { body: { username, password } };
-}
-
-// Helper function to mock successful auth
-function mockSuccessfulAuth(user = DEFAULT_USER) {
-  setupUserMocks({ 
-    findOneValue: user, 
-    compareValue: true 
-  });
-  vi.spyOn(jwt, 'sign').mockReturnValue(MOCK_TOKEN);
-}
-
-// Helper to setup common mocks for tests
-function setupUserMocks({
-  findOneValue = null,
-  findAllValue = [],
-  compareValue = false,
-  createValue = {},
-  updateValue = [1],
-} = {}) {
-  vi.spyOn(models.User, 'findOne').mockResolvedValue(findOneValue);
-  vi.spyOn(models.User, 'findAll').mockResolvedValue(findAllValue);
-  vi.spyOn(bcrypt, 'compare').mockResolvedValue(compareValue);
-  vi.spyOn(models.User, 'create').mockResolvedValue(createValue);
-  vi.spyOn(models.User, 'update').mockResolvedValue(updateValue);
-  return { findOne: models.User.findOne, findAll: models.User.findAll };
-}
-
-// Helper for common cookie clear expectations based on environment
-function expectCookiesCleared(res, includeNodeRed = true) {
-  const cookieOptions = getClearCookieOptionsForTest();
-  
-  expect(res.clearCookie).toHaveBeenCalledWith('refreshToken', cookieOptions);
-  expect(res.clearCookie).toHaveBeenCalledWith('accessToken', cookieOptions);
-  if (includeNodeRed) {
-    expect(res.clearCookie).toHaveBeenCalledWith('nodeRedToken', cookieOptions);
-  }
-}
-
-// Helper to get expected cookie options based on current NODE_ENV
-function getCookieOptionsForTest(maxAge = 3600) {
-  if (process.env.NODE_ENV === 'development') {
-    return { 
-      httpOnly: true, 
-      path: '/',
-      maxAge: maxAge * 1000 
-    };
-  } else if (process.env.NODE_ENV === 'production') {
-    return { 
-      httpOnly: true, 
-      path: '/',
-      maxAge: maxAge * 1000, 
-      sameSite: 'none', 
-      secure: true, 
-      partitioned: true 
-    };
-  } else {
-    return { 
-      httpOnly: true, 
-      path: '/',
-      maxAge: maxAge * 1000, 
-      sameSite: 'lax' 
-    };
-  }
-}
-
-// Helper to get expected cookie clear options based on current NODE_ENV
-function getClearCookieOptionsForTest() {
-  if (process.env.NODE_ENV === 'development') {
-    return { 
-      httpOnly: true, 
-      path: '/' 
-    };
-  } else if (process.env.NODE_ENV === 'production') {
-    return { 
-      httpOnly: true, 
-      path: '/',
-      sameSite: 'none', 
-      secure: true 
-    };
-  } else {
-    return { 
-      httpOnly: true, 
-      path: '/',
-      sameSite: 'lax' 
-    };
-  }
-}
-
-describe('User Controller Tests', () => {
+describe('Authentication Tests', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(errorHandler, 'handleControllerError').mockImplementation((res, error, message) => {
-      return res.status(500).json({ message: message || 'Internal server error' });
-    });
-    // Default to 'test' environment for most tests
-    process.env.NODE_ENV = 'test';
+    setupCommonMocks();
   });
 
   afterEach(() => {
-    // Restore original NODE_ENV
-    process.env.NODE_ENV = originalEnv;
+    restoreEnvironment();
   });
 
-  // Test environment-specific cookie settings
-  describe('Cookie environment settings', () => {
-    it('should use development cookie settings when NODE_ENV is development', async () => {
-      process.env.NODE_ENV = 'development';
-      mockSuccessfulAuth();
-      
-      const req = createSignInReq();
-      const res = createRes();
-
-      await userController.signIn(req, res);
-
-      expect(res.cookie).toHaveBeenCalledWith(
-        'accessToken', 
-        MOCK_TOKEN, 
-        {
-          httpOnly: true,
-          path: '/',
-          maxAge: expect.any(Number)
-        }
-      );
-    });
-
-    it('should use production cookie settings when NODE_ENV is production', async () => {
-      process.env.NODE_ENV = 'production';
-      mockSuccessfulAuth();
-      
-      const req = createSignInReq();
-      const res = createRes();
-
-      await userController.signIn(req, res);
-
-      expect(res.cookie).toHaveBeenCalledWith(
-        'accessToken', 
-        MOCK_TOKEN, 
-        {
-          httpOnly: true,
-          path: '/',
-          maxAge: expect.any(Number),
-          sameSite: 'none',
-          secure: true,
-          partitioned: true
-        }
-      );
-    });
-
-    it('should use default cookie settings for other environments', async () => {
-      process.env.NODE_ENV = 'test';
-      mockSuccessfulAuth();
-      
-      const req = createSignInReq();
-      const res = createRes();
-
-      await userController.signIn(req, res);
-
-      expect(res.cookie).toHaveBeenCalledWith(
-        'accessToken', 
-        MOCK_TOKEN, 
-        {
-          httpOnly: true,
-          path: '/',
-          maxAge: expect.any(Number),
-          sameSite: 'lax'
-        }
-      );
-    });
-  });
-
-  // Test getUsers
-  describe('getUsers', () => {
-    it('should return a list of users with status 200', async () => {
-      const mockUsers = [{ id: 1, name: 'John Doe' }];
-      vi.spyOn(models.User, 'findAll').mockResolvedValue(mockUsers);
-      
-      const req = {};
-      const res = createRes();
-
-      await userController.getUsers(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(mockUsers);
-    });
-
-    it('should handle errors gracefully in getUsers', async () => {
-      const error = new Error('Database error');
-      vi.spyOn(models.User, 'findAll').mockRejectedValueOnce(error);
-      
-      const req = {};
-      const res = createRes();
-
-      await userController.getUsers(req, res);
-
-      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
-        res, 
-        error,
-        'Failed to retrieve users'
-      );
-    });
-  });
-
-  // Test singUp
+  // Test signUp
   describe('signUp', () => {
     const signUpReqBody = { ...newUserData, username: 'existingUser' };
 
@@ -364,19 +169,8 @@ describe('User Controller Tests', () => {
     });
   });
 
-  // Test singIn
+  // Test signIn
   describe('signIn', () => {
-    function createSignInReq(username = DEFAULT_USER.username, password = 'correctPassword') {
-      return { body: { username, password } };
-    }
-
-    function mockSuccessfulAuth(user = DEFAULT_USER) {
-      // Alternative implementation: setup mocks individually
-      vi.spyOn(models.User, 'findOne').mockResolvedValue(user);
-      vi.spyOn(bcrypt, 'compare').mockResolvedValue(true);
-      vi.spyOn(jwt, 'sign').mockReturnValue(MOCK_TOKEN);
-    }
-
     it('should return 404 if user not found in signIn', async () => {
       setupUserMocks();
       
@@ -673,6 +467,116 @@ describe('User Controller Tests', () => {
         );
       }
     });
+
+    // 2FA Tests for signIn
+    describe('2FA Authentication in signIn', () => {
+      beforeEach(() => {
+        mock2FAUtils();
+      });
+
+      it('should require 2FA token when user has 2FA enabled', async () => {
+        const userWith2FA = { ...USER_WITH_2FA_ENABLED };
+        setupUserMocks({ 
+          findOneValue: userWith2FA, 
+          compareValue: true 
+        });
+        
+        const req = createSignInReq(); // No totpToken
+        const res = createRes();
+
+        await userController.signIn(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({
+          requires2FA: true,
+          message: 'Two-factor authentication required. Please provide your TOTP.'
+        });
+      });
+
+      it('should authenticate successfully with valid 2FA token', async () => {
+        setupUserMocks({ 
+          findOneValue: USER_WITH_2FA_ENABLED, 
+          compareValue: true 
+        });
+        vi.spyOn(jwt, 'sign').mockReturnValue(MOCK_TOKEN);
+        // Make sure the mock is set up before the test
+        vi.spyOn(encryption, 'decrypt').mockReturnValue(MOCK_SECRET);
+        vi.spyOn(twofaGenerator, 'verifyOTP').mockReturnValue(true);
+        
+        const req = {
+          body: {
+            username: DEFAULT_USER.username,
+            password: 'correctPassword',
+            totpToken: MOCK_OTP_TOKEN
+          }
+        };
+        const res = createRes();
+
+        await userController.signIn(req, res);
+
+        expect(encryption.decrypt).toHaveBeenCalledWith(MOCK_ENCRYPTED_SECRET);
+        expect(twofaGenerator.verifyOTP).toHaveBeenCalledWith(MOCK_OTP_TOKEN, MOCK_SECRET);
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            accessToken: MOCK_TOKEN,
+            refreshToken: MOCK_TOKEN,
+            username: USER_WITH_2FA_ENABLED.username,
+            email: USER_WITH_2FA_ENABLED.email,
+            authority: USER_WITH_2FA_ENABLED.authority,
+          })
+        );
+      });
+
+      it('should reject invalid 2FA token', async () => {
+        setupUserMocks({ 
+          findOneValue: USER_WITH_2FA_ENABLED, 
+          compareValue: true 
+        });
+        vi.spyOn(encryption, 'decrypt').mockReturnValue(MOCK_SECRET);
+        vi.spyOn(twofaGenerator, 'verifyOTP').mockReturnValue(false); // Invalid token
+        
+        const req = {
+          body: {
+            username: DEFAULT_USER.username,
+            password: 'correctPassword',
+            totpToken: 'invalid_token'
+          }
+        };
+        const res = createRes();
+
+        await userController.signIn(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({
+          message: 'Invalid 2FA token. Please try again.',
+          requires2FA: true
+        });
+      });
+
+      it('should authenticate without 2FA when user has it disabled', async () => {
+        const userWithout2FA = { ...USER_WITHOUT_2FA };
+        setupUserMocks({ 
+          findOneValue: userWithout2FA, 
+          compareValue: true 
+        });
+        vi.spyOn(jwt, 'sign').mockReturnValue(MOCK_TOKEN);
+        
+        const req = createSignInReq();
+        const res = createRes();
+
+        await userController.signIn(req, res);
+
+        expect(twofaGenerator.verifyOTP).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            accessToken: MOCK_TOKEN,
+            refreshToken: MOCK_TOKEN,
+          })
+        );
+      });
+    });
   });
 
   // Test signOut
@@ -690,14 +594,14 @@ describe('User Controller Tests', () => {
     it('should return 204 and clear all cookies when sign out successfully', async () => {
       const token = 'validToken';
       const mockUser = [{ id: 1, username: 'existingUser', refresh_token: token }];
-      setupUserMocks({ findAllValue: mockUser });
+      setupUserMocks({ findOneValue: mockUser });
       
       const req = { cookies: { refreshToken: token } };
       const res = createRes();
 
       await userController.signOut(req, res);
 
-      expect(models.User.findAll).toHaveBeenCalledWith({ where: { refresh_token: token } });
+      expect(models.User.findOne).toHaveBeenCalledWith({ where: { refresh_token: token } });
       expect(models.User.update).toHaveBeenCalledWith(
         { refresh_token: '' },
         { where: { refresh_token: token } }
@@ -708,7 +612,7 @@ describe('User Controller Tests', () => {
     });
 
     it('should return 404 and clear all cookies if user not found for refreshToken', async () => {
-      setupUserMocks({ findAllValue: [] });
+      setupUserMocks({ findOneValue: [] });
       
       const req = { cookies: { refreshToken: 'invalidToken' } };
       const res = createRes();
@@ -728,7 +632,7 @@ describe('User Controller Tests', () => {
       
       for (const env of environments) {
         process.env.NODE_ENV = env;
-        setupUserMocks({ findAllValue: [] });
+        setupUserMocks({ findOneValue: [] });
         
         const req = { cookies: { refreshToken: 'invalidToken' } };
         const res = createRes();
@@ -745,14 +649,14 @@ describe('User Controller Tests', () => {
 
     it('should handle database error during signOut process', async () => {
       const error = new Error('Database error during signout');
-      vi.spyOn(models.User, 'findAll').mockRejectedValue(error);
+      vi.spyOn(models.User, 'findOne').mockRejectedValue(error);
       
       const req = { cookies: { refreshToken: 'someToken' } };
       const res = createRes();
 
       await userController.signOut(req, res);
 
-      expect(models.User.findAll).toHaveBeenCalledWith({
+      expect(models.User.findOne).toHaveBeenCalledWith({
         where: { refresh_token: 'someToken' },
       });
       expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
@@ -761,126 +665,6 @@ describe('User Controller Tests', () => {
         'Error during sign out process'
       );
       expect(res.status).toHaveBeenCalledWith(500);
-    });
-  });
-
-  // Test para deleteUserById
-  describe('deleteUserById', () => {
-    it('should return 404 if user not found in deleteUserById', async () => {
-      vi.spyOn(models.User, 'findByPk').mockResolvedValue(null);
-      
-      const req = { params: { id: 1 } };
-      const res = createRes();
-
-      await userController.deleteUserById(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ message: 'User not found' });
-    });
-
-    it('should delete user successfully in deleteUserById', async () => {
-      const mockUser = {
-        id: 1,
-        username: 'existingUser',
-        destroy: vi.fn().mockResolvedValue({}),
-      };
-      vi.spyOn(models.User, 'findByPk').mockResolvedValue(mockUser);
-      
-      const req = { params: { id: 1 } };
-      const res = createRes();
-
-      await userController.deleteUserById(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ message: 'User deleted successfully' });
-    });
-
-    it('should handle database error during user deletion in deleteUserById', async () => {
-      const error = new Error('Database error');
-      const mockUser = {
-        id: 1,
-        username: 'existingUser',
-        destroy: vi.fn().mockRejectedValue(error),
-      };
-      vi.spyOn(models.User, 'findByPk').mockResolvedValue(mockUser);
-      
-      const req = { params: { id: 1 } };
-      const res = createRes();
-
-      await userController.deleteUserById(req, res);
-
-      expect(mockUser.destroy).toHaveBeenCalled();
-      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
-        res,
-        error,
-        'Failed to delete user'
-      );
-    });
-  });
-
-  // Test getAuthority
-  describe('getAuthority', () => {
-    function setupTokenTest(token, authority = null) {
-      const req = { cookies: { accessToken: token } };
-      const res = createRes();
-      
-      if (authority) {
-        vi.spyOn(jwt, 'verify').mockReturnValue({ authority });
-      }
-      
-      return { req, res };
-    }
-
-    it('should return authority if valid token is provided', async () => {
-      const { req, res } = setupTokenTest('validToken', 'admin');
-
-      await userController.getAuthority(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ authority: 'admin' });
-    });
-
-    it('should return 400 if no token is provided', async () => {
-      const req = { cookies: {} };
-      const res = createRes();
-
-      await userController.getAuthority(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Token is required' });
-    });
-
-    it('should return 403 if the token is invalid or expired', async () => {
-      const { req, res } = setupTokenTest('invalidToken');
-      vi.spyOn(jwt, 'verify').mockImplementation(() => {
-        throw new Error('Invalid token');
-      });
-
-      await userController.getAuthority(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid token' });
-    });
-
-    it('should return 403 if the token format is incorrect', async () => {
-      const { req, res } = setupTokenTest('malformedToken');
-      vi.spyOn(jwt, 'verify').mockImplementation(() => {
-        throw new Error('jwt malformed');
-      });
-
-      await userController.getAuthority(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Invalid token' });
-    });
-
-    it('should return 200 if token has authority ADMIN', async () => {
-      const { req, res } = setupTokenTest('validTokenWithAdminAuthority', 'ADMIN');
-
-      await userController.getAuthority(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ authority: 'ADMIN' });
     });
   });
 
@@ -1049,263 +833,70 @@ describe('User Controller Tests', () => {
     });
   });
 
-  // New tests for 100% coverage
-  describe('Cookie config helpers', () => {
-    it('should generate correct cookie options for different environments', () => {
-      // Test development environment
+  // Test environment-specific cookie settings
+  describe('Cookie environment settings', () => {
+    it('should use development cookie settings when NODE_ENV is development', async () => {
       process.env.NODE_ENV = 'development';
-      const devOptions = userController.getCookieOptions(3600);
-      expect(devOptions).toEqual({
-        httpOnly: true,
-        path: '/',
-        maxAge: 3600 * 1000
-      });
-      
-      // Test production environment
-      process.env.NODE_ENV = 'production';
-      const prodOptions = userController.getCookieOptions(3600);
-      expect(prodOptions).toEqual({
-        httpOnly: true,
-        path: '/',
-        maxAge: 3600 * 1000,
-        sameSite: 'none',
-        secure: true,
-        partitioned: true
-      });
-      
-      // Test other environments
-      process.env.NODE_ENV = 'staging';
-      const otherOptions = userController.getCookieOptions(3600);
-      expect(otherOptions).toEqual({
-        httpOnly: true,
-        path: '/',
-        maxAge: 3600 * 1000,
-        sameSite: 'lax'
-      });
-    });
-    
-    it('should generate correct cookie clear options for different environments', () => {
-      // Test development environment
-      process.env.NODE_ENV = 'development';
-      const devOptions = userController.getClearCookieOptions();
-      expect(devOptions).toEqual({
-        httpOnly: true,
-        path: '/'
-      });
-      
-      // Test production environment
-      process.env.NODE_ENV = 'production';
-      const prodOptions = userController.getClearCookieOptions();
-      expect(prodOptions).toEqual({
-        httpOnly: true,
-        path: '/',
-        sameSite: 'none',
-        secure: true
-      });
-      
-      // Test other environments
-      process.env.NODE_ENV = 'staging';
-      const otherOptions = userController.getClearCookieOptions();
-      expect(otherOptions).toEqual({
-        httpOnly: true,
-        path: '/',
-        sameSite: 'lax'
-      });
-    });
-  });
-
-  describe('Edge cases for Node-RED token', () => {
-    it('should handle empty nodeRedToken correctly', async () => {
-      const user = {
-        ...DEFAULT_USER,
-        authority: 'DEVELOPER'
-      };
-      
-      mockSuccessfulAuth(user);
-      vi.spyOn(nodeRedTokenModule, 'getNodeRedToken').mockResolvedValue('');
+      mockSuccessfulAuth();
       
       const req = createSignInReq();
       const res = createRes();
 
       await userController.signIn(req, res);
 
-      // Verify Node-RED token cookie not set when empty
-      expect(res.cookie).toHaveBeenCalledTimes(2); // Only accessToken and refreshToken
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          nodeRedToken: '',
-          nodeRedAccess: false
-        })
+      expect(res.cookie).toHaveBeenCalledWith(
+        'accessToken', 
+        MOCK_TOKEN, 
+        {
+          httpOnly: true,
+          path: '/',
+          maxAge: expect.any(Number)
+        }
       );
     });
-    
-    it('should properly handle null nodeRedToken', async () => {
-      const user = {
-        ...DEFAULT_USER,
-        authority: 'DEVELOPER'
-      };
-      
-      mockSuccessfulAuth(user);
-      vi.spyOn(nodeRedTokenModule, 'getNodeRedToken').mockResolvedValue(null);
+
+    it('should use production cookie settings when NODE_ENV is production', async () => {
+      process.env.NODE_ENV = 'production';
+      mockSuccessfulAuth();
       
       const req = createSignInReq();
       const res = createRes();
 
       await userController.signIn(req, res);
 
-      // Verify response with null Node-RED token
-      // En lugar de verificar el objeto completo, verificamos solo las propiedades que nos interesan
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          nodeRedToken: null
-        })
-      );
-      
-      // Verificar que nodeRedAccess refleja que no hay acceso a Node-RED cuando el token es null
-      const responseData = res.json.mock.calls[0][0];
-      expect(responseData.nodeRedAccess).toBe(false);
-    });
-  });
-
-  // Test whoami
-  describe('whoami', () => {
-    const mockUser = {
-      id: 1,
-      username: 'testuser',
-      email: 'test@example.com',
-      authority: 'USER',
-      createdAt: '2023-01-01T00:00:00Z',
-      updatedAt: '2023-01-01T00:00:00Z'
-    };
-
-    function createWhoamiReq(user = { user_id: 1 }) {
-      return { user };
-    }
-
-    it('should return user info when user is authenticated', async () => {
-      vi.spyOn(models.User, 'findByPk').mockResolvedValue(mockUser);
-      
-      const req = createWhoamiReq();
-      const res = createRes();
-
-      await userController.whoami(req, res);
-
-      expect(models.User.findByPk).toHaveBeenCalledWith(1, {
-        attributes: ['id', 'username', 'email', 'authority', 'createdAt', 'updatedAt']
-      });
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        id: mockUser.id,
-        username: mockUser.username,
-        email: mockUser.email,
-        authority: mockUser.authority,
-        createdAt: mockUser.createdAt,
-        updatedAt: mockUser.updatedAt
-      });
-    });
-
-    it('should return 401 if no user in request', async () => {
-      const req = createWhoamiReq(null);
-      const res = createRes();
-
-      await userController.whoami(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Unauthorized: No user in request' });
-    });
-
-    it('should return 401 if user is undefined', async () => {
-      const req = {}; // No user property at all
-      const res = createRes();
-
-      await userController.whoami(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ message: 'Unauthorized: No user in request' });
-    });
-
-    it('should return 404 if user not found in database', async () => {
-      vi.spyOn(models.User, 'findByPk').mockResolvedValue(null);
-      
-      const req = createWhoamiReq();
-      const res = createRes();
-
-      await userController.whoami(req, res);
-
-      expect(models.User.findByPk).toHaveBeenCalledWith(1, {
-        attributes: ['id', 'username', 'email', 'authority', 'createdAt', 'updatedAt']
-      });
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ message: 'User not found' });
-    });
-
-    it('should handle database error gracefully', async () => {
-      const error = new Error('Database connection error');
-      vi.spyOn(models.User, 'findByPk').mockRejectedValue(error);
-      
-      const req = createWhoamiReq();
-      const res = createRes();
-
-      await userController.whoami(req, res);
-
-      expect(errorHandler.handleControllerError).toHaveBeenCalledWith(
-        res,
-        error,
-        'Failed to fetch user info'
+      expect(res.cookie).toHaveBeenCalledWith(
+        'accessToken', 
+        MOCK_TOKEN, 
+        {
+          httpOnly: true,
+          path: '/',
+          maxAge: expect.any(Number),
+          sameSite: 'none',
+          secure: true,
+          partitioned: true
+        }
       );
     });
 
-    it('should work with different user authorities', async () => {
-      const adminUser = {
-        ...mockUser,
-        id: 2,
-        username: 'adminuser',
-        authority: 'ADMIN'
-      };
+    it('should use default cookie settings for other environments', async () => {
+      process.env.NODE_ENV = 'test';
+      mockSuccessfulAuth();
       
-      vi.spyOn(models.User, 'findByPk').mockResolvedValue(adminUser);
-      
-      const req = createWhoamiReq({ user_id: 2 });
+      const req = createSignInReq();
       const res = createRes();
 
-      await userController.whoami(req, res);
+      await userController.signIn(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        id: adminUser.id,
-        username: adminUser.username,
-        email: adminUser.email,
-        authority: adminUser.authority,
-        createdAt: adminUser.createdAt,
-        updatedAt: adminUser.updatedAt
-      });
-    });
-
-    it('should return only specified attributes', async () => {
-      const userWithExtraFields = {
-        ...mockUser,
-        password: 'hashedpassword',
-        refresh_token: 'sometoken',
-        sensitive_data: 'should not be returned'
-      };
-      
-      vi.spyOn(models.User, 'findByPk').mockResolvedValue(userWithExtraFields);
-      
-      const req = createWhoamiReq();
-      const res = createRes();
-
-      await userController.whoami(req, res);
-
-      const responseData = res.json.mock.calls[0][0];
-      expect(responseData).not.toHaveProperty('password');
-      expect(responseData).not.toHaveProperty('refresh_token');
-      expect(responseData).not.toHaveProperty('sensitive_data');
-      expect(responseData).toHaveProperty('id');
-      expect(responseData).toHaveProperty('username');
-      expect(responseData).toHaveProperty('email');
-      expect(responseData).toHaveProperty('authority');
-      expect(responseData).toHaveProperty('createdAt');
-      expect(responseData).toHaveProperty('updatedAt');
+      expect(res.cookie).toHaveBeenCalledWith(
+        'accessToken', 
+        MOCK_TOKEN, 
+        {
+          httpOnly: true,
+          path: '/',
+          maxAge: expect.any(Number),
+          sameSite: 'lax'
+        }
+      );
     });
   });
 });
