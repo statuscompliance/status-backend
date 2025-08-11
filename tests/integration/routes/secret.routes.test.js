@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { sampleUser, adminUser } from '../../utils/sampleUserData.js';
 import { models } from '../../../src/models/models.js';
 import { createSecretExample } from '../../utils/sampleSecretsData.js';
+import { v4 as uuidv4 } from 'uuid';
 
 // Helpers para token y rutas
 const buildToken = (user = sampleUser) =>
@@ -22,6 +23,7 @@ const routes = {
   secretById: (id) => `/secrets/${id}`,
 };
 
+const nonExistentId = uuidv4();
 const getResponse = (path, token) => withToken(request.get(path), token);
 
 describe('Secret API Routes', () => {
@@ -31,7 +33,7 @@ describe('Secret API Routes', () => {
   let testAdminId = 2;
 
   beforeAll(async () => {
-    
+
     // Crear usuarios en la base de datos
     await models.User.create({
       id: testUserId,
@@ -53,17 +55,17 @@ describe('Secret API Routes', () => {
     userToken = buildToken({ ...sampleUser, id: testUserId });
 
     // Crear secretos de ejemplo
-    secret1 = createSecretExample({ 
-      id: 1,
+    secret1 = createSecretExample({
+      id: uuidv4(),
       name: 'Database Password',
       type: 'PASSWORD',
       environment: 'production',
       ownerId: testUserId,
       createdBy: sampleUser.username
     });
-    
-    secret2 = createSecretExample({ 
-      id: 2,
+
+    secret2 = createSecretExample({
+      id: uuidv4(),
       name: 'API Key',
       type: 'API_KEY',
       environment: 'development',
@@ -72,8 +74,8 @@ describe('Secret API Routes', () => {
     });
 
     // Secreto de otro usuario para probar ownership
-    otherUserSecret = createSecretExample({ 
-      id: 3,
+    otherUserSecret = createSecretExample({
+      id: uuidv4(),
       name: 'Other User Secret',
       type: 'TOKEN',
       environment: 'production',
@@ -83,7 +85,7 @@ describe('Secret API Routes', () => {
 
     // Insertar secretos en la base de datos
     await models.Secret.bulkCreate([secret1, secret2, otherUserSecret]);
-    
+
     // Mock console.error para tests
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -98,11 +100,11 @@ describe('Secret API Routes', () => {
   describe('GET /secrets - listSecrets', () => {
     it('should return 200 and list of secrets owned by the authenticated user', async () => {
       const response = await getResponse(routes.secrets, userToken);
-      
+
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBe(2);
-      
+
       // Verificar que todos los secretos pertenecen al usuario
       response.body.forEach((secret) => {
         expect(secret.value).toBe('********'); // Valor enmascarado
@@ -120,7 +122,7 @@ describe('Secret API Routes', () => {
 
     it('should return 401 if user is not authenticated', async () => {
       const response = await request.get(routes.secrets);
-      
+
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('message', 'No token provided');
     });
@@ -129,7 +131,7 @@ describe('Secret API Routes', () => {
   describe('GET /secrets/:id - getSecret', () => {
     it('should return 200 and the secret for a valid ID owned by the user', async () => {
       const response = await getResponse(routes.secretById(secret1.id), userToken);
-      
+
       expect(response.status).toBe(200);
       expect(response.body.id).toBe(secret1.id);
       expect(response.body.name).toBe(secret1.name);
@@ -143,15 +145,15 @@ describe('Secret API Routes', () => {
 
     it('should return 404 if secret is not owned by the user', async () => {
       const response = await getResponse(routes.secretById(otherUserSecret.id), userToken);
-      
+
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('message', 'Secret not found or access denied');
     });
 
     it('should return 404 if secret does not exist', async () => {
-      const nonExistentId = 99999;
+      //const nonExistentId = 99999;
       const response = await getResponse(routes.secretById(nonExistentId), userToken);
-      
+
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('message', 'Secret not found or access denied');
     });
@@ -165,13 +167,13 @@ describe('Secret API Routes', () => {
         environment: 'staging',
         value: 'super-secret-api-key-123'
       };
-
+      const normalizedName = newSecretData.name.toLowerCase().replace(/\s+/g, '_');
       const response = await withToken(request.post(routes.secrets), userToken)
         .send(newSecretData);
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('message', 'Secret created successfully');
-      expect(response.body.name).toBe(newSecretData.name);
+      expect(response.body.name).toBe(normalizedName);
       expect(response.body.type).toBe(newSecretData.type);
       expect(response.body.environment).toBe(newSecretData.environment);
       expect(response.body.value).toBe(newSecretData.value); // Valor sin enmascarar en creación
@@ -239,9 +241,11 @@ describe('Secret API Routes', () => {
       const response = await withToken(request.patch(routes.secretById(secret1.id)), userToken)
         .send(updateData);
 
+      const normalizedName = updateData.name.toLowerCase().replace(/\s+/g, '_');
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('message', 'Secret updated successfully');
-      expect(response.body.name).toBe(updateData.name);
+      expect(response.body.name).toBe(normalizedName);
       expect(response.body.type).toBe(updateData.type);
       expect(response.body.environment).toBe(updateData.environment);
       expect(response.body.version).toBe(1); // Version no cambia sin rotación
@@ -272,9 +276,11 @@ describe('Secret API Routes', () => {
       const response = await withToken(request.patch(routes.secretById(secret1.id)), userToken)
         .send(updateData);
 
+      const normalizedName = updateData.name.toLowerCase().replace(/\s+/g, '_');
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('message', 'Secret updated successfully');
-      expect(response.body.name).toBe(updateData.name);
+      expect(response.body.name).toBe(normalizedName);
       expect(response.body.version).toBe(2); // Version incrementada por rotación
     });
 
@@ -289,7 +295,6 @@ describe('Secret API Routes', () => {
     });
 
     it('should return 404 if secret does not exist', async () => {
-      const nonExistentId = 99999;
       const updateData = { name: 'Non-existent Secret' };
 
       const response = await withToken(request.patch(routes.secretById(nonExistentId)), userToken)
@@ -308,8 +313,10 @@ describe('Secret API Routes', () => {
       const response = await withToken(request.patch(routes.secretById(secret2.id)), userToken)
         .send(updateData);
 
-      expect(response.status).toBe(200);
-      expect(response.body.version).toBe(2); // Version no cambia
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        message: 'Secret value cannot be an empty string or whitespace.',
+      });
     });
   });
 
@@ -333,7 +340,7 @@ describe('Secret API Routes', () => {
     });
 
     it('should return 404 if secret does not exist', async () => {
-      const nonExistentId = 99999;
+      //const nonExistentId = 99999;
       const response = await withToken(request.delete(routes.secretById(nonExistentId)), userToken);
 
       expect(response.status).toBe(404);

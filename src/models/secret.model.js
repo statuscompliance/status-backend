@@ -1,11 +1,11 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, UUIDV4 } from 'sequelize';
 
 export default (sequelize) => sequelize.define('Secret', {
   id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
+    defaultValue: UUIDV4,
     primaryKey: true,
     allowNull: false,
-    autoIncrement: !import.meta.env?.VITEST,
   },
   name: {
     type: DataTypes.STRING(100),
@@ -68,6 +68,10 @@ export default (sequelize) => sequelize.define('Secret', {
  *     Secret:
  *       type: object
  *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *           description: Unique identifier for the scope
  *         name:
  *           type: string
  *           description: The name of the secret

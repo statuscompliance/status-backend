@@ -4,7 +4,8 @@ export default (sequelize) => sequelize.define('Scope', {
   id: {
     type: DataTypes.UUID,
     defaultValue: UUIDV4,
-    primaryKey: true
+    primaryKey: true,
+    allowNull: false,
   },
   name: {
     type: DataTypes.STRING,

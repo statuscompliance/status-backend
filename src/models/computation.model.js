@@ -7,6 +7,7 @@ export default (sequelize) => sequelize.define(
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      allowNull: false,
     },
     computationGroup: {
       type: DataTypes.UUID,
