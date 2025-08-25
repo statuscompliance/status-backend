@@ -50,20 +50,20 @@
   "devDependencies": {
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
-    "@eslint/js": "9.28.0",
-    "@evilmartians/lefthook": "1.11.13",
-    "@stylistic/eslint-plugin-js": "4.4.0",
-    "@vitest/coverage-istanbul": "3.1.4",
-    "@vitest/ui": "3.1.4",
-    "chai": "5.2.1",
+    "@eslint/js": "9.34.0",
+    "@evilmartians/lefthook": "1.12.3",
+    "@stylistic/eslint-plugin-js": "4.4.1",
+    "@vitest/coverage-istanbul": "3.2.4",
+    "@vitest/ui": "3.2.4",
+    "chai": "5.3.3",
     "commitlint": "19.8.1",
     "cross-env": "7.0.3",
-    "eslint": "9.28.0",
-    "globals": "16.2.0",
+    "eslint": "9.34.0",
+    "globals": "16.3.0",
     "ioredis-mock": "8.9.0",
-    "mongodb-memory-server": "10.1.4",
+    "mongodb-memory-server": "10.2.0",
     "pre-commit": "1.2.2",
-    "supertest": "7.1.1",
-    "vitest": "3.1.4"
+    "supertest": "7.1.4",
+    "vitest": "3.2.4"
   }
 }
