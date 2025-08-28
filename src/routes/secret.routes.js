@@ -62,7 +62,8 @@ export default function () {
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *     responses:
  *       200:
  *         description: The secret metadata
@@ -123,7 +124,8 @@ export default function () {
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *     requestBody:
  *       content:
  *         application/json:
@@ -158,7 +160,8 @@ export default function () {
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *     responses:
  *       204:
  *         description: Secret deleted successfully

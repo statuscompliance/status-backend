@@ -137,16 +137,6 @@ export async function calculatePoints(req, res) {
       ownerId: userId,
     });
 
-    // Add resolved secrets to control params for easier access
-    /*
-    hydratedControls.forEach(control => {
-      control.paramsWithSecrets = { 
-        ...control.params, 
-        ...control.resolvedSecrets 
-      };
-     // console.log(`Control ${control.id} hydrated with ${Object.keys(control.resolvedSecrets || {}).length} secrets`);
-    });
-    */
     await updateOrCreateAgreement(catalog, hydratedControls, agreementId);
 
     // Construct the URL for fetching guarantees

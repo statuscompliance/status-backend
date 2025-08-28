@@ -131,6 +131,8 @@ export async function updateAssistantLimit(req, res) {
       { where: { id: configId } }
     );
 
+    await updateConfigurationsCache();
+
     res.status(200).json({ message: 'Limit updated successfully' });
 
   } catch (error) {
