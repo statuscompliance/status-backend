@@ -4,6 +4,7 @@ import registry from '../config/registry.js';
 import { updateOrCreateAgreement } from '../utils/updateOrCreateAgreement.js';
 import { v4 as uuidv4 } from 'uuid';
 import { finalizeControlsByCatalogId } from './control.controller.js';
+import { hydrateControlsWithSecrets } from '../utils/hydrateControlsWithSecrets.js';
 
 export const getCatalogs = async (req, res) => {
   try {
@@ -112,10 +113,10 @@ export const deleteCatalog = async (req, res) => {
 };
 
 export async function calculatePoints(req, res) {
-
   try {
+    const userId = req.user?.user_id;
     const agreementId = req.params.tpaId;
-    const { from, to } = req.query;
+    const { from, to, environment = 'production' } = req.query;
     const { controlIds } = req.body || {};
 
     // Validate agreementId format
@@ -125,26 +126,23 @@ export async function calculatePoints(req, res) {
 
     const catalog = await models.Catalog.findOne({ where: { tpaId: agreementId } });
 
-    let controls = [];
+    const controls = Array.isArray(controlIds) && controlIds.length > 0
+      ? await models.Control.findAll({ where: { catalogId: catalog.id, id: controlIds } })
+      : await models.Control.findAll({ where: { catalogId: catalog.id } });
 
-    if (Array.isArray(controlIds) && controlIds.length > 0) {
-      controls = await models.Control.findAll({
-        where: {
-          catalogId: catalog.id,
-          id: controlIds
-        }
-      });
-    } else {
-      controls = await models.Control.findAll({ where: { catalogId: catalog.id } });
-    }
-    await updateOrCreateAgreement(catalog, controls, agreementId);
+    // Hydrate controls with decrypted secrets
+    const hydratedControls = await hydrateControlsWithSecrets(controls, {
+      SecretModel: models.Secret,
+      defaultEnvironment: environment,
+      ownerId: userId,
+    });
+
+    await updateOrCreateAgreement(catalog, hydratedControls, agreementId);
 
     // Construct the URL for fetching guarantees
     const basePath = 'api/v6/states/';
     const safeAgreementId = encodeURIComponent(agreementId);
-
     const url = `${basePath}${safeAgreementId}/guarantees`;
-
 
     const guaranteesStates = await registry.get(url, {
       params: { from, to, newPeriodsFromGuarantees: false },
@@ -153,29 +151,44 @@ export async function calculatePoints(req, res) {
 
     // Update lastComputed
     const now = new Date();
-    if (controls.length > 0) {
-      const controlIdsToUpdate = controls.map(c => c.id);
+    let updatedCount = 0;
 
-      const [updatedCount] = await models.Control.update(
+    if (hydratedControls.length > 0) {
+      const controlIdsToUpdate = hydratedControls.map(c => c.id);
+
+      const result = await models.Control.update(
         { lastComputed: now },
         { where: { id: controlIdsToUpdate } }
       );
-      res.status(200).json(updatedCount);
+      updatedCount = result?.[0] ?? 0;
     }
 
+    // Store guarantee points
     const { storedPoints, error } = await storeGuaranteePoints(guaranteesStates.data, agreementId);
 
     if (error.length > 0) {
       const points = await models.Point.findAll({ where: { agreementId } });
       if (points.length > 0) {
-        res.status(200).json(points);
+        res.status(200).json({
+          points,
+          updatedCount,
+          warnings: error
+        });
       } else {
-        res.status(400).json(error);
+        res.status(400).json({
+          message: 'Failed to store points and no existing points found',
+          errors: error
+        });
       }
     } else {
-      res.status(200).json(storedPoints);
+      res.status(200).json({
+        storedPoints,
+        updatedCount
+      });
     }
   } catch (error) {
+    console.error('calculatePoints error:', error);
+    console.error(error.stack);
     res.status(500).json({
       message: `Failed to get points, error: ${error.message}`,
     });

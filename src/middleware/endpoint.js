@@ -30,13 +30,12 @@ export async function endpointAvailable(req, res, next) {
   if (matchingConfig === undefined) {
     return res.status(404).json({ message: 'Endpoint not found' });
   }
-  
   if (matchingConfig.dataValues.available) {
     next();
   } else {
     res.status(404).send('Endpoint not available');
-  }
-}
+  };
+};
 
 export async function assistantlimitReached(req, res, next) {
   if (!getConfigurationsCache()) {
@@ -45,18 +44,14 @@ export async function assistantlimitReached(req, res, next) {
   const matchingConfig = await models.Configuration.findOne({
     where: { endpoint: `${API_PREFIX}/assistant` },
   });
-  if (matchingConfig === undefined) {
+  if (!matchingConfig) {
     return res.status(404).json({ message: 'Endpoint not found' });
+  };
+
+  const assistants = await models.Assistant.findAll();
+  if (assistants && matchingConfig.dataValues.limit <= assistants.length) {
+    res.status(429).send('Limit reached');
   } else {
-    const assistants = await models.Assistant.findAll();
-    if (assistants) {
-      if (matchingConfig.dataValues.limit <= assistants.length) {
-        res.status(429).send('Limit reached');
-      } else {
-        next();
-      }
-    } else {
-      next();
-    }
-  }
-}
+    next();
+  };
+};

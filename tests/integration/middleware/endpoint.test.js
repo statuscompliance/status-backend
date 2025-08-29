@@ -7,8 +7,6 @@ import jwt from 'jsonwebtoken';
 import { sampleConfigurations } from '../../utils/sampleConfigurationData';
 import { sampleAssistants } from '../../utils/sampleAssistantData';
 
-const API_PREFIX = process.env.API_PREFIX || '';
-
 const getResponse = async (endpoint, token = null) => {
   let req = request.get(endpoint);
   if (token) {
@@ -60,7 +58,7 @@ afterAll(async () => {
 describe('Endpoint Integration Tests', () => {
 
   it('should allow access to an available /users endpoint for admin user', async () => {
-    const response = await getResponse(`${API_PREFIX}/users`, adminToken);
+    const response = await getResponse('/users', adminToken);
     expect(response.status).toBe(200);
   });
 
@@ -70,12 +68,12 @@ describe('Endpoint Integration Tests', () => {
   });
 
   it('should return 404 for an unavailable /users endpoint', async () => {
-    let testConfig = await models.Configuration.findOne({ where: { endpoint: `${API_PREFIX}/users` } });
+    let testConfig = await models.Configuration.findOne({ where: { endpoint: '/users' } });
 
     await models.Configuration.update({ available: false }, { where: { id: testConfig.id } });
     setConfigurationsCache(await models.Configuration.findAll());
 
-    const response = await getResponse(`${API_PREFIX}/users`, adminToken);
+    const response = await getResponse('/users', adminToken);
     expect(response.status).toBe(404);
     expect(response.text).toBe('Endpoint not available');
 
@@ -91,23 +89,22 @@ describe('Endpoint Integration Tests', () => {
 });
 
 describe('Assistant Limit Integration Tests', () => {
-
   it('should allow access to /api/assistant when limit is not reached for admin user', async () => {
-    const response = await getResponse(`${API_PREFIX}/assistant`, adminToken);
+    const response = await getResponse('/assistant', adminToken);
     expect(response.status).toBe(200);
   });
 
   it('should return 404 if assistant endpoint configuration is not found', async () => {
 
-    await models.Configuration.destroy({ where: { endpoint: `${API_PREFIX}/assistant` } });
+    await models.Configuration.destroy({ where: { endpoint: '/assistant' } });
     setConfigurationsCache(await models.Configuration.findAll());
 
-    const response = await getResponse(`${API_PREFIX}/assistant`, adminToken);
+    const response = await getResponse('/assistant', adminToken);
     expect(response.status).toBe(404);
     expect(response.body.message).toBe('Endpoint not found');
 
     await models.Configuration.create({
-      endpoint: `${API_PREFIX}/assistant`,
+      endpoint: '/assistant',
       available: true,
       limit: 1,
     });
@@ -117,7 +114,7 @@ describe('Assistant Limit Integration Tests', () => {
   it('should send 429 if the number of assistants is greater than or equal to the limit', async () => {
     setConfigurationsCache(await models.Configuration.findAll());
 
-    const response = await postResponse(`${API_PREFIX}/assistant`, sampleAssistants[0], adminToken);
+    const response = await postResponse('/assistant', sampleAssistants[0], adminToken);
 
     expect(response.status).toBe(429);
     expect(response.text).toBe('Limit reached');
@@ -160,7 +157,4 @@ describe('updateConfigurationsCache Tests', () => {
     models.Configuration.findAll = originalFindAll;
     consoleErrorSpy.mockRestore();
   });
-
 });
-
-

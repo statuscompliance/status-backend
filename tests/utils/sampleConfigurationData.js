@@ -1,57 +1,55 @@
-const API_PREFIX = process.env.API_PREFIX || '';
-
 export const sampleConfigurations = [
   {
-    endpoint: `${API_PREFIX}/users`,
+    endpoint: '/users',
     available: true,
   },
   {
-    endpoint: `${API_PREFIX}/scripts`,
+    endpoint: '/scripts',
     available: true,
   },
   {
-    endpoint: `${API_PREFIX}/controls`,
+    endpoint: '/controls',
     available: false,
   },
   {
-    endpoint: `${API_PREFIX}/grafana`,
+    endpoint: '/grafana',
     available: true,
   },
   {
-    endpoint: `${API_PREFIX}/assistant`,
+    endpoint: '/assistant',
     available: true,
     limit: 1,
   },
   {
-    endpoint: `${API_PREFIX}/thread`,
+    endpoint: '/thread',
     available: true,
   },
   {
-    endpoint: `${API_PREFIX}/catalogs`,
+    endpoint: '/catalogs',
     available: true,
   },
   {
-    endpoint: `${API_PREFIX}/computations`,
+    endpoint: '/computations',
     available: true,
   },
   {
-    endpoint: `${API_PREFIX}/points`,
+    endpoint: '/points',
     available: true,
   },
   {
-    endpoint: `${API_PREFIX}/scopes`,
+    endpoint: '/scopes',
     available: true,
   },
   {
-    endpoint: `${API_PREFIX}/config`,
+    endpoint: '/config',
     available: true,
   },
   {
-    endpoint: `${API_PREFIX}/github/auth`,
+    endpoint: '/github/auth',
     available: true,
   },
   {
-    endpoint: `${API_PREFIX}/header`,
+    endpoint: '/header',
     available: true,
   },
   {

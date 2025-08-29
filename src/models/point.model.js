@@ -4,7 +4,8 @@ export default (sequelize) => sequelize.define('Point', {
   id: {
     type: DataTypes.UUID,
     defaultValue: UUIDV4,
-    primaryKey: true
+    primaryKey: true,
+    allowNull: false,
   },
   agreementId: {
     type: DataTypes.STRING,

@@ -5,8 +5,6 @@ import * as endpointModule from '../../../../src/middleware/endpoint.js';
 
 vi.mock('../../../../src/middleware/endpoint.js');
 
-const API_PREFIX = process.env.API_PREFIX || ''; 
-
 const createRes = () => {
   const res = {};
   res.status = vi.fn(() => res);
@@ -193,8 +191,8 @@ describe('Configuration Controller', () => {
 
       await configurationController.getAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: `${API_PREFIX}/assistant`  } });
-      expectStatusAndJson(mockRes, 404, { message: `Configuration ${API_PREFIX}/assistant not found` });
+      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: '/assistant'  } });
+      expectStatusAndJson(mockRes, 404, { message: 'Configuration /assistant not found'});
     });
 
     it('should return 500 with an error message on failure', async () => {
@@ -203,7 +201,7 @@ describe('Configuration Controller', () => {
 
       await configurationController.getAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: `${API_PREFIX}/assistant`  } });
+      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: '/assistant'  } });
       expectStatusAndJson(mockRes, 500, { message: `Failed to get configuration, error: ${errorMessage}` } );
     });
 
@@ -212,7 +210,7 @@ describe('Configuration Controller', () => {
 
       await configurationController.getAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: `${API_PREFIX}/assistant`  } });
+      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: '/assistant' } });
       expectStatusAndJson(mockRes, 400, { message: 'Assistant limit is not set' });
     });
 
@@ -221,7 +219,7 @@ describe('Configuration Controller', () => {
 
       await configurationController.getAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: `${API_PREFIX}/assistant`  } });
+      expect(models.Configuration.findOne).toHaveBeenCalledOnce({ where: { endpoint: '/assistant'  } });
       expectStatusAndJson(mockRes, 400, { message: 'Assistant limit is not set' });
     });
     
@@ -239,10 +237,10 @@ describe('Configuration Controller', () => {
 
       await configurationController.updateAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: `${API_PREFIX}/assistant` } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/assistant' } });
       expect(models.Assistant.findAll).toHaveBeenCalledTimes(1);
       expect(models.Configuration.update).toHaveBeenCalledWith(
-        { 'endpoint': `${API_PREFIX}/assistant`, 'limit': 3 },
+        { 'endpoint': '/assistant', 'limit': 3 },
         { 'where': { 'id': 5 }, }
       );
       expectStatusAndJson(mockRes, 200, { message: 'Limit updated successfully' });
@@ -254,7 +252,7 @@ describe('Configuration Controller', () => {
 
       await configurationController.updateAssistantLimit(mockReq, mockRes);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: `${API_PREFIX}/assistant` } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/assistant' } });
       expect(models.Assistant.findAll).not.toHaveBeenCalled();
       expect(models.Configuration.update).not.toHaveBeenCalled();
       expectStatusAndJson(mockRes, 404, { message: 'Configuration undefined not found' });
@@ -323,9 +321,8 @@ describe('Configuration Controller', () => {
 
       await configurationController.updateAssistantLimit(mockReq, mockRes, models);
 
-      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: `${API_PREFIX}/assistant` } });
+      expect(models.Configuration.findOne).toHaveBeenCalledWith({ where: { endpoint: '/assistant' } });
       expect(mockRes.status).toHaveBeenCalledWith(500);
     });
   });
-  
 });

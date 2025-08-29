@@ -1,7 +1,6 @@
 import { models } from '../models/models.js';
 import { encrypt } from '../config/encryption.js';
 
-
 const sanitizeSecret = (secret, masked = true) => ({
   id: secret.id,
   name: secret.name,
@@ -62,12 +61,22 @@ export const createSecret = async (req, res) => {
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const { name, type, environment, value } = req.body;
+
+    if (typeof name !== 'string') {
+      return res.status(400).json({ error: 'Name must be a string' });
+    }
+
+    const normalizedName = name
+      .toLowerCase()
+      .replace(/\s+/g, '_');
+      // .replace(/[^a-z0-9_]/g, ''); remove special characters?
+
     if (!value) {
       return res.status(400).json({ message: 'Secret value is required.' });
     }
 
     const existing = await models.Secret.findOne({
-      where: { name, ownerId: userId }
+      where: { name: normalizedName, ownerId: userId }
     });
     if (existing) {
       return res.status(409).json({ message: 'A secret with this name already exists.' });
@@ -76,7 +85,7 @@ export const createSecret = async (req, res) => {
     const valueEncrypted = encrypt(value);
 
     const secretData = {
-      name,
+      name: normalizedName,
       type,
       environment,
       valueEncrypted,
@@ -85,16 +94,6 @@ export const createSecret = async (req, res) => {
       rotatedAt: new Date(),
       ownerId: userId,
     };
-
-    // For testing environment, get the next available ID since auto-increment is disabled
-    /* istanbul ignore next */
-    if (import.meta.env?.VITEST) {
-      const lastSecret = await models.Secret.findOne({
-        order: [['id', 'DESC']],
-        attributes: ['id']
-      });
-      secretData.id = lastSecret ? lastSecret.id + 1 : 1;
-    }
 
     const newSecret = await models.Secret.create(secretData);
 
@@ -117,16 +116,29 @@ export const updateSecret = async (req, res) => {
       return res.status(404).json({ message: 'Secret not found or access denied' });
     }
 
-    const updateData = { updatedAt: new Date() };
-    if (name) updateData.name = name;
-    if (type) updateData.type = type;
-    if (environment) updateData.environment = environment;
+    const updateData = {};
 
-    if (value?.trim()) {
+    if (name !== undefined) {
+      updateData.name = name.toLowerCase().replace(/\s+/g, '_');
+    }
+    if (type !== undefined) {
+      updateData.type = type;
+    }
+    if (environment !== undefined) {
+      updateData.environment = environment;
+    }
+    if (value !== undefined) {
+      if (value.trim() === '') {
+        return res.status(400).json({ message: 'Secret value cannot be an empty string or whitespace.' });
+      }
       updateData.valueEncrypted = encrypt(value);
-      updateData.version = (secret.version || 0) + 1;
+      updateData.version = secret.version + 1;
       updateData.rotatedAt = new Date();
     }
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: 'No valid fields provided for update.' });
+    }
+    updateData.updatedAt = new Date();
 
     await secret.update(updateData);
 

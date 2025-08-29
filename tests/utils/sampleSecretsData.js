@@ -1,6 +1,8 @@
+import { v4 as uuidv4 } from 'uuid';
+
 export function createSecretExample(overrides = {}) {
   return {
-    id: 1,
+    id: uuidv4(),
     name: 'Test Secret',
     type: 'database',
     environment: 'development',
@@ -28,7 +30,7 @@ export function createSecretExample(overrides = {}) {
 
 export const sampleSecrets = [
   {
-    id: 1,
+    id: uuidv4(),
     name: 'Database Password',
     type: 'database',
     environment: 'production',
@@ -40,7 +42,7 @@ export const sampleSecrets = [
     updatedAt: new Date(),
   },
   {
-    id: 2,
+    id: uuidv4(),
     name: 'API Key',
     type: 'api',
     environment: 'development',
