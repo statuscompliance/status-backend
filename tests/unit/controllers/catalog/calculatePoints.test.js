@@ -169,4 +169,83 @@ describe('calculatePoints', () => {
     expect(res.json).toHaveBeenCalledWith([mockPoint]);
   });
   */
+  it('should hydrate secrets and return stored points for a valid agreement', async () => {
+    const mockControl = {
+      id: controlId,
+      catalogId,
+      params: {
+        secretRefs: [
+          { id: 'secret-1', as: 'jwt' },
+          { name: 'ghToken', environment: 'production' }
+        ]
+      }
+    };
+    const hydratedControl = {
+      ...mockControl,
+      params: {
+        jwt: 'decrypted-jwt',
+        ghToken: 'decrypted-ghToken'
+      }
+    };
+    const mockGuaranteeStatesData = [{
+      agreementId: mockAgreementId,
+      computationGroup: 'group-1',
+      guaranteeId: 'guarantee-1',
+      guaranteeResult: true,
+      guaranteeValue: 1,
+      id: 'group-1',
+      metrics: {},
+      scope: {},
+      timestamp: '2025-07-08T11:14:28.367Z',
+    }];
+    const mockPoint = {
+      id: 'pointId',
+      agreementId: mockAgreementId,
+      guaranteeId: 'guarantee-1',
+      guaranteeValue: 1,
+      guaranteeResult: true,
+      timestamp: '2025-07-08T11:14:28.367Z',
+      metrics: {},
+      scope: {},
+      computationGroup: 'group-1'
+    };
+
+    mockController(models.Catalog, 'findOne', mockCatalog);
+    mockController(models.Control, 'findAll', [mockControl]);
+    mockController(models.Point, 'findAll', [mockPoint]);
+    vi.spyOn(registry, 'get').mockResolvedValue({ data: mockGuaranteeStatesData });
+    vi.spyOn(models.Control, 'update').mockResolvedValue([1]);
+
+    // Mock hydrateControlsWithSecrets to return hydrated controls
+    const hydrateSpy = vi.spyOn(
+      await import('../../../../src/utils/hydrateControlsWithSecrets.js'),
+      'hydrateControlsWithSecrets'
+    ).mockResolvedValue([hydratedControl]);
+
+    // Mock updateOrCreateAgreement
+    const updateAgreementSpy = vi.spyOn(
+      await import('../../../../src/utils/updateOrCreateAgreement.js'),
+      'updateOrCreateAgreement'
+    ).mockResolvedValue(true);
+
+    // Mock storeGuaranteePoints
+    vi.spyOn(guarantees, 'storeGuaranteePoints').mockResolvedValue({ storedPoints: [mockPoint], error: [] });
+
+    req.body = { controlIds: [controlId] };
+    req.user = { user_id: 42 };
+
+    await calculatePoints(req, res);
+
+    expect(hydrateSpy).toHaveBeenCalledWith([mockControl], expect.objectContaining({
+      SecretModel: expect.anything(),
+      defaultEnvironment: 'production',
+      ownerId: 42
+    }));
+    expect(updateAgreementSpy).toHaveBeenCalledWith(mockCatalog, [hydratedControl], mockAgreementId);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      storedPoints: [mockPoint],
+      updatedCount: 1
+    });
+  });
 });

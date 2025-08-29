@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { hydrateControlsWithSecrets } from '../../../src/utils/hydrateControlsWithSecrets.js';
 import { Op } from 'sequelize';
 
-describe('hydrateControlsWithSecrets (refactor)', () => {
+describe('hydrateControlsWithSecrets', () => {
   const mockSecretsById = [
     { id: 'uuid-1', name: 'jwt', environment: 'production', valueEncrypted: 'encrypted-jwt' }
   ];
