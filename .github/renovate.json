@@ -31,7 +31,8 @@
                 "lockFileMaintenance"
             ],
             "groupName": "lockfiles",
-            "dependencyDashboardApproval": true
+            "dependencyDashboardApproval": false,
+            "recreateClosed": true
         }
     ],
     "dependencyDashboard": true,
@@ -59,12 +60,23 @@
     ],
     "rebaseWhen": "behind-base-branch",
     "rangeStrategy": "pin",
+    "postUpdateOptions": [
+        "npmDedupe"
+    ],
+    "npm": {
+        "minimumReleaseAge": "3 days"
+    },
+    "npmrc": "package-lock=true\nengine-strict=true",
+    "recreateWhen": "always",
     "lockFileMaintenance": {
         "enabled": true,
         "groupName": "lockfiles",
         "schedule": [
-            "every month"
-        ]
+            "at any time"
+        ],
+        "recreateClosed": true,
+        "rebaseWhen": "behind-base-branch",
+        "automerge": false
     },
     "assignees": [
         "alvarobernal2412"
