@@ -27,6 +27,9 @@ export default defineConfig({
         '**/node_modules/**'
       ],
     },
+    benchmark: {
+      include: ['**/*.benchmark.ts']
+    }
   },
   resolve: {
     alias: {
