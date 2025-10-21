@@ -13,6 +13,7 @@ import scriptRoutes from './routes/script.routes.js';
 import pointRoutes from './routes/point.routes.js';
 import scopeRoutes from './routes/scope.routes.js';
 import secretRoutes from './routes/secret.routes.js';
+import databinderRoutes from './routes/databinder.routes.js';
 import cors from 'cors';
 import { verifyAuthority } from './middleware/verifyAuth.js';
 import { endpointAvailable } from './middleware/endpoint.js';
@@ -78,6 +79,7 @@ const configureApp = () => {
   app.use(`${API_PREFIX}/users`, userRoutes());
   app.use(`${API_PREFIX}/scripts`, scriptRoutes());
   app.use(`${API_PREFIX}/secrets`, secretRoutes());
+  app.use(`${API_PREFIX}/databinder`, databinderRoutes());
   app.use(verifyAuthority);
   app.use(`${API_PREFIX}/scopes`, scopeRoutes());
   app.use(`${API_PREFIX}/points`, pointRoutes());
@@ -110,6 +112,7 @@ async function insertEndpointsToConfig() {
     `${API_PREFIX}/points`,
     `${API_PREFIX}/scopes`,
     `${API_PREFIX}/secrets`,
+    `${API_PREFIX}/databinder`,
     'docs',
     'api-docs',
   ];

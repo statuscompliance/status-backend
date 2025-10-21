@@ -23,6 +23,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@statuscompliance/databinder": "1.0.1",
     "axios": "1.12.2",
     "bcrypt": "6.0.0",
     "cookie-parser": "1.4.7",
