@@ -1,8 +1,9 @@
-import { expect, describe, vi, it, beforeAll } from 'vitest';
+import { expect, describe, vi, it, beforeAll, afterEach, beforeEach } from 'vitest';
 import { request } from '../../setup/setup.js';
 import jwt from 'jsonwebtoken';
 import { adminUser, sampleUser } from '../../utils/sampleUserData.js';
 import { models } from '../../../src/models/models.js';
+import { updateConfigurationsCache } from '../../../src/middleware/endpoint.js';
 
 
 const getResponse = (path, token) => {
@@ -168,6 +169,57 @@ describe('Configuration API Routes', () => {
   });
   describe('GET /config/assistant/limit', () => {
     const getPath = '/config/assistant/limit';
+    
+    beforeEach(async () => {
+      // Ensure /assistant configuration exists and has correct values before EACH test
+      const existingConfig = await models.Configuration.findOne({
+        where: { endpoint: '/assistant' }
+      });
+      
+      if (!existingConfig) {
+        // If endpoint doesn't exist, create it
+        await models.Configuration.create({
+          endpoint: '/assistant',
+          available: true,
+          limit: 100,
+        });
+      } else {
+        // If endpoint exists, update it to ensure correct values
+        await models.Configuration.update(
+          { available: true, limit: 100 },
+          { where: { endpoint: '/assistant' } }
+        );
+      }
+      
+      // CRITICAL: Update cache after modifying endpoint
+      await updateConfigurationsCache();
+    });
+
+    afterEach(async () => {
+      // CRITICAL: Always restore /assistant endpoint after each test
+      const existingConfig = await models.Configuration.findOne({
+        where: { endpoint: '/assistant' }
+      });
+      
+      if (!existingConfig) {
+        // If endpoint was destroyed, recreate it
+        await models.Configuration.create({
+          endpoint: '/assistant',
+          available: true,
+          limit: 100,
+        });
+      } else {
+        // If endpoint exists, ensure it has correct values
+        await models.Configuration.update(
+          { available: true, limit: 100 },
+          { where: { endpoint: '/assistant' } }
+        );
+      }
+      
+      // Update cache to reflect restored state
+      await updateConfigurationsCache();
+    });
+
     it('should return 200 and the assistant limit for admin user', async () => {
       const response = await getResponse(getPath, adminToken);
 
@@ -204,6 +256,57 @@ describe('Configuration API Routes', () => {
     };
     const newLimit = 5;
 
+    beforeEach(async () => {
+      // Ensure /assistant configuration exists and has correct values before EACH test
+      const existingConfig = await models.Configuration.findOne({
+        where: { endpoint: '/assistant' }
+      });
+      
+      if (!existingConfig) {
+        // If endpoint doesn't exist, create it
+        await models.Configuration.create({
+          endpoint: '/assistant',
+          available: true,
+          limit: 100,
+        });
+      } else {
+        // If endpoint exists, update it to ensure correct values
+        await models.Configuration.update(
+          { available: true, limit: 100 },
+          { where: { endpoint: '/assistant' } }
+        );
+      }
+      
+      // CRITICAL: Update cache after modifying endpoint
+      await updateConfigurationsCache();
+    });
+
+    afterEach(async () => {
+      // CRITICAL: Always restore /assistant endpoint after each test
+      // This is especially important for tests that destroy the endpoint
+      const existingConfig = await models.Configuration.findOne({
+        where: { endpoint: '/assistant' }
+      });
+      
+      if (!existingConfig) {
+        // If endpoint was destroyed, recreate it
+        await models.Configuration.create({
+          endpoint: '/assistant',
+          available: true,
+          limit: 100,
+        });
+      } else {
+        // If endpoint exists, ensure it has correct values
+        await models.Configuration.update(
+          { available: true, limit: 100 },
+          { where: { endpoint: '/assistant' } }
+        );
+      }
+      
+      // Update cache to reflect restored state
+      await updateConfigurationsCache();
+    });
+
     it('should return 200 and success message for admin user', async () => {
       const response = await putResponse(newLimit, adminToken);
 
@@ -223,6 +326,8 @@ describe('Configuration API Routes', () => {
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe('Configuration undefined not found');
+      
+      // Note: afterEach will restore the assistant configuration automatically
     });
 
     it('should return 403 for regular user', async () => {

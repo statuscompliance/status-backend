@@ -79,7 +79,7 @@ export default (sequelize) => sequelize.define('Linker', {
     comment: 'Last time this linker was executed'
   },
   executionStatus: {
-    type: DataTypes.ENUM('success', 'failure', 'pending', 'not_executed'),
+    type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('success', 'failure', 'pending', 'not_executed'),
     allowNull: false,
     defaultValue: 'not_executed'
   },

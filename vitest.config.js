@@ -8,6 +8,7 @@ export default defineConfig({
     setupFiles: './tests/setup/setup.js',
     testMatch: ['**/*.test.js'],
     isolate: true,
+    fileParallelism: false,
     exclude: [
       '**/src/config/load-env.js',
       '**/src/db/database.js',

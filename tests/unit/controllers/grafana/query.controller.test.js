@@ -15,6 +15,8 @@ const supportedModels = [
   'Computation',
   'Configuration',
   'Control',
+  'Datasource',
+  'Linker',
   'Message',
   'Panel',
   'Point',

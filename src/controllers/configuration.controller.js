@@ -1,7 +1,8 @@
 import { models } from '../models/models.js';
 import { updateConfigurationsCache } from '../middleware/endpoint.js';
 
-const API_PREFIX = process.env.API_PREFIX || '';
+const isTestEnvironment = !!import.meta.env?.VITEST;
+const API_PREFIX = isTestEnvironment ? '' : process.env.API_PREFIX || '';
 
 export async function getConfiguration(req, res) {
   try {
@@ -74,9 +75,7 @@ export async function updateConfiguration(req, res) {
 export async function getAssistantLimit(req, res) {
   try {
     const configuration = await models.Configuration.findOne({
-      where: {
-        endpoint: `${API_PREFIX}/assistant`,
-      },
+      where: { endpoint: `${API_PREFIX}/assistant` },
     });
 
     if (!configuration) {

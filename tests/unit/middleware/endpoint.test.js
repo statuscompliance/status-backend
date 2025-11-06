@@ -90,7 +90,7 @@ describe('Endpoint middleware tests', () => {
         { dataValues: { id: 1, endpoint: '/public', available: true } },
         { dataValues: { id: 2, endpoint: '/private', available: false } },
         { dataValues: { id: 3, endpoint: '/partial', available: true } },
-        { dataValues: { id: 4, endpoint: 'nested/path', available: true } },
+        { dataValues: { id: 4, endpoint: '/nested/path', available: true } },
       ];
 
       vi.spyOn(models.Configuration, 'findAll').mockResolvedValue(mockConfigs);

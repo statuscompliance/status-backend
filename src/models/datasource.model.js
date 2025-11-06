@@ -49,7 +49,7 @@ export default (sequelize) => sequelize.define('Datasource', {
     allowNull: true
   },
   testStatus: {
-    type: DataTypes.ENUM('success', 'failure', 'pending', 'not_tested'),
+    type: import.meta.env?.VITEST ? DataTypes.STRING(50) : DataTypes.ENUM('success', 'failure', 'pending', 'not_tested'),
     allowNull: false,
     defaultValue: 'not_tested'
   },

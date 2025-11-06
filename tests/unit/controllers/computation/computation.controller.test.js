@@ -314,12 +314,12 @@ describe('Computation Controller', () => {
       expect(res.json).toHaveBeenCalledWith({
         code: 201,
         message: 'OK',
-        computation: expect.stringContaining('undefined/computations/'),
+        computation: expect.stringContaining('/computations/'),
       });
       
       // Verify the computation URL format more specifically
       const response = res.json.mock.calls[0][0];
-      expect(response.computation).toMatch(/^undefined\/computations\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(response.computation).toMatch(/^\/computations\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     });
 
     it('should return 400 if required fields are missing', async () => {

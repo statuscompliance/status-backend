@@ -58,9 +58,10 @@ const configureApp = () => {
   app.use(express.json());
   app.use(
     cors({
-      origin: (origin, callback) => {
-        callback(null, origin);
-      },
+      // origin: (origin, callback) => {
+      //   callback(null, origin);
+      // },
+      origin: '*', // Quick fix for allowing all origins TODO: be replaced with proper CORS policy
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie'],
     })

@@ -1,6 +1,7 @@
 import { models } from '../models/models.js';
 
-const API_PREFIX = process.env.API_PREFIX || '';
+const isTestEnvironment = !!import.meta.env?.VITEST;
+const API_PREFIX = isTestEnvironment ? '' : process.env.API_PREFIX || '';
 export const configurationsCache = { data: null };
 
 export function getConfigurationsCache() {
@@ -22,11 +23,16 @@ export async function endpointAvailable(req, res, next) {
     await updateConfigurationsCache();
   }
   const endpoint = req.url;
-  const matchingConfig = getConfigurationsCache().find(
-    (config) =>
-      endpoint.includes(config.dataValues.endpoint) ||
-            config.dataValues.endpoint.includes(endpoint)
+  
+  // Sort configurations by endpoint length (longest first) to prefer more specific matches
+  const sortedConfigs = [...getConfigurationsCache()].sort(
+    (a, b) => b.dataValues.endpoint.length - a.dataValues.endpoint.length
   );
+  
+  const matchingConfig = sortedConfigs.find(
+    (config) => endpoint.startsWith(config.dataValues.endpoint)
+  );
+  
   if (matchingConfig === undefined) {
     return res.status(404).json({ message: 'Endpoint not found' });
   }

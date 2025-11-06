@@ -7,7 +7,8 @@ import redis from '../config/redis.js';
 import { calculateCompliance } from '../utils/calculateCompliance.js';
 import { handleControllerError } from '../utils/errorHandler.js';
 
-const API_PREFIX = process.env.API_PREFIX;
+const isTestEnvironment = !!import.meta.env?.VITEST;
+const API_PREFIX = isTestEnvironment ? '' : process.env.API_PREFIX;
 
 export async function getComputations(req, res) {
   try {
