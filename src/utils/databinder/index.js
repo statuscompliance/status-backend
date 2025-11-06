@@ -3,10 +3,11 @@
  * Centralized exports for all databinder-related utilities
  */
 
-// Core utilities
-export * from './datasourceUtils.js';
-export * from './datasourceValidation.js';
-export * from './datasourceTesting.js';
+// Datasource utilities
+export * from './datasource/index.js';
+
+// Linker utilities
+export * from './linker/index.js';
 
 // Data transformation utilities
 export * from './propertyMapping.js';
