@@ -270,11 +270,11 @@ export const testDatasource = async (req, res) => {
       // Get available methods for this datasource type
       const availableMethods = Object.keys(instance.methods);
 
-      // Perform primary test
-      const { primaryTestMethod, testResult: primaryResult } = await performPrimaryTest(instance);
+      // Perform primary test (pass datasource config for context)
+      const { primaryTestMethod, testResult: primaryResult } = await performPrimaryTest(instance, datasource.config);
 
-      // Perform additional tests
-      const additionalResults = await performAdditionalTests(instance, datasource.definitionId, availableMethods);
+      // Perform additional tests (pass datasource config for context)
+      const additionalResults = await performAdditionalTests(instance, datasource.definitionId, availableMethods, datasource.config);
 
       // Combine all results
       const allResults = [primaryResult, ...additionalResults].filter(Boolean);
