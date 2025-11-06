@@ -36,8 +36,8 @@ export default function () {
 /**
  * @swagger
  * tags:
- *   name: Databinder
- *   description: Databinder datasource management
+ *   name: Databinder Datasources
+ *   description: Databinder datasources management
  */
 
 /**
@@ -45,7 +45,7 @@ export default function () {
  * /databinder/ds:
  *   get:
  *     summary: List all datasources owned by the authenticated user
- *     tags: [Databinder]
+ *     tags: [Databinder Datasources]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -66,7 +66,7 @@ export default function () {
  * /databinder/ds/{id}:
  *   get:
  *     summary: Get a specific datasource by ID (owned by the user)
- *     tags: [Databinder]
+ *     tags: [Databinder Datasources]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -95,7 +95,7 @@ export default function () {
  *     description: |
  *       Create a new datasource instance with configuration validation. The datasource will be 
  *       validated against the definition schema and tested for basic connectivity.
- *     tags: [Databinder]
+ *     tags: [Databinder Datasources]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -139,10 +139,10 @@ export default function () {
  *               description: Simple test API for prototyping
  *               value:
  *                 name: "JSONPlaceholder Posts"
- *                 definitionId: "jsonplaceholder-api"
+ *                 definitionId: "rest-api"
  *                 config:
  *                   baseUrl: "https://jsonplaceholder.typicode.com"
- *                   resourceType: "posts"
+ *                   defaultEndpoint: "/posts"
  *                 description: "Test API for posts data"
  *                 environment: "dev"
  *             restApiWithAuth:
@@ -277,7 +277,7 @@ export default function () {
  * /databinder/ds/{id}:
  *   patch:
  *     summary: Update a datasource
- *     tags: [Databinder]
+ *     tags: [Databinder Datasources]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -319,7 +319,7 @@ export default function () {
  * /databinder/ds/{id}:
  *   delete:
  *     summary: Delete a datasource
- *     tags: [Databinder]
+ *     tags: [Databinder Datasources]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -341,7 +341,7 @@ export default function () {
  * /databinder/ds/{id}/test:
  *   post:
  *     summary: Test a datasource connection with detailed test information
- *     tags: [Databinder]
+ *     tags: [Databinder Datasources]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -415,7 +415,7 @@ export default function () {
  * /databinder/ds/{id}/methods:
  *   get:
  *     summary: Get available methods for a datasource
- *     tags: [Databinder]
+ *     tags: [Databinder Datasources]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -466,7 +466,12 @@ export default function () {
  *       Fetch data from a datasource with various options including pagination, filtering, sorting, 
  *       response formats, and authentication overrides. This endpoint supports multiple response 
  *       formats and advanced querying capabilities.
- *     tags: [Databinder]
+ *       
+ *       **Important**: When creating a datasource with `definitionId: "rest-api"`, you must specify
+ *       the endpoint using `defaultEndpoint` in the config (e.g., `"defaultEndpoint": "/posts"`), 
+ *       or override it in the fetch options using `endpoint` (e.g., `"options": {"endpoint": "/posts"}`).
+ *       The datasource will default to `/data` if no endpoint is specified.
+ *     tags: [Databinder Datasources]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -1146,7 +1151,7 @@ export default function () {
  * /databinder/definitions/available:
  *   get:
  *     summary: List available datasource definitions
- *     tags: [Databinder]
+ *     tags: [Databinder Datasources]
  *     responses:
  *       200:
  *         description: A list of available datasource definitions
