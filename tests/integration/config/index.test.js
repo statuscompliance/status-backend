@@ -26,6 +26,23 @@ describe('insertEndpointsToConfig Function', () => {
   afterEach(async () => {
     // Clean up after each test
     await models.Configuration.destroy({ where: {}, truncate: true });
+    
+    // Restore all 17 endpoints for other tests that depend on them
+    const endpoints = [
+      '/config', '/users', '/scripts', '/controls', '/grafana',
+      '/thread', '/catalogs', '/assistant', '/github/auth', '/header',
+      '/computations', '/points', '/scopes', '/secrets', '/databinder',
+      'docs', 'api-docs'
+    ];
+    
+    for (const endpoint of endpoints) {
+      await models.Configuration.create({
+        endpoint,
+        available: true,
+        limit: 100
+      });
+    }
+    
     vi.restoreAllMocks();
   });
 
@@ -33,7 +50,7 @@ describe('insertEndpointsToConfig Function', () => {
     await insertEndpointsToConfig();
 
     const configurations = await models.Configuration.findAll();
-    expect(configurations.length).toBe(16); // Total number of endpoints
+    expect(configurations.length).toBe(17); // Total number of endpoints
 
     // Check that all expected endpoints are present
     const endpointNames = configurations.map(config => config.endpoint);
@@ -51,6 +68,7 @@ describe('insertEndpointsToConfig Function', () => {
     expect(endpointNames).toContain('/points');
     expect(endpointNames).toContain('/scopes');
     expect(endpointNames).toContain('/secrets');
+    expect(endpointNames).toContain('/databinder');
     expect(endpointNames).toContain('docs');
     expect(endpointNames).toContain('api-docs');
   });
@@ -85,7 +103,7 @@ describe('insertEndpointsToConfig Function', () => {
     await insertEndpointsToConfig(); // Call again
 
     const configurations = await models.Configuration.findAll();
-    expect(configurations.length).toBe(16); // Should still be 16, no duplicates
+    expect(configurations.length).toBe(17); // Should still be 17, no duplicates
 
     // Verify no duplicates exist
     const endpointCounts = configurations.reduce((acc, config) => {
