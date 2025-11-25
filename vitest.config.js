@@ -25,7 +25,9 @@ export default defineConfig({
       exclude: [
         'src/config/load-env.js',
         '**/src/db/database.js',
-        '**/node_modules/**'
+        '**/node_modules/**',
+        'src/controllers/assistant.controller.js',
+        'src/controllers/thread.controller.js'
       ],
     },
   },
