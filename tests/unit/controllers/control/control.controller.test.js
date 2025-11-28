@@ -6,15 +6,7 @@ import * as panelUtils from '../../../../src/utils/panelUtils.js';
 import { createControlExample } from '../../../utils/sampleControlsData.js';
 import { mockController } from '../../../utils/mockController.js';
 import { Op } from 'sequelize';
-
-// --- Helpers ---
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-  };
-}
+import { createRes } from '../../../utils/responseHelpers.js';
 
 // --- Suite ---
 describe('Control Controller', () => {

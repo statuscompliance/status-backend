@@ -11,15 +11,7 @@ import { methods } from '../../../../src/config/grafana.js';
 import { mockController } from '../../../utils/mockController.js';
 import * as sqlBuilder from '../../../../src/utils/sqlQueryBuilder.js'
 import { createMockPanel } from '../../../utils/createMockPanel.js';
-
-// --- Helpers ---
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-  };
-}
+import { createRes } from '../../../utils/responseHelpers.js';
 const dashboardWithoutPanel = {
   meta: { folderUid: 'folder-123' },
   dashboard: {

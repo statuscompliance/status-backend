@@ -10,15 +10,7 @@ import {
 import { models } from '../../../../src/models/models.js';
 import { validate as uuidValidate } from 'uuid';
 import * as errorHandler from '../../../../src/utils/errorHandler.js';
-
-// Helper to create mock req/res objects
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    end: vi.fn(),
-  };
-}
+import { createRes } from '../../../utils/responseHelpers.js';
 
 const userId = '5f1b7114-b133-487b-9442-2b48bf60807c';
 const computationGroupId = '5f1b7114-b133-487b-9442-2b48bf60807d';

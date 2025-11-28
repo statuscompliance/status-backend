@@ -1,3 +1,5 @@
+import { randomBytes } from 'crypto';
+
 /**
  * Utility functions for datasource operations
  */
@@ -60,7 +62,7 @@ export const generateInstanceId = (userId, normalizedName, prefix = '') => {
  * @returns {string} Execution ID
  */
 export const generateExecutionId = (datasourceId, timestamp = Date.now()) => 
-  `exec_${datasourceId}_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
+  `exec_${datasourceId}_${timestamp}_${randomBytes(4).toString('hex')}`;
 
 /**
  * Extracts data from nested response structure

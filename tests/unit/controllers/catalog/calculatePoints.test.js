@@ -8,14 +8,7 @@ import registry from '../../../../src/config/registry.js';
 import * as guarantees from '../../../../src/utils/storeGuaranteePoints.js';
 import { mockController } from '../../../utils/mockController.js';
 import { createControlExample } from '../../../utils/sampleControlsData.js';
-
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-  };
-}
+import { createRes } from '../../../utils/responseHelpers.js';
 
 const catalogId = 456;
 const controlId = 123;

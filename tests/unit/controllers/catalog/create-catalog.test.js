@@ -2,22 +2,14 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createCatalog } from '../../../../src/controllers/catalog.controller.js';
 import { models } from '../../../../src/models/models.js';
 
+import { createRes } from '../../../utils/responseHelpers.js';
+
 // Mock modules
 vi.mock('uuid', () => {
   return {
     v4: () => 'mocked-uuid'
   };
 });
-
-// --- Helpers ---
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    sendStatus: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-  };
-}
 
 // --- Test Suite ---
 describe('createCatalog', () => {

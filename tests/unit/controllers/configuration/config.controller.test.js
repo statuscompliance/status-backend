@@ -2,15 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { models } from '../../../../src/models/models.js';
 import * as configurationController from '../../../../src/controllers/configuration.controller.js';
 import * as endpointModule from '../../../../src/middleware/endpoint.js';
+import { createRes } from '../../../utils/responseHelpers.js';
 
 vi.mock('../../../../src/middleware/endpoint.js');
-
-const createRes = () => {
-  const res = {};
-  res.status = vi.fn(() => res);
-  res.json = vi.fn();
-  return res;
-};
 
 const expectStatusAndJson = (res, status, json) => {
   expect(res.status).toHaveBeenCalledWith(status);

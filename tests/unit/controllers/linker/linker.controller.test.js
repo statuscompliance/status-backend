@@ -64,14 +64,7 @@ vi.mock('../../../../src/utils/databinder/index.js', async () => {
   };
 });
 
-// --- Helpers ---
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-  };
-}
+import { createRes } from '../../../utils/responseHelpers.js';
 
 describe('Linker Controller', () => {
   let req, res;
