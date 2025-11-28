@@ -6,15 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 // Import everything
 import * as secret from '../../../../src/controllers/secret.controller.js';
 import { models } from '../../../../src/models/models.js';
-
-// --- Helpers ---
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-  };
-}
+import { createRes } from '../../../utils/responseHelpers.js';
 
 function createReq(overrides = {}) {
   return {

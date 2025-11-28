@@ -1,14 +1,17 @@
+import { randomBytes } from 'crypto';
+
 /**
  * Telemetry and logging utilities for datasource operations
  */
 
 /**
  * Generates correlation IDs for tracing
+ * Uses cryptographically secure random values
  * @returns {Object} Trace and span IDs
  */
 export const generateCorrelationIds = () => ({
-  traceId: `trace_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
-  spanId: `span_${Math.random().toString(36).substr(2, 8)}`
+  traceId: `trace_${Date.now()}_${randomBytes(4).toString('hex')}`,
+  spanId: `span_${randomBytes(4).toString('hex')}`
 });
 
 /**

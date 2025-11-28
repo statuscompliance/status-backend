@@ -2,17 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as scopeController from '../../../../src/controllers/scope.controller.js';
 import { models } from '../../../../src/models/models.js';
 import ScopeSet from '../../../../src/models/scopeSet.model.js';
-
-// Helper para crear objetos mock de req/res
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    cookie: vi.fn(),
-    clearCookie: vi.fn(),
-    send: vi.fn().mockReturnThis(),
-  };
-}
+import { createRes } from '../../../utils/responseHelpers.js';
 
 describe('Scope Controller Tests', () => {
   beforeEach(() => {

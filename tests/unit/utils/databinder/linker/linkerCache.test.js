@@ -9,6 +9,17 @@ import {
 } from '../../../../../src/utils/databinder/linker/linkerCache.js';
 import redis from '../../../../../src/config/redis.js';
 import logger from '../../../../../src/config/logger.js';
+import {
+  storeOriginalRedisMethods,
+  restoreRedisMethods,
+  mockRedisSetex,
+  mockRedisGet,
+  mockRedisGetMultiple,
+  mockRedisDel,
+  mockRedisExpire,
+  mockRedisTtl,
+  mockRedisError
+} from '../../../../utils/redisHelpers.js';
 
 describe('linkerCache', () => {
   const mockLinkerId = 'linker-123';
@@ -18,16 +29,10 @@ describe('linkerCache', () => {
     datasourceCount: 2 
   };
 
-  // Store original methods
-  let originalSetex, originalGet, originalDel, originalExpire, originalTtl;
+  let originalMethods;
 
   beforeEach(() => {
-    // Store original methods
-    originalSetex = redis.setex;
-    originalGet = redis.get;
-    originalDel = redis.del;
-    originalExpire = redis.expire;
-    originalTtl = redis.ttl;
+    originalMethods = storeOriginalRedisMethods(redis);
 
     // Spy on logger methods
     vi.spyOn(logger, 'debug').mockImplementation(() => {});
@@ -35,19 +40,13 @@ describe('linkerCache', () => {
   });
 
   afterEach(() => {
-    // Restore original methods
-    if (originalSetex) redis.setex = originalSetex;
-    if (originalGet) redis.get = originalGet;
-    if (originalDel) redis.del = originalDel;
-    if (originalExpire) redis.expire = originalExpire;
-    if (originalTtl) redis.ttl = originalTtl;
-    
+    restoreRedisMethods(redis, originalMethods);
     vi.restoreAllMocks();
   });
 
   describe('cacheLinkerExecution', () => {
     it('should cache linker execution data with 2 weeks expiration', async () => {
-      const setexSpy = vi.spyOn(redis, 'setex').mockResolvedValue('OK');
+      const setexSpy = mockRedisSetex(redis);
 
       const result = await cacheLinkerExecution(mockLinkerId, mockData, mockMetadata);
 
@@ -77,7 +76,7 @@ describe('linkerCache', () => {
     });
 
     it('should cache linker execution without metadata', async () => {
-      const setexSpy = vi.spyOn(redis, 'setex').mockResolvedValue('OK');
+      const setexSpy = mockRedisSetex(redis);
 
       const result = await cacheLinkerExecution(mockLinkerId, mockData);
 
@@ -92,7 +91,7 @@ describe('linkerCache', () => {
 
     it('should return false and log error on redis failure', async () => {
       const error = new Error('Redis connection error');
-      vi.spyOn(redis, 'setex').mockRejectedValue(error);
+      mockRedisError(redis, ['setex'], error);
 
       const result = await cacheLinkerExecution(mockLinkerId, mockData, mockMetadata);
 
@@ -118,14 +117,9 @@ describe('linkerCache', () => {
         linkerId: mockLinkerId
       };
 
-      vi.spyOn(redis, 'get').mockImplementation((key) => {
-        if (key === `linker:cache:${mockLinkerId}`) {
-          return Promise.resolve(JSON.stringify(cachedData));
-        }
-        if (key === `linker:metadata:${mockLinkerId}`) {
-          return Promise.resolve(JSON.stringify(cachedMetadata));
-        }
-        return Promise.resolve(null);
+      mockRedisGetMultiple(redis, {
+        [`linker:cache:${mockLinkerId}`]: cachedData,
+        [`linker:metadata:${mockLinkerId}`]: cachedMetadata
       });
 
       const result = await getCachedLinkerExecution(mockLinkerId);
@@ -149,14 +143,9 @@ describe('linkerCache', () => {
         linkerId: mockLinkerId
       };
 
-      vi.spyOn(redis, 'get').mockImplementation((key) => {
-        if (key === `linker:cache:${mockLinkerId}`) {
-          return Promise.resolve(JSON.stringify(cachedData));
-        }
-        if (key === `linker:metadata:${mockLinkerId}`) {
-          return Promise.resolve(JSON.stringify(cachedMetadata));
-        }
-        return Promise.resolve(null);
+      mockRedisGetMultiple(redis, {
+        [`linker:cache:${mockLinkerId}`]: cachedData,
+        [`linker:metadata:${mockLinkerId}`]: cachedMetadata
       });
 
       const result = await getCachedLinkerExecution(mockLinkerId);
@@ -168,7 +157,7 @@ describe('linkerCache', () => {
     });
 
     it('should return null data when cache does not exist', async () => {
-      vi.spyOn(redis, 'get').mockResolvedValue(null);
+      mockRedisGet(redis, null);
 
       const result = await getCachedLinkerExecution(mockLinkerId);
 
@@ -178,11 +167,8 @@ describe('linkerCache', () => {
     });
 
     it('should return null when only cache data exists but not metadata', async () => {
-      vi.spyOn(redis, 'get').mockImplementation((key) => {
-        if (key === `linker:cache:${mockLinkerId}`) {
-          return Promise.resolve(JSON.stringify({ data: mockData, cachedAt: Date.now() }));
-        }
-        return Promise.resolve(null);
+      mockRedisGetMultiple(redis, {
+        [`linker:cache:${mockLinkerId}`]: { data: mockData, cachedAt: Date.now() }
       });
 
       const result = await getCachedLinkerExecution(mockLinkerId);
@@ -194,7 +180,7 @@ describe('linkerCache', () => {
 
     it('should handle redis errors gracefully', async () => {
       const error = new Error('Redis get error');
-      vi.spyOn(redis, 'get').mockRejectedValue(error);
+      mockRedisError(redis, ['get'], error);
 
       const result = await getCachedLinkerExecution(mockLinkerId);
 
@@ -210,7 +196,7 @@ describe('linkerCache', () => {
 
   describe('invalidateLinkerCache', () => {
     it('should delete cache and metadata keys', async () => {
-      const delSpy = vi.spyOn(redis, 'del').mockResolvedValue(2); // 2 keys deleted
+      const delSpy = mockRedisDel(redis, 2); // 2 keys deleted
 
       const result = await invalidateLinkerCache(mockLinkerId);
 
@@ -229,7 +215,7 @@ describe('linkerCache', () => {
     });
 
     it('should return false when no keys were deleted', async () => {
-      vi.spyOn(redis, 'del').mockResolvedValue(0); // No keys deleted
+      mockRedisDel(redis, 0); // No keys deleted
 
       const result = await invalidateLinkerCache(mockLinkerId);
 
@@ -238,7 +224,7 @@ describe('linkerCache', () => {
 
     it('should handle redis errors gracefully', async () => {
       const error = new Error('Redis delete error');
-      vi.spyOn(redis, 'del').mockRejectedValue(error);
+      mockRedisError(redis, ['del'], error);
 
       const result = await invalidateLinkerCache(mockLinkerId);
 
@@ -252,7 +238,7 @@ describe('linkerCache', () => {
 
   describe('updateLinkerCacheTTL', () => {
     it('should update TTL for both cache and metadata keys with default value', async () => {
-      const expireSpy = vi.spyOn(redis, 'expire').mockResolvedValue(1);
+      const expireSpy = mockRedisExpire(redis);
 
       const result = await updateLinkerCacheTTL(mockLinkerId);
 
@@ -269,7 +255,7 @@ describe('linkerCache', () => {
     });
 
     it('should update TTL with custom value', async () => {
-      const expireSpy = vi.spyOn(redis, 'expire').mockResolvedValue(1);
+      const expireSpy = mockRedisExpire(redis);
       const customTTL = 3600; // 1 hour
 
       const result = await updateLinkerCacheTTL(mockLinkerId, customTTL);
@@ -287,7 +273,7 @@ describe('linkerCache', () => {
 
     it('should handle redis errors gracefully', async () => {
       const error = new Error('Redis expire error');
-      vi.spyOn(redis, 'expire').mockRejectedValue(error);
+      mockRedisError(redis, ['expire'], error);
 
       const result = await updateLinkerCacheTTL(mockLinkerId);
 
@@ -301,7 +287,7 @@ describe('linkerCache', () => {
 
   describe('getLinkerCacheTTL', () => {
     it('should return TTL in seconds for existing key', async () => {
-      vi.spyOn(redis, 'ttl').mockResolvedValue(86400); // 1 day
+      mockRedisTtl(redis, 86400); // 1 day
 
       const result = await getLinkerCacheTTL(mockLinkerId);
 
@@ -309,7 +295,7 @@ describe('linkerCache', () => {
     });
 
     it('should return -1 for key with no expiration', async () => {
-      vi.spyOn(redis, 'ttl').mockResolvedValue(-1);
+      mockRedisTtl(redis, -1);
 
       const result = await getLinkerCacheTTL(mockLinkerId);
 
@@ -317,7 +303,7 @@ describe('linkerCache', () => {
     });
 
     it('should return -2 for non-existent key', async () => {
-      vi.spyOn(redis, 'ttl').mockResolvedValue(-2);
+      mockRedisTtl(redis, -2);
 
       const result = await getLinkerCacheTTL(mockLinkerId);
 
@@ -326,7 +312,7 @@ describe('linkerCache', () => {
 
     it('should handle redis errors gracefully', async () => {
       const error = new Error('Redis TTL error');
-      vi.spyOn(redis, 'ttl').mockRejectedValue(error);
+      mockRedisError(redis, ['ttl'], error);
 
       const result = await getLinkerCacheTTL(mockLinkerId);
 
@@ -352,14 +338,9 @@ describe('linkerCache', () => {
         linkerId: mockLinkerId
       };
 
-      vi.spyOn(redis, 'get').mockImplementation((key) => {
-        if (key === `linker:cache:${mockLinkerId}`) {
-          return Promise.resolve(JSON.stringify(cachedData));
-        }
-        if (key === `linker:metadata:${mockLinkerId}`) {
-          return Promise.resolve(JSON.stringify(cachedMetadata));
-        }
-        return Promise.resolve(null);
+      mockRedisGetMultiple(redis, {
+        [`linker:cache:${mockLinkerId}`]: cachedData,
+        [`linker:metadata:${mockLinkerId}`]: cachedMetadata
       });
 
       const result = await hasValidCache(mockLinkerId);
@@ -380,14 +361,9 @@ describe('linkerCache', () => {
         linkerId: mockLinkerId
       };
 
-      vi.spyOn(redis, 'get').mockImplementation((key) => {
-        if (key === `linker:cache:${mockLinkerId}`) {
-          return Promise.resolve(JSON.stringify(cachedData));
-        }
-        if (key === `linker:metadata:${mockLinkerId}`) {
-          return Promise.resolve(JSON.stringify(cachedMetadata));
-        }
-        return Promise.resolve(null);
+      mockRedisGetMultiple(redis, {
+        [`linker:cache:${mockLinkerId}`]: cachedData,
+        [`linker:metadata:${mockLinkerId}`]: cachedMetadata
       });
 
       const result = await hasValidCache(mockLinkerId);
@@ -396,7 +372,7 @@ describe('linkerCache', () => {
     });
 
     it('should return false when cache does not exist', async () => {
-      vi.spyOn(redis, 'get').mockResolvedValue(null);
+      mockRedisGet(redis, null);
 
       const result = await hasValidCache(mockLinkerId);
 
@@ -405,7 +381,7 @@ describe('linkerCache', () => {
 
     it('should handle errors gracefully', async () => {
       const error = new Error('Redis error');
-      vi.spyOn(redis, 'get').mockRejectedValue(error);
+      mockRedisError(redis, ['get'], error);
 
       const result = await hasValidCache(mockLinkerId);
 
@@ -416,7 +392,7 @@ describe('linkerCache', () => {
 
   describe('Edge cases and integration', () => {
     it('should handle empty data object', async () => {
-      const setexSpy = vi.spyOn(redis, 'setex').mockResolvedValue('OK');
+      const setexSpy = mockRedisSetex(redis);
 
       const result = await cacheLinkerExecution(mockLinkerId, {});
 
@@ -428,7 +404,7 @@ describe('linkerCache', () => {
 
     it('should handle special characters in linkerId', async () => {
       const specialLinkerId = 'linker-123-abc_def';
-      const setexSpy = vi.spyOn(redis, 'setex').mockResolvedValue('OK');
+      const setexSpy = mockRedisSetex(redis);
 
       const result = await cacheLinkerExecution(specialLinkerId, mockData);
 
@@ -442,7 +418,7 @@ describe('linkerCache', () => {
 
     it('should maintain data integrity through cache cycle', async () => {
       // Cache the data
-      const setexSpy = vi.spyOn(redis, 'setex').mockResolvedValue('OK');
+      const setexSpy = mockRedisSetex(redis);
       await cacheLinkerExecution(mockLinkerId, mockData, mockMetadata);
 
       // Get the cached data
@@ -451,14 +427,9 @@ describe('linkerCache', () => {
       const metadataCall = setexSpy.mock.calls[1];
       const cachedMetadataString = metadataCall[2];
 
-      vi.spyOn(redis, 'get').mockImplementation((key) => {
-        if (key === `linker:cache:${mockLinkerId}`) {
-          return Promise.resolve(cachedDataString);
-        }
-        if (key === `linker:metadata:${mockLinkerId}`) {
-          return Promise.resolve(cachedMetadataString);
-        }
-        return Promise.resolve(null);
+      mockRedisGetMultiple(redis, {
+        [`linker:cache:${mockLinkerId}`]: JSON.parse(cachedDataString),
+        [`linker:metadata:${mockLinkerId}`]: JSON.parse(cachedMetadataString)
       });
 
       const result = await getCachedLinkerExecution(mockLinkerId);

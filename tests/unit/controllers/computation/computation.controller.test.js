@@ -18,15 +18,7 @@ import nodered from '../../../../src/config/nodered.js';
 import { mockController } from '../../../utils/mockController.js';
 import { createComputationExample } from '../../../utils/createComputationExample.js';
 import redis from '../../../../src/config/redis.js';
-
-// --- Helpers ---
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    end: vi.fn().mockReturnThis(),
-  };
-}
+import { createRes } from '../../../utils/responseHelpers.js';
 
 describe('Computation Controller', () => {
   let res;
@@ -288,7 +280,7 @@ describe('Computation Controller', () => {
       req = {
         body: {
           metric: {
-            endpoint: 'mock-endpoint',
+            endpoint: '/mock-endpoint',
             params: { key: 'value' },
             window: {
               start: '2024-01-01',

@@ -1,16 +1,12 @@
 import { expect, describe, vi, it, beforeAll, afterEach, beforeEach } from 'vitest';
 import { request } from '../../setup/setup.js';
-import jwt from 'jsonwebtoken';
-import { adminUser, sampleUser } from '../../utils/sampleUserData.js';
 import { models } from '../../../src/models/models.js';
-import { updateConfigurationsCache } from '../../../src/middleware/endpoint.js';
-
-
-const getResponse = (path, token) => {
-  return request
-    .get(path)
-    .set('Cookie', `accessToken=${token}`);
-};
+import { createAdminToken, createRegularToken } from '../../utils/tokenHelpers.js';
+import { getRequest, postRequest, putRequest } from '../../utils/requestHelpers.js';
+import {
+  setupAssistantConfigBeforeEach,
+  cleanupAssistantConfigAfterEach
+} from '../../utils/configHelpers.js';
 
 describe('Configuration API Routes', () => {
   let adminToken;
@@ -18,22 +14,8 @@ describe('Configuration API Routes', () => {
   let endpointExists;
 
   beforeAll(async () => {
-    adminToken = jwt.sign(
-      {
-        userId: adminUser._id,
-        username: adminUser.username,
-        authority: adminUser.authority,
-      },
-      'test-secret-key'
-    );
-    regularToken = jwt.sign(
-      {
-        userId: sampleUser._id,
-        username: sampleUser.username,
-        authority: sampleUser.authority,
-      },
-      'test-secret-key'
-    );
+    adminToken = createAdminToken();
+    regularToken = createRegularToken();
     const getAllEndpoints = await models.Configuration.findAll();
     endpointExists = getAllEndpoints[5].dataValues;
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -42,33 +24,27 @@ describe('Configuration API Routes', () => {
   describe('Index GET /', () => {
     const getPath = '/config';
     it('should return 200 and all configurations for admin user', async () => {
-      const response = await getResponse(getPath, adminToken);
+      const response = await getRequest(request, getPath, adminToken);
 
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
     });
     it('should return 403 for regular user', async () => {
-      const response = await getResponse(getPath, regularToken);
+      const response = await getRequest(request, getPath, regularToken);
 
       expect(response.status).toBe(403);
       expect(response.body.message).toBe('Forbidden');
     });
     it('should return 401 for Unauthorized user', async () => {
-      const response = await getResponse(getPath);
+      const response = await getRequest(request, getPath);
 
       expect(response.status).toBe(401);
-      expect(response.body.message).toBe('Unauthorized');
+      expect(response.body.message).toBe('No token provided');
     });
   });
   describe('POST /config', () => {
-    const postResponse = (token, endpoint) => {
-      return request
-        .post('/config')
-        .set('Cookie', `accessToken=${token}`)
-        .send(endpoint);
-    };
     it('should return 200 and the configuration for admin user', async () => {
-      const response = await postResponse(adminToken, endpointExists);        
+      const response = await postRequest(request, '/config', adminToken, endpointExists);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('endpoint');
@@ -78,7 +54,7 @@ describe('Configuration API Routes', () => {
 
     it('should return 500 if configuration not found for admin user', async () => {
       const nonExistentEndpoint = 'non-existent-endpoint';
-      const response = await postResponse(adminToken, nonExistentEndpoint);   
+      const response = await postRequest(request, '/config', adminToken, nonExistentEndpoint);
 
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty(
@@ -88,20 +64,20 @@ describe('Configuration API Routes', () => {
     });
 
     it('should return 403 for regular user', async () => {
-      const response = await postResponse(regularToken, endpointExists);   
+      const response = await postRequest(request, '/config', regularToken, endpointExists);
 
       expect(response.status).toBe(403);
       expect(response.body.message).toBe('Forbidden');
     });
 
     it('should return 401 for unauthorized user', async () => {
-      const response = await postResponse(undefined, endpointExists);   
+      const response = await postRequest(request, '/config', undefined, endpointExists);
       expect(response.status).toBe(401);
-      expect(response.body.message).toBe('Unauthorized');
+      expect(response.body.message).toBe('No token provided');
     });
 
     it('should return 500 for invalid request body', async () => {
-      const response = await postResponse(adminToken, undefined); // Missing 'endpoint'
+      const response = await postRequest(request, '/config', adminToken, undefined); // Missing 'endpoint'
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty(
         'message',
@@ -110,15 +86,8 @@ describe('Configuration API Routes', () => {
     });
   });
   describe('PUT /config', () => {
-    const putResponse = (token, endpoint) => {
-      return request
-        .put('/config')
-        .set('Cookie', `accessToken=${token}`)
-        .send(endpoint);
-    };
-
     it('should return 200 and success message for admin user', async () => {
-      const response = await putResponse(adminToken, endpointExists);
+      const response = await putRequest(request, '/config', adminToken, endpointExists);
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe(
@@ -129,13 +98,10 @@ describe('Configuration API Routes', () => {
     it('should return 404 if configuration not found for admin user', async () => {
       const nonExistentEndpoint = 'non-existent-update-endpoint';
       const updatedAvailability = false;
-      const response = await request
-        .put('/config')
-        .set('Cookie', `accessToken=${adminToken}`)
-        .send({
-          endpoint: nonExistentEndpoint,
-          available: updatedAvailability,
-        });
+      const response = await putRequest(request, '/config', adminToken, {
+        endpoint: nonExistentEndpoint,
+        available: updatedAvailability,
+      });
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe(
@@ -144,21 +110,21 @@ describe('Configuration API Routes', () => {
     });
 
     it('should return 403 for regular user', async () => {
-      const response = await putResponse(regularToken, endpointExists);
+      const response = await putRequest(request, '/config', regularToken, endpointExists);
 
       expect(response.status).toBe(403);
       expect(response.body.message).toBe('Forbidden');
     });
 
     it('should return 401 for No token provided user', async () => {
-      const response = await putResponse(undefined, endpointExists);
+      const response = await putRequest(request, '/config', undefined, endpointExists);
 
       expect(response.status).toBe(401);
-      expect(response.body.message).toBe('Unauthorized');
+      expect(response.body.message).toBe('No token provided');
     });
 
     it('should return 500 for invalid request body', async () => {
-      const response = await putResponse(adminToken, undefined); // Missing 'available'
+      const response = await putRequest(request, '/config', adminToken, undefined); // Missing 'available'
 
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty(
@@ -170,145 +136,45 @@ describe('Configuration API Routes', () => {
   describe('GET /config/assistant/limit', () => {
     const getPath = '/config/assistant/limit';
     
-    beforeEach(async () => {
-      // Ensure /assistant configuration exists and has correct values before EACH test
-      const existingConfig = await models.Configuration.findOne({
-        where: { endpoint: '/assistant' }
-      });
-      
-      if (!existingConfig) {
-        // If endpoint doesn't exist, create it
-        await models.Configuration.create({
-          endpoint: '/assistant',
-          available: true,
-          limit: 100,
-        });
-      } else {
-        // If endpoint exists, update it to ensure correct values
-        await models.Configuration.update(
-          { available: true, limit: 100 },
-          { where: { endpoint: '/assistant' } }
-        );
-      }
-      
-      // CRITICAL: Update cache after modifying endpoint
-      await updateConfigurationsCache();
-    });
-
-    afterEach(async () => {
-      // CRITICAL: Always restore /assistant endpoint after each test
-      const existingConfig = await models.Configuration.findOne({
-        where: { endpoint: '/assistant' }
-      });
-      
-      if (!existingConfig) {
-        // If endpoint was destroyed, recreate it
-        await models.Configuration.create({
-          endpoint: '/assistant',
-          available: true,
-          limit: 100,
-        });
-      } else {
-        // If endpoint exists, ensure it has correct values
-        await models.Configuration.update(
-          { available: true, limit: 100 },
-          { where: { endpoint: '/assistant' } }
-        );
-      }
-      
-      // Update cache to reflect restored state
-      await updateConfigurationsCache();
-    });
+    beforeEach(setupAssistantConfigBeforeEach());
+    afterEach(cleanupAssistantConfigAfterEach());
 
     it('should return 200 and the assistant limit for admin user', async () => {
-      const response = await getResponse(getPath, adminToken);
+      const response = await getRequest(request, getPath, adminToken);
 
       expect(response.status).toBe(200);
       expect(response.body.limit).toBe(100);
     });
 
     it('should return 403 for regular user', async () => {
-      const response = await getResponse(getPath, regularToken);
+      const response = await getRequest(request, getPath, regularToken);
 
       expect(response.status).toBe(403);
       expect(response.body.message).toBe('Forbidden');
     });
 
     it('should return 401 for unauthorized user', async () => {
-      const response = await getResponse(getPath, undefined);
+      const response = await getRequest(request, getPath);
 
       expect(response.status).toBe(401);
-      expect(response.body.message).toBe('Unauthorized');
+      expect(response.body.message).toBe('No token provided');
     });
 
     it('should return 404 if configuration not found for admin user', async () => {
-      const response = await getResponse(getPath, undefined);
+      const response = await getRequest(request, getPath);
       expect(response.status).toBe(401);
-      expect(response.body.message).toBe('Unauthorized');
+      expect(response.body.message).toBe('No token provided');
     });
   });
 
   describe('PUT /config/assistant/limit/:limit', () => {
-    const putResponse = (limit, token) => {
-      return request
-        .put('/config/assistant/limit/'+limit)
-        .set('Cookie', `accessToken=${token}`)
-    };
     const newLimit = 5;
 
-    beforeEach(async () => {
-      // Ensure /assistant configuration exists and has correct values before EACH test
-      const existingConfig = await models.Configuration.findOne({
-        where: { endpoint: '/assistant' }
-      });
-      
-      if (!existingConfig) {
-        // If endpoint doesn't exist, create it
-        await models.Configuration.create({
-          endpoint: '/assistant',
-          available: true,
-          limit: 100,
-        });
-      } else {
-        // If endpoint exists, update it to ensure correct values
-        await models.Configuration.update(
-          { available: true, limit: 100 },
-          { where: { endpoint: '/assistant' } }
-        );
-      }
-      
-      // CRITICAL: Update cache after modifying endpoint
-      await updateConfigurationsCache();
-    });
-
-    afterEach(async () => {
-      // CRITICAL: Always restore /assistant endpoint after each test
-      // This is especially important for tests that destroy the endpoint
-      const existingConfig = await models.Configuration.findOne({
-        where: { endpoint: '/assistant' }
-      });
-      
-      if (!existingConfig) {
-        // If endpoint was destroyed, recreate it
-        await models.Configuration.create({
-          endpoint: '/assistant',
-          available: true,
-          limit: 100,
-        });
-      } else {
-        // If endpoint exists, ensure it has correct values
-        await models.Configuration.update(
-          { available: true, limit: 100 },
-          { where: { endpoint: '/assistant' } }
-        );
-      }
-      
-      // Update cache to reflect restored state
-      await updateConfigurationsCache();
-    });
+    beforeEach(setupAssistantConfigBeforeEach());
+    afterEach(cleanupAssistantConfigAfterEach());
 
     it('should return 200 and success message for admin user', async () => {
-      const response = await putResponse(newLimit, adminToken);
+      const response = await putRequest(request, `/config/assistant/limit/${newLimit}`, adminToken);
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Limit updated successfully');
@@ -322,7 +188,7 @@ describe('Configuration API Routes', () => {
       });
 
       const nonExistentLimit = 999;
-      const response = await putResponse(nonExistentLimit, adminToken);
+      const response = await putRequest(request, `/config/assistant/limit/${nonExistentLimit}`, adminToken);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe('Configuration undefined not found');
@@ -331,22 +197,22 @@ describe('Configuration API Routes', () => {
     });
 
     it('should return 403 for regular user', async () => {
-      const response = await putResponse(newLimit, regularToken);
+      const response = await putRequest(request, `/config/assistant/limit/${newLimit}`, regularToken);
 
       expect(response.status).toBe(403);
       expect(response.body.message).toBe('Forbidden');
     });
 
     it('should return 401 for No token provided user', async () => {
-      const response = await putResponse(newLimit, undefined);
+      const response = await putRequest(request, `/config/assistant/limit/${newLimit}`, undefined);
 
       expect(response.status).toBe(401);
-      expect(response.body.message).toBe('Unauthorized');
+      expect(response.body.message).toBe('No token provided');
     });
 
     it('should return 400 for invalid limit parameter', async () => {
       const invalidLimit = 'abc';
-      const response = await putResponse(invalidLimit, adminToken);
+      const response = await putRequest(request, `/config/assistant/limit/${invalidLimit}`, adminToken);
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBe('Invalid limit value');

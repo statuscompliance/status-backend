@@ -14,15 +14,7 @@ import { models } from '../../../../src/models/models.js';
 import * as databinderConfig from '../../../../src/config/databinder.js';
 import logger from '../../../../src/config/logger.js';
 import * as databinderUtils from '../../../../src/utils/databinder/index.js';
-
-// Helper to create mock req/res objects
-function createRes() {
-  return {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn().mockReturnThis(),
-    send: vi.fn().mockReturnThis(),
-  };
-}
+import { createRes } from '../../../utils/responseHelpers.js';
 
 function createReq(overrides = {}) {
   return {

@@ -10,6 +10,62 @@ import { handleControllerError } from '../utils/errorHandler.js';
 const isTestEnvironment = !!import.meta.env?.VITEST;
 const API_PREFIX = isTestEnvironment ? '' : process.env.API_PREFIX;
 
+/**
+ * Validates that the endpoint doesn't contain malicious patterns.
+ * 
+ * Security measures:
+ * - Prevents path traversal attacks (../)
+ * - Blocks URL encoding bypass attempts (%2e, %2f, %5c)
+ * - Rejects null bytes and special characters
+ * - Ensures clean path format (no backslashes, double slashes)
+ * - Restricts to safe character set: alphanumeric, hyphens, underscores, slashes
+ * 
+ * @param {string} endpoint - The endpoint to validate
+ * @returns {boolean} - True if valid, false otherwise
+ */
+function isValidNodeRedEndpoint(endpoint) {
+  if (!endpoint || typeof endpoint !== 'string') {
+    return false;
+  }
+  
+  // Ensure it starts with /
+  if (!endpoint.startsWith('/')) {
+    return false;
+  }
+  
+  // Prevent path traversal attempts
+  if (endpoint.includes('..')) {
+    return false;
+  }
+  
+  // Prevent backslashes (use forward slashes only)
+  if (endpoint.includes('\\')) {
+    return false;
+  }
+  
+  // Prevent null bytes
+  if (endpoint.includes('\0') || endpoint.includes('%00')) {
+    return false;
+  }
+  
+  // Prevent URL encoding that could be used to bypass filters
+  if (endpoint.match(/%2e|%2f|%5c/i)) {
+    return false;
+  }
+  
+  // Only allow alphanumeric, hyphens, underscores, and forward slashes
+  if (!/^[a-zA-Z0-9/_-]+$/.test(endpoint)) {
+    return false;
+  }
+  
+  // Prevent multiple consecutive slashes
+  if (endpoint.includes('//')) {
+    return false;
+  }
+  
+  return true;
+}
+
 export async function getComputations(req, res) {
   try {
     const computations = await models.Computation.findAll();
@@ -128,6 +184,14 @@ export async function createComputation(req, res) {
     if (!validation) {
       return res.status(400).json({ error: textError });
     }
+    
+    // Validate the endpoint against whitelist
+    if (!isValidNodeRedEndpoint(metric.endpoint)) {
+      return res.status(400).json({ 
+        error: 'Invalid endpoint. The specified endpoint is not allowed.' 
+      });
+    }
+    
     const endpoint = `/${API_PREFIX}${metric.endpoint}`;
     const computationId = uuidv4();
     const { end: to, ...restWindow } = metric.window;
