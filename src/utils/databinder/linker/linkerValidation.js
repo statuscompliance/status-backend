@@ -80,8 +80,8 @@ export const validateDatasourcesExist = async (datasourceIds, Datasource, userId
       }
     });
 
-    const foundIds = datasources.map(ds => ds.id);
-    const missingIds = datasourceIds.filter(id => !foundIds.includes(id));
+    const foundIds = new Set(datasources.map(ds => ds.id));
+    const missingIds = datasourceIds.filter(id => !foundIds.has(id));
 
     if (missingIds.length > 0) {
       return {
@@ -106,45 +106,95 @@ export const validateDatasourcesExist = async (datasourceIds, Datasource, userId
 };
 
 /**
+ * Validate a single datasource config
+ * @param {string} dsId - Datasource ID
+ * @param {Object} config - Config to validate
+ * @param {Array<string>} datasourceIds - Array of valid datasource IDs
+ * @returns {Array<string>} Array of error messages
+ */
+const validateSingleDatasourceConfig = (dsId, config, datasourceIds) => {
+  const errors = [];
+  const datasourceIdSet = new Set(datasourceIds);
+
+  if (!datasourceIdSet.has(dsId)) {
+    errors.push(`Config provided for datasource '${dsId}' but this ID is not in datasourceIds array`);
+  }
+
+  if (config.id && config.id !== dsId) {
+    errors.push(`Config for datasource '${dsId}' has mismatched id field: '${config.id}'`);
+  }
+
+  if (config.methodConfig) {
+    const methodConfigErrors = validateMethodConfig(dsId, config.methodConfig);
+    errors.push(...methodConfigErrors);
+  }
+
+  if (config.propertyMapping) {
+    const propertyMappingErrors = validatePropertyMapping(dsId, config.propertyMapping);
+    errors.push(...propertyMappingErrors);
+  }
+
+  return errors;
+};
+
+/**
+ * Validate method config structure
+ * @param {string} dsId - Datasource ID
+ * @param {Object} methodConfig - Method config to validate
+ * @returns {Array<string>} Array of error messages
+ */
+const validateMethodConfig = (dsId, methodConfig) => {
+  const errors = [];
+
+  if (typeof methodConfig !== 'object') {
+    errors.push(`methodConfig for datasource '${dsId}' must be an object`);
+    return errors;
+  }
+
+  if (methodConfig.methodName && typeof methodConfig.methodName !== 'string') {
+    errors.push(`methodConfig.methodName for datasource '${dsId}' must be a string`);
+  }
+
+  return errors;
+};
+
+/**
+ * Validate property mapping structure
+ * @param {string} dsId - Datasource ID
+ * @param {Object} propertyMapping - Property mapping to validate
+ * @returns {Array<string>} Array of error messages
+ */
+const validatePropertyMapping = (dsId, propertyMapping) => {
+  const errors = [];
+
+  if (typeof propertyMapping !== 'object' || Array.isArray(propertyMapping)) {
+    errors.push(`propertyMapping for datasource '${dsId}' must be an object`);
+  }
+
+  return errors;
+};
+
+/**
  * Validate datasource configs structure
  * @param {Object} datasourceConfigs - The configs to validate
  * @param {Array<string>} datasourceIds - Array of valid datasource IDs
  * @returns {Object} Validation result
  */
 export const validateDatasourceConfigs = (datasourceConfigs, datasourceIds) => {
-  const errors = [];
-
   if (!datasourceConfigs) {
     return { isValid: true, errors: [] };
   }
 
+  const allErrors = [];
+
   for (const [dsId, config] of Object.entries(datasourceConfigs)) {
-    if (!datasourceIds.includes(dsId)) {
-      errors.push(`Config provided for datasource '${dsId}' but this ID is not in datasourceIds array`);
-    }
-
-    if (config.id && config.id !== dsId) {
-      errors.push(`Config for datasource '${dsId}' has mismatched id field: '${config.id}'`);
-    }
-
-    if (config.methodConfig) {
-      if (typeof config.methodConfig !== 'object') {
-        errors.push(`methodConfig for datasource '${dsId}' must be an object`);
-      } else if (config.methodConfig.methodName && typeof config.methodConfig.methodName !== 'string') {
-        errors.push(`methodConfig.methodName for datasource '${dsId}' must be a string`);
-      }
-    }
-
-    if (config.propertyMapping) {
-      if (typeof config.propertyMapping !== 'object' || Array.isArray(config.propertyMapping)) {
-        errors.push(`propertyMapping for datasource '${dsId}' must be an object`);
-      }
-    }
+    const configErrors = validateSingleDatasourceConfig(dsId, config, datasourceIds);
+    allErrors.push(...configErrors);
   }
 
   return {
-    isValid: errors.length === 0,
-    errors
+    isValid: allErrors.length === 0,
+    errors: allErrors
   };
 };
 

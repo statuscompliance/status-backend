@@ -21,7 +21,7 @@ export const applyPropertyMapping = (data, mapping) => {
   // Handle objects by remapping properties
   const remapped = {};
   for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key)) {
+    if (Object.hasOwn(data, key)) {
       const newKey = mapping[key] || key;
       // If the value is an object or array, recursively apply mapping
       if (typeof data[key] === 'object' && data[key] !== null) {

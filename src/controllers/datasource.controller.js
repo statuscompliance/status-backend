@@ -1,5 +1,5 @@
 import { methods } from '../config/grafana.js';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { handleControllerError } from '../utils/errorHandler.js';
 
 export async function getDatasources(req, res) {

@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 
 /**
  * Utility functions for datasource operations
@@ -41,7 +41,7 @@ export const checkOwnership = (datasource, userId) =>
  * @returns {string} Normalized name
  */
 export const normalizeName = (name) => 
-  name.toLowerCase().replace(/\s+/g, '_');
+  name.toLowerCase().replaceAll(/\s+/g, '_');
 
 /**
  * Generates unique instance ID
