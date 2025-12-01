@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 const algorithm = 'aes-256-gcm';
 const secretKey = process.env.SECRET_ENCRYPTION_KEY || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'; //This string is just for testing purposes, replace it with a secure key in production.
 

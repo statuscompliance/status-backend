@@ -9,7 +9,7 @@ import {
 import { mockController } from '../../../utils/mockController.js';
 import { methods } from '../../../../src/config/grafana.js';
 import * as errorHandler from '../../../../src/utils/errorHandler.js';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 describe('Grafana: Folder Controller', () => {
   let req;

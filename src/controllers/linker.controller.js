@@ -6,9 +6,7 @@ import {
   extractResultData,
   applyPropertyMapping,
   generateCorrelationIds,
-  createTelemetryContext
-} from '../utils/databinder/index.js';
-import { 
+  createTelemetryContext,
   normalizeName,
   sanitizeLinker,
   checkLinkerOwnership,
@@ -34,13 +32,13 @@ const datasourceCatalog = getDatabinderCatalog();
  * This is used both when creating a linker and when executing it via /execute endpoint
  * @param {Object} linker - The linker instance
  * @param {number} userId - The user ID
- * @param {Object} options - Options to pass to datasource methods
  * @param {string} executionId - Execution ID for logging
  * @param {string} traceId - Trace ID for telemetry
  * @param {string} spanId - Span ID for telemetry
+ * @param {Object} options - Options to pass to datasource methods
  * @returns {Promise<Object>} Execution result with status, data, and metadata
  */
-const executeLinkerInternal = async (linker, userId, options = {}, executionId, traceId, spanId) => {
+const executeLinkerInternal = async (linker, userId, executionId, traceId, spanId, options = {}) => {
   logger.debug(`[${executionId}] Starting internal linker execution`, {
     linkerId: linker.id,
     linkerName: linker.name,
@@ -61,8 +59,8 @@ const executeLinkerInternal = async (linker, userId, options = {}, executionId, 
   });
 
   if (datasources.length !== linker.datasourceIds.length) {
-    const foundIds = datasources.map(ds => ds.id);
-    const missingIds = linker.datasourceIds.filter(id => !foundIds.includes(id));
+    const foundIds = new Set(datasources.map(ds => ds.id));
+    const missingIds = linker.datasourceIds.filter(id => !foundIds.has(id));
     
     throw new Error(`Some datasources are no longer available. Missing: ${missingIds.join(', ')}`);
   }
@@ -74,7 +72,7 @@ const executeLinkerInternal = async (linker, userId, options = {}, executionId, 
     try {
       const dsConfig = linker.datasourceConfigs?.[datasource.id];
       const methodName = dsConfig?.methodConfig?.methodName || linker.defaultMethodName;
-      const methodOptions = { ...options, ...(dsConfig?.methodConfig?.options || {}) };
+      const methodOptions = { ...options, ...dsConfig?.methodConfig?.options };
       const propertyMapping = dsConfig?.propertyMapping || null;
 
       // Create datasource instance
@@ -133,7 +131,15 @@ const executeLinkerInternal = async (linker, userId, options = {}, executionId, 
   // Determine overall execution status
   const allSuccessful = results.every(r => r.success);
   const anySuccessful = results.some(r => r.success);
-  const overallStatus = allSuccessful ? 'success' : (anySuccessful ? 'success' : 'failure');
+  
+  let overallStatus;
+  if (allSuccessful) {
+    overallStatus = 'success';
+  } else if (anySuccessful) {
+    overallStatus = 'success';
+  } else {
+    overallStatus = 'failure';
+  }
 
   const executionEndTime = Date.now();
 
@@ -275,10 +281,10 @@ export const createLinker = async (req, res) => {
       const executionResult = await executeLinkerInternal(
         newLinker,
         userId,
-        {},
         executionId,
         traceId,
-        spanId
+        spanId,
+        {}
       );
 
       // Update linker execution status
@@ -322,11 +328,168 @@ export const createLinker = async (req, res) => {
   }
 };
 
+/**
+ * Validate and prepare name update
+ * @param {string} name - New name
+ * @param {Object} linker - Current linker
+ * @param {number} userId - User ID
+ * @param {string} linkerId - Linker ID
+ * @returns {Promise<Object>} Result with normalized name or error
+ */
+const validateNameUpdate = async (name, linker, userId, linkerId) => {
+  const normalizedName = normalizeName(name);
+  
+  if (normalizedName === linker.name) {
+    return { normalizedName, isValid: true };
+  }
+
+  const existing = await models.Linker.findOne({
+    where: { name: normalizedName, ownerId: userId }
+  });
+
+  if (existing && existing.id !== linkerId) {
+    return {
+      isValid: false,
+      error: { status: 409, message: 'A linker with this name already exists.' }
+    };
+  }
+
+  return { normalizedName, isValid: true };
+};
+
+/**
+ * Process datasource IDs update
+ * @param {Array<string>} datasourceIds - New datasource IDs
+ * @param {Object} linker - Current linker
+ * @param {number} userId - User ID
+ * @returns {Promise<Object>} Update data and cache invalidation flag
+ */
+const processDatasourceIdsUpdate = async (datasourceIds, linker, userId) => {
+  const dsValidation = await validateDatasourcesExist(datasourceIds, models.Datasource, userId);
+  
+  if (!dsValidation.isValid) {
+    return {
+      isValid: false,
+      error: { status: 400, message: dsValidation.errors.join(', ') }
+    };
+  }
+
+  return {
+    isValid: true,
+    updateData: {
+      datasourceIds,
+      version: linker.version + 1,
+      executionStatus: 'not_executed'
+    },
+    shouldInvalidateCache: true
+  };
+};
+
+/**
+ * Process datasource configs update
+ * @param {Object} datasourceConfigs - New datasource configs
+ * @param {Array<string>} targetDatasourceIds - Target datasource IDs
+ * @param {Object} linker - Current linker
+ * @param {Object} currentUpdateData - Current update data
+ * @returns {Object} Update data and cache invalidation flag
+ */
+const processDatasourceConfigsUpdate = (datasourceConfigs, targetDatasourceIds, linker, currentUpdateData) => {
+  const configValidation = validateDatasourceConfigs(datasourceConfigs, targetDatasourceIds);
+  
+  if (!configValidation.isValid) {
+    return {
+      isValid: false,
+      error: { status: 400, message: configValidation.errors.join(', ') }
+    };
+  }
+
+  const updateData = {
+    datasourceConfigs: normalizeDatasourceConfigs(datasourceConfigs, targetDatasourceIds)
+  };
+
+  if (currentUpdateData.version === undefined) {
+    updateData.version = linker.version + 1;
+  }
+
+  return {
+    isValid: true,
+    updateData,
+    shouldInvalidateCache: true
+  };
+};
+
+/**
+ * Build update data from request body
+ * @param {Object} body - Request body
+ * @param {Object} linker - Current linker
+ * @param {number} userId - User ID
+ * @param {string} linkerId - Linker ID
+ * @returns {Promise<Object>} Update data and flags
+ */
+const buildUpdateData = async (body, linker, userId, linkerId) => {
+  const { name, defaultMethodName, datasourceIds, datasourceConfigs, description, environment, isActive } = body;
+  const updateData = {};
+  let shouldInvalidateCache = false;
+
+  // Handle name update
+  if (name !== undefined) {
+    const nameResult = await validateNameUpdate(name, linker, userId, linkerId);
+    if (!nameResult.isValid) {
+      return nameResult;
+    }
+    updateData.name = nameResult.normalizedName;
+  }
+
+  // Handle defaultMethodName update
+  if (defaultMethodName !== undefined) {
+    updateData.defaultMethodName = defaultMethodName;
+  }
+
+  // Handle datasourceIds update
+  if (datasourceIds !== undefined) {
+    const dsResult = await processDatasourceIdsUpdate(datasourceIds, linker, userId);
+    if (!dsResult.isValid) {
+      return dsResult;
+    }
+    Object.assign(updateData, dsResult.updateData);
+    shouldInvalidateCache = dsResult.shouldInvalidateCache;
+  }
+
+  // Handle datasourceConfigs update
+  if (datasourceConfigs !== undefined) {
+    const targetDatasourceIds = datasourceIds || linker.datasourceIds;
+    const configResult = processDatasourceConfigsUpdate(datasourceConfigs, targetDatasourceIds, linker, updateData);
+    if (!configResult.isValid) {
+      return configResult;
+    }
+    Object.assign(updateData, configResult.updateData);
+    shouldInvalidateCache = shouldInvalidateCache || configResult.shouldInvalidateCache;
+  }
+
+  // Handle simple fields
+  if (description !== undefined) {
+    updateData.description = description;
+  }
+
+  if (environment !== undefined) {
+    updateData.environment = environment;
+  }
+
+  if (isActive !== undefined) {
+    updateData.isActive = Boolean(isActive);
+  }
+
+  return {
+    isValid: true,
+    updateData,
+    shouldInvalidateCache
+  };
+};
+
 export const updateLinker = async (req, res) => {
   try {
     const userId = req.user?.user_id;
     const { id } = req.params;
-    const { name, defaultMethodName, datasourceIds, datasourceConfigs, description, environment, isActive } = req.body;
 
     const linker = await models.Linker.findByPk(id);
     if (!checkLinkerOwnership(linker, userId)) {
@@ -334,85 +497,27 @@ export const updateLinker = async (req, res) => {
     }
 
     // Validate input
-    const validation = validateLinkerUpdateInput({ datasourceIds, defaultMethodName, datasourceConfigs });
+    const validation = validateLinkerUpdateInput(req.body);
     if (!validation.isValid) {
       return res.status(400).json({ error: validation.errors.join(', ') });
     }
 
-    const updateData = {};
-
-    if (name !== undefined) {
-      const normalizedName = normalizeName(name);
-      // Check for name conflicts
-      if (normalizedName !== linker.name) {
-        const existing = await models.Linker.findOne({
-          where: { name: normalizedName, ownerId: userId }
-        });
-        if (existing && existing.id !== id) {
-          return res.status(409).json({ message: 'A linker with this name already exists.' });
-        }
-      }
-      updateData.name = normalizedName;
+    // Build update data
+    const result = await buildUpdateData(req.body, linker, userId, id);
+    if (!result.isValid) {
+      return res.status(result.error.status).json({ message: result.error.message });
     }
 
-    if (defaultMethodName !== undefined) {
-      updateData.defaultMethodName = defaultMethodName;
-    }
-
-    let shouldInvalidateCache = false;
-
-    if (datasourceIds !== undefined) {
-      // Validate that all datasource IDs exist and belong to the user
-      const dsValidation = await validateDatasourcesExist(datasourceIds, models.Datasource, userId);
-      if (!dsValidation.isValid) {
-        return res.status(400).json({ error: dsValidation.errors.join(', ') });
-      }
-
-      updateData.datasourceIds = datasourceIds;
-      updateData.version = linker.version + 1;
-      updateData.executionStatus = 'not_executed';
-      shouldInvalidateCache = true;
-    }
-
-    if (datasourceConfigs !== undefined) {
-      const targetDatasourceIds = datasourceIds || linker.datasourceIds;
-      
-      // Validate datasource configs structure
-      const configValidation = validateDatasourceConfigs(datasourceConfigs, targetDatasourceIds);
-      if (!configValidation.isValid) {
-        return res.status(400).json({ error: configValidation.errors.join(', ') });
-      }
-
-      updateData.datasourceConfigs = normalizeDatasourceConfigs(datasourceConfigs, targetDatasourceIds);
-      
-      if (updateData.version === undefined) {
-        updateData.version = linker.version + 1;
-      }
-      shouldInvalidateCache = true;
-    }
-
-    if (description !== undefined) {
-      updateData.description = description;
-    }
-
-    if (environment !== undefined) {
-      updateData.environment = environment;
-    }
-
-    if (isActive !== undefined) {
-      updateData.isActive = Boolean(isActive);
-    }
-
-    if (Object.keys(updateData).length === 0) {
+    if (Object.keys(result.updateData).length === 0) {
       return res.status(400).json({ message: 'No valid fields provided for update.' });
     }
 
-    updateData.updatedAt = new Date();
+    result.updateData.updatedAt = new Date();
 
-    await linker.update(updateData);
+    await linker.update(result.updateData);
 
-    // Invalidate cache if datasources or configs changed
-    if (shouldInvalidateCache) {
+    // Invalidate cache if needed
+    if (result.shouldInvalidateCache) {
       await invalidateLinkerCache(linker.id);
       logger.info(`Invalidated cache for linker ${linker.id} due to configuration changes`);
     }
@@ -535,10 +640,10 @@ export const executeLinker = async (req, res) => {
     const executionResult = await executeLinkerInternal(
       linker,
       userId,
-      options,
       executionId,
       traceId,
-      spanId
+      spanId,
+      options
     );
 
     // Update linker execution status

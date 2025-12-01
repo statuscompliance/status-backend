@@ -25,7 +25,7 @@ export default (sequelize) => sequelize.define('Linker', {
     validate: {
       isValidArray(value) {
         if (!Array.isArray(value)) {
-          throw new Error('datasourceIds must be an array');
+          throw new TypeError('datasourceIds must be an array');
         }
         if (value.length === 0) {
           throw new Error('datasourceIds must contain at least one datasource ID');
