@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test-type: [unit, integration]
+        test-type: [unit:config, unit:controllers, unit:db, unit:middleware, unit:utils, integration]
     
     steps:
       - name: Checkout ⬇️
