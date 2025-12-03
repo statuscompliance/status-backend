@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test-type: [unit:config, unit:controllers, unit:db, unit:middleware, unit:utils, integration]
+        test-type: [unit-config, unit-controllers, unit-db, unit-middleware, unit-utils, integration]
     
     steps:
       - name: Checkout ⬇️
@@ -42,11 +42,16 @@ jobs:
         run: npm ci
         
       - name: Run ${{ matrix.test-type }} tests 🧪
-        run: npm run test:${{ matrix.test-type }}
+        run: |
+          TEST_TYPE=$(echo "${{ matrix.test-type }}" | sed 's/-/:/')
+          npm run test:$TEST_TYPE
 
   coverage:
     needs: test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        coverage-type: [unit-config, unit-controllers, unit-db, unit-middleware, unit-utils, integration]
 
     steps:
       - name: Checkout Repository
@@ -63,8 +68,38 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Run Tests with Coverage
-        run: npm run coverage:ci
+      - name: Run ${{ matrix.coverage-type }} Coverage 📊
+        run: |
+          COVERAGE_TYPE=$(echo "${{ matrix.coverage-type }}" | sed 's/-/:/')
+          npm run coverage:$COVERAGE_TYPE
+
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.coverage-type }}
+          path: coverage/lcov.info
+          retention-days: 1
+
+  merge-coverage:
+    needs: coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6.0.1
+        with:
+          show-progress: false
+
+      - name: Download All Coverage Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-reports
+
+      - name: Merge Coverage Reports
+        run: |
+          mkdir -p coverage
+          find coverage-reports -name 'lcov.info' -exec cat {} \; > coverage/lcov.info
 
       - name: Submit Coverage to Coveralls
         uses: coverallsapp/github-action@v2
@@ -73,7 +108,7 @@ jobs:
           path-to-lcov: ./coverage/lcov.info
       
   build:
-    needs: coverage
+    needs: merge-coverage
     runs-on: ubuntu-latest
     services:
       postgres:
