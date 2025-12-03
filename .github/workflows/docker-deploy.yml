@@ -21,8 +21,9 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
+      max-parallel: 6  # Adjust based on your runner capacity
       matrix:
         test-type: [unit-config, unit-controllers, unit-db, unit-middleware, unit-utils, integration]
     
@@ -48,8 +49,9 @@ jobs:
 
   coverage:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
+      max-parallel: 6
       matrix:
         coverage-type: [unit-config, unit-controllers, unit-db, unit-middleware, unit-utils, integration]
 
@@ -82,7 +84,7 @@ jobs:
 
   merge-coverage:
     needs: coverage
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout Repository
