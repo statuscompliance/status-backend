@@ -43,7 +43,7 @@ export const clearDatabase = async () => {
   const collections = mongoose.connection.collections;
   await Promise.all(
     Object.values(collections).map(async (collection) => {
-      await collection.deleteMany();
+      await collection.deleteMany({});
     })
   );
   logger.debug('In-memory MongoDB cleared');
@@ -55,7 +55,11 @@ export const clearDatabase = async () => {
 };
 
 async function initMongoDB() {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryServer.create({
+    instance: {
+      launchTimeout: 60000,
+    },
+  });
   await mongoose.connect(mongoServer.getUri());
   logger.debug('In-memory MongoDB connected');
 }
