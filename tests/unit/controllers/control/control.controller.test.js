@@ -3,7 +3,7 @@ import * as control from '../../../../src/controllers/control.controller.js';
 import { models } from '../../../../src/models/models.js';
 import * as utils from '../../../../src/utils/checkRequiredProperties.js';
 import * as panelUtils from '../../../../src/utils/panelUtils.js';
-import { createControlExample } from '../../../utils/sampleControlsData.js';
+import { createControlExample, resetControlIdCounter } from '../../../utils/sampleControlsData.js';
 import { mockController } from '../../../utils/mockController.js';
 import { Op } from 'sequelize';
 import { createRes } from '../../../utils/responseHelpers.js';
@@ -17,6 +17,7 @@ describe('Control Controller', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    resetControlIdCounter();
     res = createRes();
 
     vi.spyOn(utils, 'checkRequiredProperties').mockReturnValue({
@@ -426,10 +427,10 @@ describe('Control Controller', () => {
   describe('getPanelsByControlId', () => {
     beforeEach(() => {
       vi.spyOn(panelUtils, 'mapPanelsToDTO').mockResolvedValue([]);
-      mockController(models.Control, 'findByPk', { id: controlId });
     });
 
     it('should return 200 with mapped panels DTO', async () => {
+      mockController(models.Control, 'findByPk', { id: controlId });
       vi.spyOn(models.Panel, 'findAll').mockResolvedValueOnce([
         { id: panelId },
       ]);
@@ -449,13 +450,14 @@ describe('Control Controller', () => {
     });
 
     it('should return 500 if mapping panels fails', async () => {
+      mockController(models.Control, 'findByPk', { id: controlId });
       vi.spyOn(models.Panel, 'findAll').mockResolvedValueOnce([]);
 
       panelUtils.mapPanelsToDTO.mockRejectedValueOnce(
         new Error('Map panel error')
       );
 
-      await control.getPanelsByControlId({ params: { id: invalidId } }, res);
+      await control.getPanelsByControlId({ params: { id: controlId } }, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
@@ -769,7 +771,8 @@ describe('Control Controller', () => {
   });
   describe('getModelById Helper', async () => {
     it('should use default resource name if not provided and return 404', async () => {
-      mockController(models.Control, 'findByPk', null); // Mock findByPk to return null (not found)
+      // Use mockResolvedValue instead of mockResolvedValueOnce for more reliable mocking
+      vi.spyOn(models.Control, 'findByPk').mockResolvedValue(null);
       const mockRes = createRes(); // Use your helper to create a mock res
 
       // Call getModelById directly, omitting the 'name' option

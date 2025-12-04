@@ -244,17 +244,22 @@ export async function getPanelsByControlId(req, res) {
       name: 'Control',
     });
     if (!control) return; // aborts early with 404
+    
     // Fetch associated panels
     const panels = await models.Panel.findAll({
       where: {
         controlId: id,
       },
     });
+    
     // Map to enriched DTOs
     const panelsDTO = await mapPanelsToDTO(panels);
 
     res.status(200).json(panelsDTO);
   } catch (error) {
+    // If response was already sent (by getModelById), don't send another
+    if (res.headersSent) return;
+    
     const message = 'Failed to get panels from control, error in Grafana API';
     const status = (error.response && error.response.status) || 500;
     return res.status(status).json({ message, error: error.message });
