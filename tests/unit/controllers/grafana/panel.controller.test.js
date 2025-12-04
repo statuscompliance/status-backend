@@ -77,15 +77,15 @@ describe('Grafana: Panel Controller', () => {
   const PANEL_NOT_FOUND_MSG = 'Panel not found in dashboard.';
 
   const mockSuccessfulGetDashboard = (data) => {
-    mockController(methods.dashboard, 'getDashboardByUID', { data });
+    mockController(methods.dashboard, 'getDashboardByUID', { data }, null, false);
   };
 
   const mockSuccessfulPostDashboard = (data) => {
-    mockController(methods.dashboard, 'postDashboard', { data });
+    mockController(methods.dashboard, 'postDashboard', { data }, null, false);
   };
 
   const mockFailedGetDashboard = (error) => {
-    mockController(methods.dashboard, 'getDashboardByUID', null, error);
+    mockController(methods.dashboard, 'getDashboardByUID', null, error, null, false);
   };
   // --- addDashboardPanel Tests ---
   describe('addDashboardPanel', () => {
@@ -198,7 +198,7 @@ describe('Grafana: Panel Controller', () => {
     it('should return 500 if updating dashboard fails', async () => {
       const error = new Error('Grafana post error');
       mockSuccessfulGetDashboard(mockDashboardData)
-      mockController(methods.dashboard, 'postDashboard', null, error);
+      mockController(methods.dashboard, 'postDashboard', null, error, null, false);
 
       req.body = {
         ...request,
@@ -474,7 +474,7 @@ describe('Grafana: Panel Controller', () => {
     it('should return 500 if updating dashboard after deletion fails', async () => {
       const error = new Error('Grafana post error');
       mockSuccessfulGetDashboard(mockDashboardData);
-      mockController(methods.dashboard, 'postDashboard', null, error);
+      mockController(methods.dashboard, 'postDashboard', null, error, null, false);
 
       await deletePanelByID(req, res);
 
@@ -638,7 +638,7 @@ describe('Grafana: Panel Controller', () => {
       req.body = { title: 'Updated' };
       const error = new Error('Grafana post error');
       mockSuccessfulGetDashboard(mockDashboardData);
-      mockController(methods.dashboard, 'postDashboard', null, error);
+      mockController(methods.dashboard, 'postDashboard', null, error, null, false);
 
       await updatePanelByID(req, res);
 
