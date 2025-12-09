@@ -34,7 +34,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@statuscompliance/databinder": "1.0.1",
+    "@statuscompliance/databinder": "1.1.1",
     "axios": "1.13.2",
     "bcrypt": "6.0.0",
     "cookie-parser": "1.4.7",
@@ -44,10 +44,10 @@
     "express": "5.2.1",
     "express-validator": "7.3.1",
     "ioredis": "5.8.2",
-    "jsonwebtoken": "9.0.2",
+    "jsonwebtoken": "9.0.3",
     "lodash": "4.17.21",
-    "mongoose": "9.0.0",
-    "openai": "6.9.1",
+    "mongoose": "9.0.1",
+    "openai": "6.10.0",
     "pg": "8.16.3",
     "pg-mem": "3.0.5",
     "qrcode": "1.5.4",
@@ -57,7 +57,7 @@
     "swagger-ui-express": "5.0.1",
     "tsx": "4.21.0",
     "uuid": "13.0.0",
-    "winston": "3.18.3",
+    "winston": "3.19.0",
     "yaml": "2.8.2"
   },
   "devDependencies": {
