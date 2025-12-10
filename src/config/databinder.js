@@ -1,7 +1,7 @@
 import { DatasourceCatalog, Datasources } from '@statuscompliance/databinder';
 import logger from './logger.js';
 
-const { RestApiDatasource, MicrosoftGraphDatasource } = Datasources;
+const { RestApiDatasource, MicrosoftGraphDatasource, OwnCloudDatasource } = Datasources;
 
 let catalog = null;
 
@@ -18,6 +18,7 @@ function initializeDatasourceDefinitions() {
     // Register built-in datasource definitions
     catalog.registerDatasource(RestApiDatasource);
     catalog.registerDatasource(MicrosoftGraphDatasource);
+    catalog.registerDatasource(OwnCloudDatasource);
     
     // Register custom datasource definitions if needed
     registerCustomDatasources();

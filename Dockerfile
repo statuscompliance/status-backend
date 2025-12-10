@@ -2,9 +2,11 @@ FROM node:lts-alpine
 
 WORKDIR /status-backend
 
-COPY . .
+COPY package*.json ./
 
-RUN npm ci --omit=dev && \
-    rm -rf $(npm get cache)
+RUN npm install --omit=dev --no-audit --no-fund && \
+    npm cache clean --force
+
+COPY . .
 
 ENTRYPOINT ["npm", "start"]
