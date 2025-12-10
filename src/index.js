@@ -56,12 +56,33 @@ const configureApp = () => {
   const app = express();
 
   app.use(express.json());
+  
+  // Configure CORS with environment-based origin validation
+  const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+    : [];
+  
   app.use(
     cors({
-      // origin: (origin, callback) => {
-      //   callback(null, origin);
-      // },
-      origin: '*', // Quick fix for allowing all origins TODO: be replaced with proper CORS policy
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, Postman, or server-to-server)
+        if (!origin) {
+          return callback(null, true);
+        }
+        
+        // In development, allow all origins if ALLOWED_ORIGINS is not set
+        if (allowedOrigins.length === 0 && process.env.NODE_ENV !== 'production') {
+          return callback(null, true);
+        }
+        
+        // Check if origin is in the allowed list
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // Reject origin
+        callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+      },
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie'],
     })
