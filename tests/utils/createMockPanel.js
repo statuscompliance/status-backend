@@ -16,32 +16,32 @@ export const  createMockPanel = (overrides = {}) => {
   let defaultTargets = [];
 
   switch (datasourceType) {
-  case 'prometheus':
+    case 'prometheus':
     // Prometheus targets use 'expr'
-    defaultTargets = [
-      {
-        refId: 'A',
-        expr: `metric_${panelId}`, // Example PromQL expression
-        datasource: { type: datasourceType, uid: datasourceUid },
-      },
-    ];
-    break;
-  case 'grafana-postgresql-datasource':
-  case 'mysql': // Or other SQL-based datasources
+      defaultTargets = [
+        {
+          refId: 'A',
+          expr: `metric_${panelId}`, // Example PromQL expression
+          datasource: { type: datasourceType, uid: datasourceUid },
+        },
+      ];
+      break;
+    case 'grafana-postgresql-datasource':
+    case 'mysql': // Or other SQL-based datasources
     // SQL-based targets use 'rawSql' and optionally 'table'
-    defaultTargets = [
-      {
-        refId: 'A',
-        rawSql: `SELECT * FROM data_${panelId}`,
-        table: `table_${panelId}`, // Only if applicable for the SQL type
-        datasource: { type: datasourceType, uid: datasourceUid },
-      },
-    ];
-    break;
-  // Add more cases for other datasource types as needed
-  default:
-    console.warn(`[createMockPanel] Unsupported datasource type: ${datasourceType}. Using generic target.`);
-    defaultTargets = [{ refId: 'A', query: `query_for_panel_${panelId}`, datasource: { type: datasourceType, uid: datasourceUid } }];
+      defaultTargets = [
+        {
+          refId: 'A',
+          rawSql: `SELECT * FROM data_${panelId}`,
+          table: `table_${panelId}`, // Only if applicable for the SQL type
+          datasource: { type: datasourceType, uid: datasourceUid },
+        },
+      ];
+      break;
+      // Add more cases for other datasource types as needed
+    default:
+      console.warn(`[createMockPanel] Unsupported datasource type: ${datasourceType}. Using generic target.`);
+      defaultTargets = [{ refId: 'A', query: `query_for_panel_${panelId}`, datasource: { type: datasourceType, uid: datasourceUid } }];
   }
 
   // If specific targets are provided, use them, otherwise use the generated defaults

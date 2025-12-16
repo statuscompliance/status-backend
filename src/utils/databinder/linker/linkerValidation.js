@@ -20,9 +20,15 @@ export const validateLinkerInput = (input) => {
     errors.push('defaultMethodName must be a string');
   }
 
-  if (input.datasourceConfigs !== undefined && input.datasourceConfigs !== null) {
-    if (typeof input.datasourceConfigs !== 'object' || Array.isArray(input.datasourceConfigs)) {
-      errors.push('datasourceConfigs must be an object');
+  // datasourceConfigs is now REQUIRED and must configure all datasources
+  if (!input.datasourceConfigs || typeof input.datasourceConfigs !== 'object' || Array.isArray(input.datasourceConfigs)) {
+    errors.push('datasourceConfigs is required and must be an object');
+  } else if (input.datasourceIds && Array.isArray(input.datasourceIds)) {
+    // Validate that all datasources have configs
+    for (const dsId of input.datasourceIds) {
+      if (!input.datasourceConfigs[dsId]) {
+        errors.push(`Missing configuration for datasource '${dsId}' in datasourceConfigs`);
+      }
     }
   }
 
@@ -124,7 +130,10 @@ const validateSingleDatasourceConfig = (dsId, config, datasourceIds) => {
     errors.push(`Config for datasource '${dsId}' has mismatched id field: '${config.id}'`);
   }
 
-  if (config.methodConfig) {
+  // methodConfig is now MANDATORY for each datasource
+  if (!config.methodConfig) {
+    errors.push(`methodConfig is required for datasource '${dsId}'`);
+  } else {
     const methodConfigErrors = validateMethodConfig(dsId, config.methodConfig);
     errors.push(...methodConfigErrors);
   }
@@ -151,8 +160,16 @@ const validateMethodConfig = (dsId, methodConfig) => {
     return errors;
   }
 
-  if (methodConfig.methodName && typeof methodConfig.methodName !== 'string') {
+  // methodName is now MANDATORY
+  if (!methodConfig.methodName) {
+    errors.push(`methodConfig.methodName is required for datasource '${dsId}'`);
+  } else if (typeof methodConfig.methodName !== 'string') {
     errors.push(`methodConfig.methodName for datasource '${dsId}' must be a string`);
+  }
+
+  // Validate options if provided
+  if (methodConfig.options !== undefined && (typeof methodConfig.options !== 'object' || Array.isArray(methodConfig.options))) {
+    errors.push(`methodConfig.options for datasource '${dsId}' must be an object`);
   }
 
   return errors;
@@ -182,11 +199,20 @@ const validatePropertyMapping = (dsId, propertyMapping) => {
  */
 export const validateDatasourceConfigs = (datasourceConfigs, datasourceIds) => {
   if (!datasourceConfigs) {
-    return { isValid: true, errors: [] };
+    return { isValid: false, errors: ['datasourceConfigs is required and cannot be null'] };
   }
 
   const allErrors = [];
 
+  // Check that ALL datasources have configurations
+  const configuredDatasourceIds = new Set(Object.keys(datasourceConfigs));
+  for (const dsId of datasourceIds) {
+    if (!configuredDatasourceIds.has(dsId)) {
+      allErrors.push(`Missing configuration for datasource '${dsId}'`);
+    }
+  }
+
+  // Validate each config
   for (const [dsId, config] of Object.entries(datasourceConfigs)) {
     const configErrors = validateSingleDatasourceConfig(dsId, config, datasourceIds);
     allErrors.push(...configErrors);
@@ -206,19 +232,25 @@ export const validateDatasourceConfigs = (datasourceConfigs, datasourceIds) => {
  */
 export const normalizeDatasourceConfigs = (datasourceConfigs, datasourceIds) => {
   if (!datasourceConfigs) {
-    return {};
+    throw new Error('datasourceConfigs is required and cannot be null');
   }
 
   const normalized = {};
 
   for (const dsId of datasourceIds) {
-    if (datasourceConfigs[dsId]) {
-      normalized[dsId] = {
-        id: dsId,
-        methodConfig: datasourceConfigs[dsId].methodConfig || undefined,
-        propertyMapping: datasourceConfigs[dsId].propertyMapping || undefined
-      };
+    if (!datasourceConfigs[dsId]) {
+      throw new Error(`Missing configuration for datasource '${dsId}'`);
     }
+    
+    if (!datasourceConfigs[dsId].methodConfig) {
+      throw new Error(`methodConfig is required for datasource '${dsId}'`);
+    }
+
+    normalized[dsId] = {
+      id: dsId,
+      methodConfig: datasourceConfigs[dsId].methodConfig,
+      propertyMapping: datasourceConfigs[dsId].propertyMapping || undefined
+    };
   }
 
   return normalized;

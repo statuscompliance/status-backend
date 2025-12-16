@@ -14,7 +14,9 @@ describe('linkerValidation', () => {
         datasourceIds: ['ds-1', 'ds-2', 'ds-3'],
         defaultMethodName: 'getData',
         datasourceConfigs: {
-          'ds-1': { methodConfig: { methodName: 'getUsers' } }
+          'ds-1': { methodConfig: { methodName: 'getUsers' } },
+          'ds-2': { methodConfig: { methodName: 'getOrders' } },
+          'ds-3': { methodConfig: { methodName: 'getProducts' } }
         }
       };
 
@@ -78,7 +80,7 @@ describe('linkerValidation', () => {
       const result = validateLinkerInput(input);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('datasourceConfigs must be an object');
+      expect(result.errors).toContain('datasourceConfigs is required and must be an object');
     });
 
     it('should reject input with non-object datasourceConfigs', () => {
@@ -90,10 +92,10 @@ describe('linkerValidation', () => {
       const result = validateLinkerInput(input);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('datasourceConfigs must be an object');
+      expect(result.errors).toContain('datasourceConfigs is required and must be an object');
     });
 
-    it('should allow null datasourceConfigs', () => {
+    it('should reject null datasourceConfigs', () => {
       const input = {
         datasourceIds: ['ds-1'],
         datasourceConfigs: null
@@ -101,17 +103,19 @@ describe('linkerValidation', () => {
 
       const result = validateLinkerInput(input);
 
-      expect(result.isValid).toBe(true);
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('datasourceConfigs is required and must be an object');
     });
 
-    it('should allow undefined datasourceConfigs', () => {
+    it('should reject undefined datasourceConfigs', () => {
       const input = {
         datasourceIds: ['ds-1']
       };
 
       const result = validateLinkerInput(input);
 
-      expect(result.isValid).toBe(true);
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('datasourceConfigs is required and must be an object');
     });
   });
 
@@ -251,6 +255,7 @@ describe('linkerValidation', () => {
         },
         'ds-2': {
           id: 'ds-2',
+          methodConfig: { methodName: 'getUsers' },
           propertyMapping: { oldKey: 'newKey' }
         }
       };
@@ -262,36 +267,38 @@ describe('linkerValidation', () => {
       expect(result.errors).toEqual([]);
     });
 
-    it('should return valid for null configs', () => {
+    it('should reject null configs', () => {
       const result = validateDatasourceConfigs(null, ['ds-1']);
 
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toEqual([]);
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('datasourceConfigs is required and cannot be null');
     });
 
     it('should reject config for datasource not in datasourceIds', () => {
       const datasourceConfigs = {
-        'ds-3': { id: 'ds-3' }
+        'ds-3': { id: 'ds-3', methodConfig: { methodName: 'getData' } }
       };
       const datasourceIds = ['ds-1', 'ds-2'];
 
       const result = validateDatasourceConfigs(datasourceConfigs, datasourceIds);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors[0]).toContain('ds-3');
-      expect(result.errors[0]).toContain('not in datasourceIds array');
+      expect(result.errors.some(e => e.includes('ds-1') && e.includes('Missing configuration'))).toBe(true);
+      expect(result.errors.some(e => e.includes('ds-2') && e.includes('Missing configuration'))).toBe(true);
+      expect(result.errors.some(e => e.includes('ds-3') && e.includes('not in datasourceIds array'))).toBe(true);
     });
 
     it('should reject config with mismatched id', () => {
       const datasourceConfigs = {
-        'ds-1': { id: 'ds-2' }
+        'ds-1': { id: 'ds-2', methodConfig: { methodName: 'getData' } },
+        'ds-2': { methodConfig: { methodName: 'getUsers' } }
       };
       const datasourceIds = ['ds-1', 'ds-2'];
 
       const result = validateDatasourceConfigs(datasourceConfigs, datasourceIds);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors[0]).toContain('mismatched id field');
+      expect(result.errors.some(e => e.includes('mismatched id field'))).toBe(true);
     });
 
     it('should reject non-object methodConfig', () => {
@@ -330,6 +337,7 @@ describe('linkerValidation', () => {
       const datasourceConfigs = {
         'ds-1': {
           id: 'ds-1',
+          methodConfig: { methodName: 'getData' },
           propertyMapping: []
         }
       };
@@ -372,23 +380,23 @@ describe('linkerValidation', () => {
       });
     });
 
-    it('should return empty object for null configs', () => {
-      const result = normalizeDatasourceConfigs(null, ['ds-1', 'ds-2']);
-
-      expect(result).toEqual({});
+    it('should throw error for null configs', () => {
+      expect(() => {
+        normalizeDatasourceConfigs(null, ['ds-1', 'ds-2']);
+      }).toThrow('datasourceConfigs is required and cannot be null');
     });
 
-    it('should return empty object for undefined configs', () => {
-      const result = normalizeDatasourceConfigs(undefined, ['ds-1', 'ds-2']);
-
-      expect(result).toEqual({});
+    it('should throw error for undefined configs', () => {
+      expect(() => {
+        normalizeDatasourceConfigs(undefined, ['ds-1', 'ds-2']);
+      }).toThrow('datasourceConfigs is required and cannot be null');
     });
 
     it('should only include configs for datasource IDs in the list', () => {
       const datasourceConfigs = {
-        'ds-1': { methodConfig: {} },
-        'ds-2': { methodConfig: {} },
-        'ds-3': { methodConfig: {} }
+        'ds-1': { methodConfig: { methodName: 'getData' } },
+        'ds-2': { methodConfig: { methodName: 'getUsers' } },
+        'ds-3': { methodConfig: { methodName: 'getOrders' } }
       };
       const datasourceIds = ['ds-1', 'ds-3'];
 
@@ -399,22 +407,20 @@ describe('linkerValidation', () => {
       expect(result).toHaveProperty('ds-3');
     });
 
-    it('should handle datasource IDs without configs', () => {
+    it('should throw error for datasource IDs without configs', () => {
       const datasourceConfigs = {
-        'ds-1': { methodConfig: {} }
+        'ds-1': { methodConfig: { methodName: 'getData' } }
       };
       const datasourceIds = ['ds-1', 'ds-2', 'ds-3'];
 
-      const result = normalizeDatasourceConfigs(datasourceConfigs, datasourceIds);
-
-      expect(result).toHaveProperty('ds-1');
-      expect(result).not.toHaveProperty('ds-2');
-      expect(result).not.toHaveProperty('ds-3');
+      expect(() => {
+        normalizeDatasourceConfigs(datasourceConfigs, datasourceIds);
+      }).toThrow("Missing configuration for datasource 'ds-2'");
     });
 
     it('should set id field correctly', () => {
       const datasourceConfigs = {
-        'ds-1': { methodConfig: {} }
+        'ds-1': { methodConfig: { methodName: 'getData' } }
       };
       const datasourceIds = ['ds-1'];
 

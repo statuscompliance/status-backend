@@ -34,7 +34,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@statuscompliance/databinder": "1.1.2",
+    "@statuscompliance/databinder": "1.2.2",
     "axios": "1.13.2",
     "bcrypt": "6.0.0",
     "cookie-parser": "1.4.7",
@@ -65,7 +65,7 @@
     "@commitlint/config-conventional": "20.0.0",
     "@eslint/js": "9.39.1",
     "@evilmartians/lefthook": "2.0.7",
-    "@stylistic/eslint-plugin-js": "4.4.1",
+    "@stylistic/eslint-plugin": "4.4.1",
     "@vitest/coverage-istanbul": "4.0.15",
     "@vitest/ui": "4.0.15",
     "commitlint": "20.1.0",

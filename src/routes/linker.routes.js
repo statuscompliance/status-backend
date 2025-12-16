@@ -99,6 +99,7 @@ export default function () {
  *             type: object
  *             required:
  *               - datasourceIds
+ *               - datasourceConfigs
  *             properties:
  *               name:
  *                 type: string
@@ -118,20 +119,30 @@ export default function () {
  *                 example: ["123e4567-e89b-12d3-a456-426614174000", "987fcdeb-51a2-43d7-b789-123456789abc"]
  *               datasourceConfigs:
  *                 type: object
- *                 description: Configuration map for each datasource
+ *                 required: true
+ *                 description: |
+ *                   Configuration map for each datasource (REQUIRED). 
+ *                   Each datasource MUST have a methodConfig with a methodName specified.
+ *                   This ensures proper method configuration for all datasources.
  *                 additionalProperties:
  *                   type: object
+ *                   required:
+ *                     - methodConfig
  *                   properties:
  *                     id:
  *                       type: string
  *                       format: uuid
  *                     methodConfig:
  *                       type: object
+ *                       required:
+ *                         - methodName
  *                       properties:
  *                         methodName:
  *                           type: string
+ *                           description: Name of the method to invoke (REQUIRED)
  *                         options:
  *                           type: object
+ *                           description: Method-specific options
  *                     propertyMapping:
  *                       type: object
  *                       additionalProperties:
@@ -156,20 +167,11 @@ export default function () {
  *                 enum: [production, staging, dev]
  *                 default: production
  *           examples:
- *             simpleLinker:
- *               summary: Simple Linker
- *               description: Basic linker with two datasources
- *               value:
- *                 name: "User Data Aggregator"
- *                 defaultMethodName: "default"
- *                 datasourceIds: 
- *                   - "123e4567-e89b-12d3-a456-426614174000"
- *                   - "987fcdeb-51a2-43d7-b789-123456789abc"
- *                 description: "Combines user data from two APIs"
- *                 environment: "production"
- *             linkerWithConfigs:
- *               summary: Linker with Datasource Configs
- *               description: Linker with specific configurations for each datasource
+ *             requiredConfigs:
+ *               summary: Linker with Required Datasource Configs
+ *               description: |
+ *                 All linkers MUST specify datasourceConfigs with methodConfig for each datasource.
+ *                 Each methodConfig MUST include a methodName.
  *               value:
  *                 name: "Enhanced Data Aggregator"
  *                 defaultMethodName: "getAll"
@@ -189,7 +191,10 @@ export default function () {
  *                   "987fcdeb-51a2-43d7-b789-123456789abc":
  *                     id: "987fcdeb-51a2-43d7-b789-123456789abc"
  *                     methodConfig:
- *                       methodName: "default"
+ *                       methodName: "listRecursive"
+ *                       options:
+ *                         path: "/"
+ *                         maxDepth: 5
  *                     propertyMapping:
  *                       userEmail: "email"
  *                 description: "Advanced aggregator with property mappings"

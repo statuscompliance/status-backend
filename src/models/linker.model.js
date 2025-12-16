@@ -35,12 +35,21 @@ export default (sequelize) => sequelize.define('Linker', {
   },
   datasourceConfigs: {
     type: DataTypes.JSON,
-    allowNull: true,
-    comment: 'Configuration map for each datasource including method configs and property mappings',
+    allowNull: false,
+    comment: 'Configuration map for each datasource including method configs and property mappings (REQUIRED)',
     validate: {
       isValidConfig(value) {
-        if (value !== null && typeof value !== 'object') {
-          throw new Error('datasourceConfigs must be an object or null');
+        if (typeof value !== 'object' || Array.isArray(value)) {
+          throw new Error('datasourceConfigs must be an object');
+        }
+        // Ensure each datasource config has methodConfig with methodName
+        for (const [dsId, config] of Object.entries(value)) {
+          if (!config.methodConfig) {
+            throw new Error(`methodConfig is required for datasource '${dsId}'`);
+          }
+          if (!config.methodConfig.methodName) {
+            throw new Error(`methodConfig.methodName is required for datasource '${dsId}'`);
+          }
         }
       }
     }
@@ -150,20 +159,29 @@ export default (sequelize) => sequelize.define('Linker', {
  *           description: Array of datasource IDs referenced by this linker
  *         datasourceConfigs:
  *           type: object
- *           description: Configuration map for each datasource
+ *           required: true
+ *           description: |
+ *             Configuration map for each datasource (REQUIRED). 
+ *             Each datasource MUST have a methodConfig with a methodName specified.
  *           additionalProperties:
  *             type: object
+ *             required:
+ *               - methodConfig
  *             properties:
  *               id:
  *                 type: string
  *                 format: uuid
  *               methodConfig:
  *                 type: object
+ *                 required:
+ *                   - methodName
  *                 properties:
  *                   methodName:
  *                     type: string
+ *                     description: Name of the method to invoke (REQUIRED)
  *                   options:
  *                     type: object
+ *                     description: Method-specific options
  *               propertyMapping:
  *                 type: object
  *                 additionalProperties:
@@ -206,6 +224,7 @@ export default (sequelize) => sequelize.define('Linker', {
  *           description: User ID of the owner
  *       required:
  *         - datasourceIds
+ *         - datasourceConfigs
  *         - createdBy
  *         - ownerId
  */

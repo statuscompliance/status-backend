@@ -57,7 +57,24 @@ export const sampleLinkers = [
     name: 'staging_linker_1',
     defaultMethodName: 'default',
     datasourceIds: ['44444444-4444-4444-4444-444444444444', '55555555-5555-5555-5555-555555555555'],
-    datasourceConfigs: null,
+    datasourceConfigs: {
+      '44444444-4444-4444-4444-444444444444': {
+        id: '44444444-4444-4444-4444-444444444444',
+        methodConfig: {
+          methodName: 'default',
+          options: {}
+        },
+        propertyMapping: {}
+      },
+      '55555555-5555-5555-5555-555555555555': {
+        id: '55555555-5555-5555-5555-555555555555',
+        methodConfig: {
+          methodName: 'default',
+          options: {}
+        },
+        propertyMapping: {}
+      }
+    },
     description: 'Staging linker with minimal config',
     environment: 'staging',
     isActive: false,

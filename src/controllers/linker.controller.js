@@ -233,12 +233,10 @@ export const createLinker = async (req, res) => {
       return res.status(400).json({ error: dsValidation.errors.join(', ') });
     }
 
-    // Validate datasource configs structure if provided
-    if (datasourceConfigs) {
-      const configValidation = validateDatasourceConfigs(datasourceConfigs, datasourceIds);
-      if (!configValidation.isValid) {
-        return res.status(400).json({ error: configValidation.errors.join(', ') });
-      }
+    // Validate datasource configs structure (now mandatory)
+    const configValidation = validateDatasourceConfigs(datasourceConfigs, datasourceIds);
+    if (!configValidation.isValid) {
+      return res.status(400).json({ error: configValidation.errors.join(', ') });
     }
 
     // Normalize and check for existing linker with same name
@@ -260,7 +258,7 @@ export const createLinker = async (req, res) => {
       name: normalizedName,
       defaultMethodName: defaultMethodName || 'default',
       datasourceIds,
-      datasourceConfigs: Object.keys(normalizedConfigs).length > 0 ? normalizedConfigs : null,
+      datasourceConfigs: normalizedConfigs, // Always required, never null
       description: description || null,
       environment: environment || 'production',
       isActive: true,
@@ -457,7 +455,14 @@ const buildUpdateData = async (body, linker, userId, linkerId) => {
 
   // Handle datasourceConfigs update
   if (datasourceConfigs !== undefined) {
-    const targetDatasourceIds = datasourceIds || linker.datasourceIds;
+    const targetDatasourceIds = datasourceIds || linker.datasourceIds;    
+    // datasourceConfigs cannot be null or undefined
+    if (datasourceConfigs === null) {
+      return {
+        isValid: false,
+        error: 'datasourceConfigs is required and cannot be null'
+      };
+    }
     const configResult = processDatasourceConfigsUpdate(datasourceConfigs, targetDatasourceIds, linker, updateData);
     if (!configResult.isValid) {
       return configResult;

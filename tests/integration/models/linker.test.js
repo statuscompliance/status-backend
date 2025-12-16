@@ -133,27 +133,30 @@ describe('Linker models', () => {
       }
     });
 
-    it('should create a linker with null datasourceConfigs', async () => {
-      const linkerWithNullConfig = await models.Linker.create({
-        name: 'null_config_linker',
-        defaultMethodName: 'default',
-        datasourceIds: ['cccccccc-cccc-cccc-cccc-cccccccccccc'],
-        datasourceConfigs: null,
-        description: 'Linker with null config',
-        environment: 'dev',
-        isActive: true,
-        createdBy: 'testuser',
-        ownerId: testUserId
-      });
-
-      expect(linkerWithNullConfig).toBeDefined();
-      expect(linkerWithNullConfig.datasourceConfigs).toBeNull();
+    it('should reject creating a linker with null datasourceConfigs', async () => {
+      try {
+        await models.Linker.create({
+          name: 'null_config_linker',
+          defaultMethodName: 'default',
+          datasourceIds: ['cccccccc-cccc-cccc-cccc-cccccccccccc'],
+          datasourceConfigs: null,
+          description: 'Linker with null config',
+          environment: 'dev',
+          isActive: true,
+          createdBy: 'testuser',
+          ownerId: testUserId
+        });
+        expect(true).toBe(false); // Force test to fail
+      } catch (error) {
+        expect(error).toBeDefined();
+        expect(error.name).toBe('SequelizeValidationError');
+      }
     });
 
     afterAll(async () => {
       await models.Linker.destroy({
         where: { 
-          name: [testLinker.name, 'null_config_linker']
+          name: testLinker.name
         }
       });
     });
@@ -324,7 +327,16 @@ describe('Linker models', () => {
         name: 'association_test_linker',
         defaultMethodName: 'default',
         datasourceIds: ['dddddddd-dddd-dddd-dddd-dddddddddddd'],
-        datasourceConfigs: null,
+        datasourceConfigs: {
+          'dddddddd-dddd-dddd-dddd-dddddddddddd': {
+            id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+            methodConfig: {
+              methodName: 'default',
+              options: {}
+            },
+            propertyMapping: {}
+          }
+        },
         description: 'Linker for association tests',
         environment: 'production',
         isActive: true,
@@ -344,7 +356,16 @@ describe('Linker models', () => {
           name: 'association_test_linker', // Same name as existing
           defaultMethodName: 'default',
           datasourceIds: ['eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'],
-          datasourceConfigs: null,
+          datasourceConfigs: {
+            'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee': {
+              id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+              methodConfig: {
+                methodName: 'default',
+                options: {}
+              },
+              propertyMapping: {}
+            }
+          },
           description: 'Duplicate linker',
           environment: 'production',
           isActive: true,
@@ -377,7 +398,16 @@ describe('Linker models', () => {
         name: 'status_test_linker',
         defaultMethodName: 'default',
         datasourceIds: ['ffffffff-ffff-ffff-ffff-ffffffffffff'],
-        datasourceConfigs: null,
+        datasourceConfigs: {
+          'ffffffff-ffff-ffff-ffff-ffffffffffff': {
+            id: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+            methodConfig: {
+              methodName: 'default',
+              options: {}
+            },
+            propertyMapping: {}
+          }
+        },
         description: 'Linker for status tests',
         environment: 'production',
         isActive: true,

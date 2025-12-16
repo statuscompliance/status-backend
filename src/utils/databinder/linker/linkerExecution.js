@@ -18,38 +18,38 @@ export const mergeDatasourceResults = (results, mergeStrategy = 'concat') => {
   }
 
   switch (mergeStrategy) {
-  case 'concat':
+    case 'concat':
     // Concatenate arrays
-    return results.reduce((acc, result) => {
-      if (Array.isArray(result.data)) {
-        return acc.concat(result.data);
-      }
-      return acc;
-    }, []);
+      return results.reduce((acc, result) => {
+        if (Array.isArray(result.data)) {
+          return acc.concat(result.data);
+        }
+        return acc;
+      }, []);
 
-  case 'merge':
+    case 'merge':
     // Merge objects
-    return results.reduce((acc, result) => {
-      if (typeof result.data === 'object' && !Array.isArray(result.data)) {
-        return { ...acc, ...result.data };
-      }
-      return acc;
-    }, {});
+      return results.reduce((acc, result) => {
+        if (typeof result.data === 'object' && !Array.isArray(result.data)) {
+          return { ...acc, ...result.data };
+        }
+        return acc;
+      }, {});
 
-  case 'override':
+    case 'override':
     // Last result wins
-    return results[results.length - 1].data;
+      return results[results.length - 1].data;
 
-  case 'indexed':
+    case 'indexed':
     // Return as an object indexed by datasource name (or ID as fallback)
-    return results.reduce((acc, result) => {
-      const key = result.datasourceName || result.datasourceId;
-      acc[key] = result.data;
-      return acc;
-    }, {});
+      return results.reduce((acc, result) => {
+        const key = result.datasourceName || result.datasourceId;
+        acc[key] = result.data;
+        return acc;
+      }, {});
 
-  default:
-    return results.map(r => r.data);
+    default:
+      return results.map(r => r.data);
   }
 };
 

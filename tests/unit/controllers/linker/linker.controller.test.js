@@ -245,13 +245,18 @@ describe('Linker Controller', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          error: expect.stringContaining('datasource IDs were not found'),
+          error: expect.stringContaining('datasourceConfigs'),
         })
       );
     });
 
     it('should return 409 if linker name already exists', async () => {
       databinderUtils.normalizeName.mockReturnValueOnce('new_linker');
+      // Add complete datasourceConfigs for all datasources
+      req.body.datasourceConfigs = {
+        [datasource1Id]: { methodConfig: { methodName: 'getData' } },
+        [datasource2Id]: { methodConfig: { methodName: 'getUsers' } }
+      };
       // Mock findAll to return datasources so validation passes
       vi.spyOn(models.Datasource, 'findAll').mockResolvedValue([
         { id: datasource1Id, name: 'ds1' },
