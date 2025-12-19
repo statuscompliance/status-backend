@@ -6,6 +6,7 @@ import {
   updateLinker,
   deleteLinker,
   getLinkerDatasources,
+  executeLinker,
 } from '../../../../src/controllers/linker.controller.js';
 import { models } from '../../../../src/models/models.js';
 import logger from '../../../../src/config/logger.js';
@@ -60,6 +61,9 @@ vi.mock('../../../../src/utils/databinder/index.js', async () => {
       failed: results?.filter(r => !r.success).length || 0,
     })),
     cacheLinkerExecution: vi.fn(() => Promise.resolve()),
+    getCachedLinkerExecution: vi.fn(() => Promise.resolve({ data: null, isStale: false, cacheAge: null, metadata: null })),
+    mergeDatasourceResults: vi.fn((results) => results),
+    createTelemetryContext: vi.fn((opts) => opts),
     // Don't mock invalidateLinkerCache here - we'll spy on it in beforeEach
   };
 });
@@ -295,6 +299,7 @@ describe('Linker Controller', () => {
         })
       );
     });
+
   });
 
   describe('updateLinker', () => {
@@ -424,6 +429,125 @@ describe('Linker Controller', () => {
       expect(res.json).toHaveBeenCalledWith({
         message: 'No valid fields provided for update.',
       });
+    });
+
+    it('should update name when it is the same (normalized) as current name', async () => {
+      req.body = { name: 'test_linker' };
+      vi.spyOn(databinderUtils, 'normalizeName').mockReturnValue('test_linker');
+      
+      await updateLinker(req, res);
+
+      expect(mockLinker.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'test_linker'
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Linker updated successfully'
+        })
+      );
+    });
+
+    it('should not update when datasourceConfigs is null', async () => {
+      req.body = { datasourceConfigs: null };
+      
+      await updateLinker(req, res);
+
+      // Should not call update when invalid input
+      expect(mockLinker.update).not.toHaveBeenCalled();
+    });
+
+    it('should invalidate cache when datasourceConfigs change', async () => {
+      req.body = {
+        datasourceConfigs: {
+          [datasource1Id]: { methodConfig: { methodName: 'newMethod' } },
+          [datasource2Id]: { methodConfig: { methodName: 'anotherMethod' } }
+        }
+      };
+
+      await updateLinker(req, res);
+
+      expect(mockLinker.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          datasourceConfigs: expect.any(Object),
+          version: 2
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Linker updated successfully'
+        })
+      );
+    });
+
+    it('should update defaultMethodName', async () => {
+      req.body = { defaultMethodName: 'customMethod' };
+      
+      await updateLinker(req, res);
+
+      expect(mockLinker.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          defaultMethodName: 'customMethod'
+        })
+      );
+    });
+
+    it('should update description', async () => {
+      req.body = { description: 'New description' };
+      
+      await updateLinker(req, res);
+
+      expect(mockLinker.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: 'New description'
+        })
+      );
+    });
+
+    it('should update environment', async () => {
+      req.body = { environment: 'staging' };
+      
+      await updateLinker(req, res);
+
+      expect(mockLinker.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          environment: 'staging'
+        })
+      );
+    });
+
+    it('should update isActive', async () => {
+      req.body = { isActive: false };
+      
+      await updateLinker(req, res);
+
+      expect(mockLinker.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isActive: false
+        })
+      );
+    });
+
+    it('should handle error when datasourceIds validation fails', async () => {
+      req.body = { datasourceIds: ['non-existent-id'] };
+      vi.spyOn(models.Datasource, 'findAll').mockResolvedValue([]);
+      
+      await updateLinker(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should handle error when datasourceConfigs validation fails', async () => {
+      req.body = {
+        datasourceConfigs: {
+          'invalid-id': { methodConfig: { methodName: 'test' } }
+        }
+      };
+      
+      await updateLinker(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
     });
   });
 
@@ -581,6 +705,85 @@ describe('Linker Controller', () => {
       await getLinkerDatasources(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('executeLinker', () => {
+    let mockLinker;
+
+    beforeEach(() => {
+      mockLinker = {
+        id: 1,
+        name: 'test_linker',
+        datasourceIds: [datasource1Id, datasource2Id],
+        ownerId: 1,
+        update: vi.fn().mockResolvedValue({}),
+      };
+    });
+
+    it('should return 404 when linker not found', async () => {
+      const req = {
+        user: { user_id: 1 },
+        params: { id: 'non-existent' },
+        body: {}
+      };
+      const res = createRes();
+
+      vi.mocked(models.Linker.findByPk).mockResolvedValue(null);
+
+      await executeLinker(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Linker not found or access denied'
+      });
+    });
+
+    it('should return 404 when user does not own linker', async () => {
+      const req = {
+        user: { user_id: 999 }, // Different user
+        params: { id: mockLinker.id },
+        body: {}
+      };
+      const res = createRes();
+
+      vi.mocked(models.Linker.findByPk).mockResolvedValue(mockLinker);
+
+      await executeLinker(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Linker not found or access denied'
+      });
+    });
+
+    it('should handle missing datasources error during execution', async () => {
+      const req = {
+        user: { user_id: 1 },
+        params: { id: mockLinker.id },
+        body: { options: {} }
+      };
+      const res = createRes();
+
+      vi.mocked(models.Linker.findByPk).mockResolvedValue(mockLinker);
+      vi.mocked(databinderUtils.getCachedLinkerExecution).mockResolvedValue({
+        data: null,
+        isStale: false,
+      });
+      // Only return one datasource instead of two
+      vi.mocked(models.Datasource.findAll).mockResolvedValue([
+        { id: datasource1Id, name: 'DS1', definitionId: 'rest-api', config: {} },
+      ]);
+
+      await executeLinker(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Error executing linker',
+          error: expect.stringContaining('Some datasources are no longer available'),
+        })
+      );
     });
   });
 });

@@ -376,6 +376,71 @@ describe('Databinder Controller', () => {
       expect(mockDatasource.update).toHaveBeenCalledWith(
         expect.objectContaining({
           version: 2,
+          testStatus: 'not_tested'
+        })
+      );
+    });
+
+    it('should update definitionId', async () => {
+      vi.spyOn(models.Datasource, 'findByPk').mockResolvedValue(mockDatasource);
+
+      const req = createReq({
+        params: { datasourceId: '1' },
+        body: { definitionId: 'microsoft-graph' },
+      });
+      await updateDatasource(req, res);
+
+      expect(mockDatasource.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          definitionId: 'microsoft-graph'
+        })
+      );
+    });
+
+    it('should update description', async () => {
+      vi.spyOn(models.Datasource, 'findByPk').mockResolvedValue(mockDatasource);
+
+      const req = createReq({
+        params: { datasourceId: '1' },
+        body: { description: 'Updated description' },
+      });
+      await updateDatasource(req, res);
+
+      expect(mockDatasource.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: 'Updated description'
+        })
+      );
+    });
+
+    it('should update environment', async () => {
+      vi.spyOn(models.Datasource, 'findByPk').mockResolvedValue(mockDatasource);
+
+      const req = createReq({
+        params: { datasourceId: '1' },
+        body: { environment: 'staging' },
+      });
+      await updateDatasource(req, res);
+
+      expect(mockDatasource.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          environment: 'staging'
+        })
+      );
+    });
+
+    it('should update isActive', async () => {
+      vi.spyOn(models.Datasource, 'findByPk').mockResolvedValue(mockDatasource);
+
+      const req = createReq({
+        params: { datasourceId: '1' },
+        body: { isActive: false },
+      });
+      await updateDatasource(req, res);
+
+      expect(mockDatasource.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isActive: false
         })
       );
     });
@@ -471,6 +536,19 @@ describe('Databinder Controller', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ testStatus: 'failure' })
       );
+    });
+
+    it('should perform additional tests when available', async () => {
+      vi.spyOn(models.Datasource, 'findByPk').mockResolvedValue(mockDatasource);
+      vi.spyOn(databinderUtils, 'performAdditionalTests').mockResolvedValue([
+        { method: 'test2', status: 'success' }
+      ]);
+
+      const req = createReq({ params: { datasourceId: '1' } });
+      await testDatasource(req, res);
+
+      expect(databinderUtils.performAdditionalTests).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalled();
     });
 
     it('should handle errors when testing datasource', async () => {
@@ -578,6 +656,46 @@ describe('Databinder Controller', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({ message: expect.any(String) })
       );
+    });
+
+    it('should include telemetry context in response', async () => {
+      vi.spyOn(models.Datasource, 'findByPk').mockResolvedValue(mockDatasource);
+      vi.spyOn(databinderUtils, 'createTelemetryContext').mockReturnValue({
+        traceId: 'trace-123',
+        spanId: 'span-456'
+      });
+
+      const req = createReq({
+        params: { datasourceId: '1' },
+        body: { method: 'fetch', params: {} },
+      });
+      await fetchFromDatasource(req, res);
+
+      expect(databinderUtils.createTelemetryContext).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            telemetryContext: expect.any(Object)
+          })
+        })
+      );
+    });
+
+    it('should include http call details in response', async () => {
+      vi.spyOn(models.Datasource, 'findByPk').mockResolvedValue(mockDatasource);
+      vi.spyOn(databinderUtils, 'createHttpCallDetails').mockReturnValue({
+        method: 'GET',
+        endpoint: '/api/data'
+      });
+
+      const req = createReq({
+        params: { datasourceId: '1' },
+        body: { method: 'fetch', params: {} },
+      });
+      await fetchFromDatasource(req, res);
+
+      expect(databinderUtils.createHttpCallDetails).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalled();
     });
   });
 
