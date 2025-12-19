@@ -71,8 +71,17 @@ const executeLinkerInternal = async (linker, userId, executionId, traceId, spanI
   for (const datasource of datasources) {
     try {
       const dsConfig = linker.datasourceConfigs?.[datasource.id];
-      const methodName = dsConfig?.methodConfig?.methodName || linker.defaultMethodName;
-      const methodOptions = { ...options, ...dsConfig?.methodConfig?.options };
+      
+      // Determine method name: runtime options > datasource config > linker default
+      let methodName = options?.methodName || dsConfig?.methodConfig?.methodName || linker.defaultMethodName;
+      
+      // Merge options: runtime options override config options
+      const configOptions = dsConfig?.methodConfig?.options || {};
+      const methodOptions = { ...configOptions, ...options };
+      
+      // Remove methodName from options if present (it's not a method parameter)
+      delete methodOptions.methodName;
+      
       const propertyMapping = dsConfig?.propertyMapping || null;
 
       // Create datasource instance
@@ -85,11 +94,12 @@ const executeLinkerInternal = async (linker, userId, executionId, traceId, spanI
 
       // Check if method exists
       if (!instance.methods[methodName]) {
+        const availableMethods = instance.listMethods ? instance.listMethods() : Object.keys(instance.methods);
         results.push({
           datasourceId: datasource.id,
           datasourceName: datasource.name,
           success: false,
-          error: `Method '${methodName}' not available`,
+          error: `Method '${methodName}' not available. Available methods: ${availableMethods.join(', ')}`,
           data: null
         });
         continue;

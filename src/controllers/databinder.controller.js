@@ -563,27 +563,150 @@ export const getDatasourceMethods = async (req, res) => {
       `methods_${datasource.id}_${Date.now()}`
     );
 
-    // Create methods info using utility
-    const methodsInfo = createMethodsInfo(instance, (methodName) => 
-      getMethodDescription(
-        datasourceCatalog.listDatasourceDefinitions.bind(datasourceCatalog),
-        datasource.definitionId,
-        methodName
-      )
-    );
+    // Use built-in introspection method
+    const methods = instance.listMethods ? instance.listMethods() : Object.keys(instance.methods);
 
     res.json({
       datasourceId: datasource.id,
       datasourceName: datasource.name,
       definitionId: datasource.definitionId,
-      availableMethods: methodsInfo,
-      methodCount: Object.keys(methodsInfo).length
+      methods
     });
 
   } catch (error) {
     logger.error('Error getting datasource methods:', error);
     res.status(500).json({ 
       message: 'Error getting datasource methods', 
+      error: error.message 
+    });
+  }
+};
+
+export const getMethodInfo = async (req, res) => {
+  try {
+    const userId = req.user?.user_id;
+    const { id, methodName } = req.params;
+
+    const datasource = await models.Datasource.findByPk(id);
+    if (!checkOwnership(datasource, userId)) {
+      return res.status(404).json({ message: 'Datasource not found or access denied' });
+    }
+
+    // Create a temporary instance
+    const instance = datasourceCatalog.createDatasourceInstance(
+      datasource.definitionId,
+      datasource.config,
+      `method_info_${datasource.id}_${Date.now()}`
+    );
+
+    // Use built-in introspection method if available
+    let methodInfo;
+    if (instance.getMethodInfo) {
+      methodInfo = instance.getMethodInfo(methodName);
+    } else {
+      // Fallback to checking if method exists
+      if (!instance.methods[methodName]) {
+        return res.status(404).json({ 
+          message: `Method '${methodName}' not found on datasource` 
+        });
+      }
+      methodInfo = {
+        name: methodName,
+        description: getMethodDescription(
+          datasourceCatalog.listDatasourceDefinitions.bind(datasourceCatalog),
+          datasource.definitionId,
+          methodName
+        )
+      };
+    }
+
+    if (!methodInfo) {
+      return res.status(404).json({ 
+        message: `Method '${methodName}' not found on datasource` 
+      });
+    }
+
+    // Filter out technical Zod schema details, keep only useful info
+    const filteredMethodInfo = {
+      name: methodInfo.name,
+      description: methodInfo.description,
+      requiredOptions: methodInfo.requiredOptions || [],
+      optionalOptions: methodInfo.optionalOptions || [],
+      examples: methodInfo.examples || []
+    };
+
+    res.json({
+      datasourceId: datasource.id,
+      datasourceName: datasource.name,
+      definitionId: datasource.definitionId,
+      methodInfo: filteredMethodInfo
+    });
+
+  } catch (error) {
+    logger.error('Error getting method info:', error);
+    res.status(500).json({ 
+      message: 'Error getting method info', 
+      error: error.message 
+    });
+  }
+};
+
+export const getAllMethodsInfo = async (req, res) => {
+  try {
+    const userId = req.user?.user_id;
+    const { id } = req.params;
+
+    const datasource = await models.Datasource.findByPk(id);
+    if (!checkOwnership(datasource, userId)) {
+      return res.status(404).json({ message: 'Datasource not found or access denied' });
+    }
+
+    // Create a temporary instance
+    const instance = datasourceCatalog.createDatasourceInstance(
+      datasource.definitionId,
+      datasource.config,
+      `all_methods_info_${datasource.id}_${Date.now()}`
+    );
+
+    // Use built-in introspection method if available
+    let allMethodsInfo;
+    if (instance.getAllMethodsInfo) {
+      allMethodsInfo = instance.getAllMethodsInfo();
+    } else {
+      // Fallback to creating info from available methods
+      allMethodsInfo = createMethodsInfo(instance, (methodName) => 
+        getMethodDescription(
+          datasourceCatalog.listDatasourceDefinitions.bind(datasourceCatalog),
+          datasource.definitionId,
+          methodName
+        )
+      );
+    }
+
+    // Filter out technical Zod schema details from all methods
+    const filteredMethodsInfo = {};
+    Object.keys(allMethodsInfo).forEach(methodName => {
+      const info = allMethodsInfo[methodName];
+      filteredMethodsInfo[methodName] = {
+        name: info.name,
+        description: info.description,
+        requiredOptions: info.requiredOptions || [],
+        optionalOptions: info.optionalOptions || [],
+        examples: info.examples || []
+      };
+    });
+
+    res.json({
+      datasourceId: datasource.id,
+      datasourceName: datasource.name,
+      definitionId: datasource.definitionId,
+      methods: filteredMethodsInfo
+    });
+
+  } catch (error) {
+    logger.error('Error getting all methods info:', error);
+    res.status(500).json({ 
+      message: 'Error getting all methods info', 
       error: error.message 
     });
   }

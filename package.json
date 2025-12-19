@@ -34,7 +34,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@statuscompliance/databinder": "1.2.2",
+    "@statuscompliance/databinder": "1.2.3",
     "axios": "1.13.2",
     "bcrypt": "6.0.0",
     "cookie-parser": "1.4.7",

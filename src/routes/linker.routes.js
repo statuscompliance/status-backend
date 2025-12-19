@@ -307,6 +307,12 @@ export default function () {
  *     description: |
  *       Executes all datasources in the linker and returns combined results. Supports different 
  *       merge strategies to combine data from multiple sources.
+ *       
+ *       **New in v1.2.2**: Runtime method selection support. You can now specify `methodName` 
+ *       in the options to override the configured method for all datasources, or the system will use:
+ *       1. Method specified in options.methodName (runtime override)
+ *       2. Method configured in datasourceConfigs.methodConfig.methodName
+ *       3. Linker's defaultMethodName
  *     tags: [Databinder Linker]
  *     security:
  *       - bearerAuth: []
@@ -325,10 +331,19 @@ export default function () {
  *             properties:
  *               options:
  *                 type: object
- *                 description: Options to pass to datasource methods
+ *                 description: |
+ *                   Options to pass to datasource methods. Can include `methodName` to override 
+ *                   the configured method at runtime.
+ *                 properties:
+ *                   methodName:
+ *                     type: string
+ *                     description: |
+ *                       Optional method name to override configured method for all datasources.
+ *                       This provides runtime method selection without reconfiguration.
+ *                     example: "getById"
  *                 example:
- *                   limit: 10
- *                   offset: 0
+ *                   methodName: "listFiles"
+ *                   path: "/documents"
  *               mergeStrategy:
  *                 type: string
  *                 enum: [concat, merge, override, indexed]
@@ -341,16 +356,27 @@ export default function () {
  *                   - indexed: Return an object indexed by datasource ID
  *           examples:
  *             simpleExecution:
- *               summary: Simple Execution
+ *               summary: Simple Execution (Uses Configured Methods)
+ *               description: Executes using methods configured in datasourceConfigs
  *               value:
  *                 options: {}
  *                 mergeStrategy: "indexed"
- *             withOptions:
- *               summary: Execution with Options
+ *             runtimeMethodSelection:
+ *               summary: Runtime Method Override (New in v1.2.2)
+ *               description: Override configured method at runtime without reconfiguration
  *               value:
  *                 options:
- *                   limit: 50
- *                   filter: "active"
+ *                   methodName: "getById"
+ *                   id: "12345"
+ *                 mergeStrategy: "indexed"
+ *             withOptions:
+ *               summary: Execution with Method and Options
+ *               description: Specify method and pass additional options
+ *               value:
+ *                 options:
+ *                   methodName: "listFiles"
+ *                   path: "/documents"
+ *                   recursive: true
  *                 mergeStrategy: "concat"
  *     responses:
  *       200:

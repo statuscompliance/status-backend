@@ -8,7 +8,9 @@ import {
   testDatasource,
   listAvailableDefinitions,
   fetchFromDatasource,
-  getDatasourceMethods
+  getDatasourceMethods,
+  getMethodInfo,
+  getAllMethodsInfo
 } from '../controllers/databinder.controller.js';
 import { verifyAuthority } from '../middleware/verifyAuth.js';
 
@@ -27,8 +29,12 @@ export default function () {
   
   // Additional datasource operations
   router.post('/ds/:id/test', verifyAuthority, testDatasource);
-  router.get('/ds/:id/methods', verifyAuthority, getDatasourceMethods);
   router.post('/ds/:id/fetch', verifyAuthority, fetchFromDatasource);
+  
+  // Datasource introspection methods (new in v1.2.2)
+  router.get('/ds/:id/methods', verifyAuthority, getDatasourceMethods);
+  router.get('/ds/:id/methods/all', verifyAuthority, getAllMethodsInfo);
+  router.get('/ds/:id/methods/:methodName', verifyAuthority, getMethodInfo);
 
   return router;
 }
@@ -414,7 +420,11 @@ export default function () {
  * @swagger
  * /databinder/ds/{id}/methods:
  *   get:
- *     summary: Get available methods for a datasource
+ *     summary: List all available method names for a datasource
+ *     description: |
+ *       Returns a simple list of method names available on the datasource.
+ *       This is a lightweight endpoint for discovering what methods can be called.
+ *       Introduced in v1.2.2 for datasource introspection without Linker.
  *     tags: [Databinder Datasources]
  *     security:
  *       - bearerAuth: []
@@ -425,9 +435,10 @@ export default function () {
  *         schema:
  *           type: string
  *           format: uuid
+ *         description: Datasource ID
  *     responses:
  *       200:
- *         description: Available methods for the datasource
+ *         description: List of method names
  *         content:
  *           application/json:
  *             schema:
@@ -435,26 +446,21 @@ export default function () {
  *               properties:
  *                 datasourceId:
  *                   type: string
- *                   format: uuid
  *                 datasourceName:
  *                   type: string
  *                 definitionId:
  *                   type: string
- *                 availableMethods:
- *                   type: object
- *                   additionalProperties:
- *                     type: object
- *                     properties:
- *                       available:
- *                         type: boolean
- *                       type:
- *                         type: string
- *                       description:
- *                         type: string
- *                 methodCount:
- *                   type: integer
+ *                 methods:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *             example:
+ *               datasourceId: "123e4567-e89b-12d3-a456-426614174000"
+ *               datasourceName: "External API"
+ *               definitionId: "rest-api"
+ *               methods: ["default", "getById", "search"]
  *       404:
- *         description: Datasource not found or unauthorized
+ *         description: Datasource not found or access denied
  */
 
 /**
@@ -466,6 +472,9 @@ export default function () {
  *       Fetch data from a datasource with various options including pagination, filtering, sorting, 
  *       response formats, and authentication overrides. This endpoint supports multiple response 
  *       formats and advanced querying capabilities.
+ *       
+ *       **New in v1.2.2**: `methodName` is now optional. If not provided, uses the 'default' method.
+ *       This allows runtime method selection without pre-configuration.
  *       
  *       **Important**: When creating a datasource with `definitionId: "rest-api"`, you must specify
  *       the endpoint using `defaultEndpoint` in the config (e.g., `"defaultEndpoint": "/posts"`), 
@@ -490,8 +499,11 @@ export default function () {
  *               methodName:
  *                 type: string
  *                 default: "default"
- *                 description: Name of the method to execute
- *                 example: "getAll"
+ *                 description: |
+ *                   Optional name of the method to execute. If not specified, uses 'default' method.
+ *                   Use introspection endpoints (/methods/list, /methods/{methodName}) to discover
+ *                   available methods and their requirements.
+ *                 example: "getById"
  *               propertyMapping:
  *                 type: object
  *                 additionalProperties:
@@ -1177,4 +1189,155 @@ export default function () {
  *                     type: array
  *                     items:
  *                       type: string
+ */
+
+/**
+ * @swagger
+ * /databinder/ds/{id}/methods/{methodName}:
+ *   get:
+ *     summary: Get configuration details for a specific method
+ *     description: |
+ *       Returns useful configuration information about a specific method including description,
+ *       required and optional parameters, and usage examples. Technical schema details are filtered out.
+ *       Introduced in v1.2.2 for datasource introspection without Linker.
+ *     tags: [Databinder Datasources]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Datasource ID
+ *       - in: path
+ *         name: methodName
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Name of the method to get information about
+ *     responses:
+ *       200:
+ *         description: Method configuration (frontend-ready)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 datasourceId:
+ *                   type: string
+ *                 datasourceName:
+ *                   type: string
+ *                 definitionId:
+ *                   type: string
+ *                 methodInfo:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                       description: Method name
+ *                     description:
+ *                       type: string
+ *                       description: Human-readable description
+ *                     requiredOptions:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: List of required parameter names
+ *                     optionalOptions:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: List of optional parameter names
+ *                     examples:
+ *                       type: array
+ *                       description: Usage examples
+ *             example:
+ *               datasourceId: "123e4567-e89b-12d3-a456-426614174000"
+ *               datasourceName: "External API"
+ *               definitionId: "rest-api"
+ *               methodInfo:
+ *                 name: "getById"
+ *                 description: "Fetch a resource by ID"
+ *                 requiredOptions: ["id"]
+ *                 optionalOptions: ["endpoint", "query"]
+ *                 examples: []
+ *       404:
+ *         description: Datasource or method not found
+ */
+
+/**
+ * @swagger
+ * /databinder/ds/{id}/methods/all:
+ *   get:
+ *     summary: Get configuration details for all methods
+ *     description: |
+ *       Returns useful configuration information about all methods available on the datasource.
+ *       Technical schema details are filtered out, returning only frontend-friendly data.
+ *       Introduced in v1.2.2 for datasource introspection without Linker.
+ *     tags: [Databinder Datasources]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Datasource ID
+ *     responses:
+ *       200:
+ *         description: All methods configuration (frontend-ready)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 datasourceId:
+ *                   type: string
+ *                 datasourceName:
+ *                   type: string
+ *                 definitionId:
+ *                   type: string
+ *                 methods:
+ *                   type: object
+ *                   description: Map of method name to configuration
+ *                   additionalProperties:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       requiredOptions:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                       optionalOptions:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                       examples:
+ *                         type: array
+ *             example:
+ *               datasourceId: "123e4567-e89b-12d3-a456-426614174000"
+ *               datasourceName: "External API"
+ *               definitionId: "rest-api"
+ *               methods:
+ *                 default:
+ *                   name: "default"
+ *                   description: "Default method for generic requests"
+ *                   requiredOptions: []
+ *                   optionalOptions: ["endpoint", "method", "body"]
+ *                   examples: []
+ *                 getById:
+ *                   name: "getById"
+ *                   description: "Fetch a resource by ID"
+ *                   requiredOptions: ["id"]
+ *                   optionalOptions: ["endpoint", "query"]
+ *                   examples: []
+ *       404:
+ *         description: Datasource not found or access denied
  */
