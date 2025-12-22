@@ -53,6 +53,29 @@ jobs:
       matrix:
         coverage-type: [unit-config, unit-controllers, unit-db, unit-middleware, unit-utils, integration]
 
+    #Define here your service list
+    services:
+      node-red:
+        image: statuscompliance/node-red-status:latest
+        ports:
+          - 1880:1880
+        env:
+          NODE_RED_USER: admin
+          NODE_RED_PASSWORD: admin
+          TZ: Europe/Madrid
+        options: >-
+          --health-cmd "curl -f http://localhost:1880/auth/login || exit 1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+          
+    #GLOBAL JOB .ENV CONFIGURATION
+    env:
+      NODE_RED_HOST: node-red
+      NODE_RED_PORT: 1880
+      NODE_RED_USER: admin
+      NODE_RED_PASSWORD: admin
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6.0.1

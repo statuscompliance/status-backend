@@ -16,6 +16,7 @@
     "test:unit:utils": "cross-env NODE_NO_WARNINGS=1 VITE_TEST_TYPE=unit vitest run tests/unit/utils",
     "test:integration": "cross-env NODE_NO_WARNINGS=1 vitest run tests/integration",
     "test:watch": "cross-env NODE_NO_WARNINGS=1 vitest --watch",
+    "test:e2e": "cross-env NODE_NO_WARNINGS=1 VITE_TEST_TYPE=unit vitest run tests/e2e",
     "coverage": "cross-env NODE_NO_WARNINGS=1 vitest run --coverage --coverage.reporter=text",
     "coverage:ci": "cross-env NODE_NO_WARNINGS=1 vitest run --coverage --coverage.reporter=lcov",
     "coverage:unit:config": "cross-env NODE_NO_WARNINGS=1 VITE_TEST_TYPE=unit vitest run tests/unit/config --coverage --coverage.reporter=lcov",
